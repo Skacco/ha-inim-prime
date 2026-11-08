@@ -266,3 +266,48 @@ async def test_zone_devices_linked_to_panel(hass: HomeAssistant):
     panel_dev = reg.async_get_device(identifiers={(DOMAIN, SERIAL)})
     zone_dev = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zone_1")})
     assert panel_dev and zone_dev and zone_dev.via_device_id == panel_dev.id
+
+
+async def test_alarm_panel_no_custom_bypass_while_scenario_lags(hass: HomeAssistant):
+    """Partitions switch first, the active scenario a few reads later."""
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1, "arm_night": 2})
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+
+    original = panel.request
+    lag = {"left": 0, "target": None}
+    seen = []
+
+    async def lagging(cmd, **params):
+        if cmd == "set_scenarios_mode":
+            sid = int(params["p1"])
+            for pid, part in panel.partitions.items():
+                part["am"] = panel.scenario_arms.get(sid, {}).get(pid, 4)
+            panel.calls.append((cmd, params))
+            lag.update(left=3, target=sid)
+            return {}
+        if cmd == "get_scenarios_status" and lag["target"] is not None:
+            lag["left"] -= 1
+            if lag["left"] <= 0:
+                for i, s in panel.scenarios.items():
+                    s["st"] = 1 if i == lag["target"] else 0
+                lag["target"] = None
+        res = await original(cmd, **params)
+        st = hass.states.get(eid)
+        if st:
+            seen.append(st.state)
+        return res
+
+    async def no_sleep(*_):
+        return None
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=lagging), \
+         patch("custom_components.inim_prime.entities.alarm_panel.asyncio.sleep", no_sleep):
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_vacation", {"entity_id": eid}, blocking=True)
+        await hass.async_block_till_done()
+
+    assert "armed_custom_bypass" not in seen
+    assert "arming" in seen
+    assert hass.states.get(eid).state == "armed_vacation"
