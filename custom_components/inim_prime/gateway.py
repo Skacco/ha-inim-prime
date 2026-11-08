@@ -41,6 +41,9 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
+        # With both backends: False = only expose outputs PrimeLAN also
+        # publishes (outputs enabled for the PrimeLAN user).
+        self.show_hidden_outputs: bool = False
 
         # Preferred backend for anything both sides support equally.
 
@@ -121,6 +124,10 @@ class InimPrimeGateway:
         if self._native is not None:
             outputs = self._native.outputs
             labels = self._primelan_output_labels
+            if labels is not None and not self.show_hidden_outputs:
+                outputs = MappingProxyType({
+                    oid: o for oid, o in outputs.items() if oid in labels
+                })
             if labels and any(not o.label for o in outputs.values()):
                 outputs = MappingProxyType({
                     oid: (replace(o, label = labels.get(oid, "")) if not o.label else o)
@@ -172,6 +179,8 @@ class InimPrimeGateway:
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
         if self._native is not None:
             await self._native.update_outputs()
+            # PrimeLAN is read once: for the list of outputs enabled for its
+            # user (filter) and as a fallback for names.
             if self._primelan is not None and self._primelan_output_labels is None:
                 try:
                     primelan_outputs = await self._primelan.update_outputs()

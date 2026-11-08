@@ -112,6 +112,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     )
 
     inim_gateway = _build_gateway(data)
+    inim_gateway.show_hidden_outputs = bool(entry.options.get("show_hidden_outputs", False))
     await inim_gateway.connect()
 
     ###

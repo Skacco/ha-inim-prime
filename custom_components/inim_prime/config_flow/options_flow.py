@@ -30,6 +30,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             scenarios_scan_interval = options["scan_intervals"].get("scenarios"),
             panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
             alarm_panel = options.get("alarm_panel"),
+            show_hidden_outputs = options.get("show_hidden_outputs"),
         )
 
 

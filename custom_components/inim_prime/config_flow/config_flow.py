@@ -201,6 +201,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
             self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
             self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
+            self._options.show_hidden_outputs = user_input.get(OptionsKey.SHOW_HIDDEN_OUTPUTS)
 
             if self._data.use_primelan:
                 self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]
@@ -283,6 +284,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         self._options.scenarios_scan_interval = scan_intervals.get("scenarios")
         self._options.panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit")
         self._options.alarm_panel = options.get("alarm_panel")
+        self._options.show_hidden_outputs = options.get("show_hidden_outputs")
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         # Populate self._data/self._options from the existing entry only
@@ -372,6 +374,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
             self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
             self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
+            self._options.show_hidden_outputs = user_input.get(OptionsKey.SHOW_HIDDEN_OUTPUTS)
 
             if self._data.use_primelan:
                 self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]

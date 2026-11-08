@@ -60,10 +60,12 @@
       "options": {
         "title": "INIM Prime Options",
         "data": {
-          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit"
+          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
+          "show_hidden_outputs": "Show outputs not available via PrimeLAN"
         },
         "data_description": {
-          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed."
+          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
+          "show_hidden_outputs": "Native reads every output of the panel; PrimeLAN only those enabled for its user. Enable to also show the others (e.g. outputs not enabled for the user linked to PrimeLAN)."
         },
         "sections": {
           "scan_intervals": {
@@ -153,10 +155,12 @@
       "reconfigure_options": {
         "title": "INIM Prime Options",
         "data": {
-          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit"
+          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
+          "show_hidden_outputs": "Show outputs not available via PrimeLAN"
         },
         "data_description": {
-          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed."
+          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
+          "show_hidden_outputs": "Native reads every output of the panel; PrimeLAN only those enabled for its user. Enable to also show the others (e.g. outputs not enabled for the user linked to PrimeLAN)."
         },
         "sections": {
           "scan_intervals": {
@@ -210,10 +214,12 @@
       "init": {
         "title": "INIM Prime Options",
         "data": {
-          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit"
+          "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
+          "show_hidden_outputs": "Show outputs not available via PrimeLAN"
         },
         "data_description": {
-          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed."
+          "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
+          "show_hidden_outputs": "Native reads every output of the panel; PrimeLAN only those enabled for its user. Enable to also show the others (e.g. outputs not enabled for the user linked to PrimeLAN)."
         },
         "sections": {
           "scan_intervals": {

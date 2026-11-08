@@ -306,6 +306,14 @@ def build_options_schema(
         vol.Required("scan_intervals"): section(vol.Schema(scan_interval_fields)),
     }
 
+    if has_native and has_primelan:
+        # Native sees every output of the panel; PrimeLAN only those enabled
+        # for its user. Off = show only the PrimeLAN ones (like the panel apps).
+        schema[vol.Required(
+            OptionsKey.SHOW_HIDDEN_OUTPUTS,
+            default = bool(current_options.show_hidden_outputs) if current_options else False,
+        )] = bool
+
     if has_primelan:
         # Alarm panel: one scenario id per command, like the Sdomotica panel.
         # Empty fields = command not offered; no disarm scenario = no panel.
