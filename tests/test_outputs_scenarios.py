@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.inim_prime.const import DOMAIN
+from custom_components.inim_prime_skacco.const import DOMAIN
 
 SERIAL = "PRIME123"
 

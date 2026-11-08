@@ -2,7 +2,7 @@ from typing import Final
 
 import inim.prime.native.const
 
-DOMAIN: Final[str] = "inim_prime"
+DOMAIN: Final[str] = "inim_prime_skacco"
 
 
 PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT: Final[int] = 40
