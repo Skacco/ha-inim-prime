@@ -168,8 +168,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     if inim_gateway.supports_outputs:
         default_outputs_interval = (
-            OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
-            if data.get("primelan") else OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT
+            OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT
+            if data.get("native") else OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
         )
         outputs_coordinator = InimPrimeOutputsUpdateCoordinator(
             hass = hass,

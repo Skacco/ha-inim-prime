@@ -4,9 +4,8 @@ Coordinators and entities talk only to this gateway; they never import from
 inim.prime.native or inim.prime.primelan directly. When both backends are
 configured, native is preferred for everything it supports; PrimeLAN remains
 the only source for GSM, system faults, log events, and output dimming until
-native grows those features -- and it's *preferred* specifically for reading
-output status, since it's a strict superset (adds dimming %) of what native
-reports.
+native grows those features. Outputs come from native when it is configured
+(faster), otherwise from PrimeLAN (which also reports dimming levels).
 """
 from __future__ import annotations
 
@@ -112,10 +111,12 @@ class InimPrimeGateway:
 
     @property
     def outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
-        # PrimeLAN is preferred for outputs: it reports dimming levels too.
-        if self._primelan is not None:
-            return self._primelan.outputs
-        return self._native.outputs if self._native is not None else None
+        # Native is preferred for outputs (much faster polling); PrimeLAN is
+        # used only when native isn't configured. Native has no dimming, so
+        # dimmers are on/off when native is active.
+        if self._native is not None:
+            return self._native.outputs
+        return self._primelan.outputs if self._primelan is not None else None
 
     @property
     def scenarios(self) -> MappingProxyType[int, UnifiedScenario] | None:
@@ -158,10 +159,10 @@ class InimPrimeGateway:
         return await self._preferred.update_partitions()
 
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
-        if self._primelan is not None:
-            return await self._primelan.update_outputs()
         if self._native is not None:
             return await self._native.update_outputs()
+        if self._primelan is not None:
+            return await self._primelan.update_outputs()
         raise InimPrimeFeatureNotSupportedError("Outputs require Native or PrimeLAN")
 
     async def update_scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
@@ -249,11 +250,11 @@ class InimPrimeGateway:
     ) -> None:
         # Output ids come from whichever backend reports them (see `outputs`),
         # so commands must go to that same backend.
-        if self._primelan is not None:
-            await self._primelan.set_output(output_id, state, level)
-            return
         if self._native is not None:
             await self._native.set_output(output_id, state)
+            return
+        if self._primelan is not None:
+            await self._primelan.set_output(output_id, state, level)
             return
         raise InimPrimeFeatureNotSupportedError("Output set requires Native or PrimeLAN")
 

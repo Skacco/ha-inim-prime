@@ -129,13 +129,13 @@ def _output_to_unified(output: NativeOutput) -> UnifiedOutput:
     if output.output_status is None:
         unified_output = UnifiedOutput(
             output_id = output.terminal_id,
-            label = output.label,
+            label = (output.label or "").strip(),
             state = None,
         )
     else:
         unified_output = UnifiedOutput(
             output_id = output.terminal_id,
-            label = output.label,
+            label = (output.label or "").strip(),
             state = output.output_status.state,
         )
     return unified_output
