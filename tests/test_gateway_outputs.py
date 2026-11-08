@@ -78,8 +78,8 @@ async def test_connection_errors_say_which_backend_failed():
     with patch.object(cf, "test_native_connection_and_get_serial", boom), \
          patch.object(cf, "test_primelan_connection", ok):
         errors, ph = await cf._run_connection_tests(data, get_serial=True)
-    assert errors == {"base": "native_cannot_connect"}
-    assert "timeout" in ph["native_error"] and ph["primelan_error"] == ""
+    assert errors == {"base": "connection_failed"}
+    assert ph["status"].startswith("Native: FAILED (timeout") and ph["status"].endswith("PrimeLAN: OK")
 
     async def refused(*a, **k):
         raise ConnectionRefusedError()
@@ -87,9 +87,17 @@ async def test_connection_errors_say_which_backend_failed():
     with patch.object(cf, "test_native_connection_and_get_serial", ok), \
          patch.object(cf, "test_primelan_connection", refused):
         errors, ph = await cf._run_connection_tests(data, get_serial=True)
-    assert errors == {"base": "primelan_cannot_connect"} and data.serial_number == "SER1"
+    assert errors == {"base": "connection_failed"} and data.serial_number == "SER1"
+    assert ph["status"] == "Native: OK | PrimeLAN: FAILED (connection refused (port closed))"
 
     with patch.object(cf, "test_native_connection_and_get_serial", boom), \
          patch.object(cf, "test_primelan_connection", refused):
+        errors, ph = await cf._run_connection_tests(data, get_serial=True)
+    assert errors == {"base": "connection_failed"}
+    assert ph["status"].count("FAILED") == 2
+
+    # nothing failing -> no error
+    with patch.object(cf, "test_native_connection_and_get_serial", ok), \
+         patch.object(cf, "test_primelan_connection", ok):
         errors, _ = await cf._run_connection_tests(data, get_serial=True)
-    assert errors == {"base": "both_cannot_connect"}
+    assert errors == {}
