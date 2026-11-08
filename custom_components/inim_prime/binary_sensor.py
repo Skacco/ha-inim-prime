@@ -29,4 +29,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
                 SystemFaultBinarySensor(system_faults_coordinator, exposedSystemFault)
             )
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup

@@ -12,4 +12,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
 
         entities.append(panel_log_events_event)
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup

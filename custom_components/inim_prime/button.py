@@ -25,4 +25,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         for scenario in (scenarios_coordinator.gateway.scenarios or {}).values():
             entities.append(ScenarioButton(scenarios_coordinator, scenario))
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup

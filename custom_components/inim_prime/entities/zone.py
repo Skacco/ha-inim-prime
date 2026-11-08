@@ -21,7 +21,6 @@ def create_zone_device_info(
         name = f"Zone {zone_name}",
         model = "Prime Zone",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
-        via_device = (domain, serial_number),
     )
 
 

@@ -231,7 +231,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
         platforms = PLATFORMS,
     )
 
+    _link_child_devices(hass, entry)
+
     return True
+
+
+def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Show zones, partitions and GSM under the panel device.
+
+    Home Assistant no longer accepts ``via_device`` in DeviceInfo, so the
+    link is set on the device registry once the devices exist.
+    """
+    device_registry = dr.async_get(hass)
+    serial_number = entry.data["serial_number"]
+    panel = device_registry.async_get_device(identifiers = {(DOMAIN, serial_number)})
+    if panel is None:
+        return
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        if device.id != panel.id and device.via_device_id != panel.id:
+            device_registry.async_update_device(device.id, via_device_id = panel.id)
 
 
 async def async_remove_config_entry_device(
