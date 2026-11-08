@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.inim_prime_skacco.const import DOMAIN
+from custom_components.inim_prime.const import DOMAIN
 
 SERIAL = "PRIME123"
 
@@ -168,7 +168,7 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
 
 
 async def test_new_primelan_defaults():
-    from custom_components.inim_prime_skacco.config_flow.schemas import build_options_schema
+    from custom_components.inim_prime.config_flow.schemas import build_options_schema
     schema = build_options_schema(has_native=False, has_primelan=True)
     fields = list(schema.values())[0].schema.schema
     d = {str(k): k.default() for k in fields}

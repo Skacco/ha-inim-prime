@@ -1,8 +1,8 @@
 """Backend choice for outputs: native when configured, otherwise PrimeLAN."""
 from types import MappingProxyType
 
-from custom_components.inim_prime_skacco.gateway import InimPrimeGateway
-from custom_components.inim_prime_skacco.models.outputs import UnifiedOutput
+from custom_components.inim_prime.gateway import InimPrimeGateway
+from custom_components.inim_prime.models.outputs import UnifiedOutput
 
 
 class FakeBackend:

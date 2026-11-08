@@ -1,7 +1,7 @@
 {
-  "domain": "inim_prime_skacco",
-  "name": "Inim Prime Skacco",
-  "version": "0.2.0-beta.3+skacco.1",
+  "domain": "inim_prime",
+  "name": "Inim Prime",
+  "version": "0.2.0-beta.3",
   "documentation": "https://github.com/Pitscheider/ha_inim_prime",
   "requirements": [
     "inim-prime-primelan@git+https://github.com/Pitscheider/inim-prime-primelan.git@319421e980ad334e25003b135a7076e2d1a71c3f",
