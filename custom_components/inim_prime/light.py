@@ -9,6 +9,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
 
     if outputs_coordinator is not None:
         for output in (outputs_coordinator.gateway.outputs or {}).values():
-            entities.append(OutputLight(outputs_coordinator, output))
+            if output.dimmable:
+                entities.append(OutputLight(outputs_coordinator, output))
 
     async_add_entities(entities)

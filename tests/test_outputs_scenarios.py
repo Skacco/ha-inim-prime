@@ -73,17 +73,18 @@ def _eid(hass, platform, unique_id):
     return er.async_get(hass).async_get_entity_id(platform, DOMAIN, unique_id)
 
 
-async def test_outputs_become_lights(hass: HomeAssistant):
+async def test_outputs_switches_and_dimmers(hass: HomeAssistant):
     panel = FakePanel()
     await _setup(hass, panel)
 
-    relay = _eid(hass, "light", f"{SERIAL}_output_31")
+    relay = _eid(hass, "switch", f"{SERIAL}_output_31")
+    assert _eid(hass, "light", f"{SERIAL}_output_31") is None
+    assert _eid(hass, "switch", f"{SERIAL}_output_570") is None
     dimmer = _eid(hass, "light", f"{SERIAL}_output_570")
     assert relay and dimmer
 
     s = hass.states.get(relay)
     assert s.state == "off"
-    assert s.attributes["supported_color_modes"] == ["onoff"]
     assert s.attributes["output_id"] == 31
 
     s = hass.states.get(dimmer)
@@ -92,7 +93,7 @@ async def test_outputs_become_lights(hass: HomeAssistant):
     assert s.attributes["brightness"] == round(40 * 255 / 100)
 
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
-        await hass.services.async_call("light", "turn_on", {"entity_id": relay}, blocking=True)
+        await hass.services.async_call("switch", "turn_on", {"entity_id": relay}, blocking=True)
         await hass.async_block_till_done()
         assert ("set_outputs_mode", {"p1": 31, "p2": 1}) in panel.calls
         assert hass.states.get(relay).state == "on"
