@@ -130,6 +130,9 @@ class PanelLogEventsEvent(
 ):
     _attr_name = "Log Events"
     _attr_event_types = ["generic"]
+    # The full list is shown in the UI but not written to the recorder on
+    # every event (it would duplicate the whole log in the database).
+    _unrecorded_attributes = frozenset({"events"})
 
     def __init__(
             self,
@@ -139,6 +142,23 @@ class PanelLogEventsEvent(
 
         self._attr_unique_id = f"{self.coordinator.serial_number}_panel_log_events"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Last N panel log events (N = panel_log_events_fetch_limit), newest first."""
+        limit = self.coordinator.panel_log_events_fetch_limit
+        events = list(self.coordinator.last_panel_log_events)[-limit:]
+        return {
+            "events": [
+                {
+                    "timestamp": e.timestamp.isoformat(),
+                    "type": e.type,
+                    "location": e.location,
+                    "agent": e.agent,
+                }
+                for e in reversed(events)
+            ]
+        }
 
     async def handle_events(self, log_events: list[UnifiedLogEvent]) -> None:
         for log_event in log_events:

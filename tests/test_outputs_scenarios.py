@@ -363,3 +363,22 @@ async def test_stale_output_entities_removed(hass: HomeAssistant):
         await hass.async_block_till_done()
     assert _eid(hass, "switch", f"{SERIAL}_output_31") is None
     assert _eid(hass, "light", f"{SERIAL}_output_570")  # still there
+
+
+async def test_log_events_history_attribute(hass: HomeAssistant):
+    from datetime import datetime
+    from custom_components.inim_prime.models.log_events import UnifiedLogEvent
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    coord = entry.runtime_data.coordinators.panel_log_events
+    coord.last_panel_log_events = [
+        UnifiedLogEvent(i, datetime(2026, 11, 8, 23, i), f"Evento {i}", "Utente", f"Zona {i}", None)
+        for i in range(50)
+    ]
+    eid = _eid(hass, "event", f"{SERIAL}_panel_log_events")
+    coord.async_update_listeners()
+    await hass.async_block_till_done()
+    events = hass.states.get(eid).attributes["events"]
+    assert len(events) == 40                       # = panel_log_events_fetch_limit
+    assert events[0]["type"] == "Evento 49"        # newest first
+    assert events[-1]["location"] == "Zona 10"
