@@ -244,10 +244,11 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
     """
     device_registry = dr.async_get(hass)
     serial_number = entry.data["serial_number"]
-    panel = device_registry.async_get_device(identifiers = {(DOMAIN, serial_number)})
+    devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+    panel = next((d for d in devices if (DOMAIN, serial_number) in d.identifiers), None)
     if panel is None:
         return
-    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+    for device in devices:
         if device.id != panel.id and device.via_device_id != panel.id:
             device_registry.async_update_device(device.id, via_device_id = panel.id)
 
