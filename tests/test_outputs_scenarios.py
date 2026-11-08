@@ -19,7 +19,11 @@ class FakePanel:
             31: {"lb": "Luce Portico   ", "tl": 31, "st": 0, "t": 0},
             570: {"lb": "Faretti Soggiorno", "tl": 570, "st": 40, "t": 1, "v": "230,1", "p": "12,5", "c": "0,98"},
         }
-        self.scenarios = {1: {"lb": "Totale", "st": 0}, 2: {"lb": "Notte", "st": 1}}
+        self.scenarios = {0: {"lb": "Spento", "st": 0}, 1: {"lb": "Totale", "st": 0}, 2: {"lb": "Notte", "st": 1}}
+        # am: 1 away, 2 stay, 3 instant, 4 disarmed; st: 0 alarm, 1 ok
+        self.partitions = {1: {"lb": "Casa", "st": 1, "am": 4}, 2: {"lb": "Esterni", "st": 1, "am": 4}}
+        # what each scenario arms
+        self.scenario_arms = {0: {}, 1: {1: 1, 2: 1}, 2: {2: 3}}
         self.calls = []
 
     async def request(self, cmd, timeout=None, retries=None, retry_delay=None, **params):
@@ -29,7 +33,8 @@ class FakePanel:
         if cmd == "get_zones_status":
             return {"zone": [{"id": "1", "lb": "Ingresso", "tl": "1", "st": "1", "mm": "0", "by": "1"}]}
         if cmd == "get_partitions_status":
-            return {"part": [{"id": "1", "lb": "Casa", "st": "0", "am": "4", "mm": "0"}]}
+            return {"part": [{"id": str(i), "lb": p["lb"], "st": str(p["st"]), "am": str(p["am"]), "mm": "0"}
+                             for i, p in self.partitions.items()]}
         if cmd == "get_outputs_status":
             return {"cmd": [{"id": str(i), **{k: str(v) for k, v in o.items()}} for i, o in self.outputs.items()]}
         if cmd == "get_scenarios_status":
@@ -44,13 +49,16 @@ class FakePanel:
             self.outputs[int(params["p1"])]["st"] = int(params["p2"])
             return {}
         if cmd == "set_scenarios_mode":
+            sid = int(params["p1"])
             for i, s in self.scenarios.items():
-                s["st"] = 1 if i == int(params["p1"]) else 0
+                s["st"] = 1 if i == sid else 0
+            for pid, part in self.partitions.items():
+                part["am"] = self.scenario_arms.get(sid, {}).get(pid, 4)
             return {}
         raise AssertionError(f"unexpected command {cmd} {params}")
 
 
-async def _setup(hass: HomeAssistant, panel: FakePanel) -> MockConfigEntry:
+async def _setup(hass: HomeAssistant, panel: FakePanel, alarm_panel: dict | None = None) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         version=2,
@@ -60,7 +68,8 @@ async def _setup(hass: HomeAssistant, panel: FakePanel) -> MockConfigEntry:
               "primelan": {"api_key": "k", "use_https": False}},
         options={"scan_intervals": {"zones": 5000, "partitions": 10000, "gsm": 30000,
                                     "system_faults": 15000, "panel_log_events": 15000},
-                 "panel_log_events_fetch_limit": 40},
+                 "panel_log_events_fetch_limit": 40,
+                 **({"alarm_panel": alarm_panel} if alarm_panel else {})},
     )
     entry.add_to_hass(hass)
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
@@ -130,6 +139,8 @@ async def test_scenarios(hass: HomeAssistant):
         await hass.async_block_till_done()
     assert ("set_scenarios_mode", {"p1": 1}) in panel.calls
     assert hass.states.get(active).state == "Totale"
+    # no alarm_panel options -> no alarm panel entity
+    assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel") is None
 
 
 async def test_unload(hass: HomeAssistant):
@@ -176,3 +187,72 @@ async def test_new_primelan_defaults():
     schema = build_options_schema(has_native=True, has_primelan=True)
     d = {str(k): k.default() for k in list(schema.values())[0].schema.schema}
     assert (d["zones"], d["partitions"], d["outputs"]) == (500, 500, 500)
+
+
+
+async def test_alarm_panel_uses_scenarios(hass: HomeAssistant):
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1, "arm_night": 2})
+
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+    assert eid
+    st = hass.states.get(eid)
+    assert st.state == "disarmed"
+    assert st.attributes["code_arm_required"] is False
+    # only configured commands are offered: night + vacation
+    from homeassistant.components.alarm_control_panel import AlarmControlPanelEntityFeature as F
+    assert st.attributes["supported_features"] == F.ARM_NIGHT | F.ARM_VACATION
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_vacation", {"entity_id": eid}, blocking=True)
+        await hass.async_block_till_done()
+        assert ("set_scenarios_mode", {"p1": 1}) in panel.calls
+        st = hass.states.get(eid)
+        assert st.state == "armed_vacation"
+        assert st.attributes["active_scenario"] == "Totale"
+        assert st.attributes["armed_partitions"] == ["Casa", "Esterni"]
+
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_night", {"entity_id": eid}, blocking=True)
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "armed_night"
+
+        # alarm on a partition -> triggered
+        panel.partitions[2]["st"] = 0
+        await entry_refresh(hass)
+        assert hass.states.get(eid).state == "triggered"
+        panel.partitions[2]["st"] = 1
+
+        await hass.services.async_call("alarm_control_panel", "alarm_disarm", {"entity_id": eid}, blocking=True)
+        await hass.async_block_till_done()
+        assert ("set_scenarios_mode", {"p1": 0}) in panel.calls
+        assert hass.states.get(eid).state == "disarmed"
+
+        # armed from the keypad without a mapped scenario -> custom bypass
+        panel.partitions[1]["am"] = 1
+        await entry_refresh(hass)
+        assert hass.states.get(eid).state == "armed_custom_bypass"
+
+
+async def entry_refresh(hass):
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    await entry.runtime_data.coordinators.partitions.async_refresh()
+    await entry.runtime_data.coordinators.scenarios.async_refresh()
+    await hass.async_block_till_done()
+
+
+async def test_options_flow_alarm_panel(hass: HomeAssistant):
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        scan = {str(k): k.default() for k in result["data_schema"].schema["scan_intervals"].schema.schema}
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"scan_intervals": scan, "panel_log_events_fetch_limit": 40,
+             "alarm_panel": {"disarm": 0, "arm_away": 2.0}},
+        )
+        await hass.async_block_till_done()
+    assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
+    assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")

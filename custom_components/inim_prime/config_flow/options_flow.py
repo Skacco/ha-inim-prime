@@ -4,14 +4,19 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.config_entries import OptionsFlowWithReload
 
-from .models import ConfigOptions
+from .models import ConfigOptions, clean_alarm_panel
 from ..entry_data import get_entry_options, get_entry_data
 from .schemas import build_options_schema
 
 class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            return self.async_create_entry(title = "", data = user_input)
+            data = dict(user_input)
+            if "alarm_panel" in data:
+                alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
+                if alarm_panel:
+                    data["alarm_panel"] = alarm_panel
+            return self.async_create_entry(title = "", data = data)
 
         data = get_entry_data(self.config_entry)
         options = get_entry_options(self.config_entry)
@@ -24,6 +29,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             outputs_scan_interval = options["scan_intervals"].get("outputs"),
             scenarios_scan_interval = options["scan_intervals"].get("scenarios"),
             panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
+            alarm_panel = options.get("alarm_panel"),
         )
 
 

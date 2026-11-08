@@ -12,7 +12,7 @@ from .const import (
     DataKey,
     OptionsKey,
 )
-from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions
+from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel
 from .options_flow import InimPrimeOptionsFlowHandler
 from .schemas import build_connection_schema, build_options_schema
 from ..const import DOMAIN
@@ -163,6 +163,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
                 self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
                 self._options.panel_log_events_fetch_limit = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
+                self._options.alarm_panel = clean_alarm_panel(user_input.get(OptionsKey.ALARM_PANEL)) or None
 
             assert self._data.serial_number is not None
             return self.async_create_entry(
@@ -236,6 +237,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         self._options.outputs_scan_interval = scan_intervals.get("outputs")
         self._options.scenarios_scan_interval = scan_intervals.get("scenarios")
         self._options.panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit")
+        self._options.alarm_panel = options.get("alarm_panel")
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         # Populate self._data/self._options from the existing entry only
@@ -338,6 +340,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
                 self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
                 self._options.panel_log_events_fetch_limit = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
+                self._options.alarm_panel = clean_alarm_panel(user_input.get(OptionsKey.ALARM_PANEL)) or None
             else:
                 # Backend switched away from PrimeLAN: drop its
                 # PrimeLAN-only options rather than leaving stale values
@@ -347,6 +350,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._options.system_faults_scan_interval = None
                 self._options.panel_log_events_scan_interval = None
                 self._options.panel_log_events_fetch_limit = None
+                self._options.alarm_panel = None
 
             assert self._data.serial_number is not None
             reconfigure_entry = self._get_reconfigure_entry()

@@ -69,6 +69,7 @@ class ConfigOptions:
     outputs_scan_interval: int | None = None
     scenarios_scan_interval: int | None = None
     panel_log_events_fetch_limit: int | None = None
+    alarm_panel: dict[str, int] | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
         assert self.zones_scan_interval is not None
@@ -92,6 +93,8 @@ class ConfigOptions:
         options: InimPrimeOptionsData = {"scan_intervals": scan_intervals}
         if self.panel_log_events_fetch_limit is not None:
             options["panel_log_events_fetch_limit"] = self.panel_log_events_fetch_limit
+        if self.alarm_panel:
+            options["alarm_panel"] = self.alarm_panel
         return options
 
 class ScanIntervalsDefault(TypedDict):
@@ -102,3 +105,9 @@ class ScanIntervalsDefault(TypedDict):
     panel_log_events: int
     outputs: int
     scenarios: int
+
+def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
+    """Keep only the commands that have a scenario id set."""
+    if not raw:
+        return {}
+    return {key: int(value) for key, value in raw.items() if value is not None and value != ""}

@@ -43,6 +43,7 @@ class ScanIntervalsData(TypedDict):
 
 class InimPrimeOptionsData(TypedDict):
     scan_intervals: ScanIntervalsData
+    alarm_panel: NotRequired[dict[str, int]]
     panel_log_events_fetch_limit: NotRequired[int]
 
 

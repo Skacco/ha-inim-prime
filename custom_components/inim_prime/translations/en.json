@@ -1,6 +1,5 @@
 {
   "title": "INIM Prime",
-
   "config": {
     "step": {
       "user": {
@@ -88,6 +87,18 @@
               "outputs": "How often Home Assistant reads the outputs status.",
               "scenarios": "How often Home Assistant reads which scenario is active."
             }
+          },
+          "alarm_panel": {
+            "name": "Alarm panel",
+            "description": "Scenario number (0-49) the panel activates for each command. Leave empty to hide a command; without a disarm scenario the panel is not created.",
+            "data": {
+              "disarm": "Disarm scenario",
+              "arm_away": "Arm away scenario",
+              "arm_home": "Arm home scenario",
+              "arm_night": "Arm night scenario",
+              "arm_vacation": "Arm vacation scenario",
+              "arm_custom_bypass": "Arm custom bypass scenario"
+            }
           }
         }
       },
@@ -169,6 +180,18 @@
               "outputs": "How often Home Assistant reads the outputs status.",
               "scenarios": "How often Home Assistant reads which scenario is active."
             }
+          },
+          "alarm_panel": {
+            "name": "Alarm panel",
+            "description": "Scenario number (0-49) the panel activates for each command. Leave empty to hide a command; without a disarm scenario the panel is not created.",
+            "data": {
+              "disarm": "Disarm scenario",
+              "arm_away": "Arm away scenario",
+              "arm_home": "Arm home scenario",
+              "arm_night": "Arm night scenario",
+              "arm_vacation": "Arm vacation scenario",
+              "arm_custom_bypass": "Arm custom bypass scenario"
+            }
           }
         }
       }
@@ -181,7 +204,6 @@
       "reconfigure_successful": "The INIM Prime panel was reconfigured successfully."
     }
   },
-
   "options": {
     "step": {
       "init": {
@@ -213,6 +235,18 @@
               "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
               "outputs": "How often Home Assistant reads the outputs status.",
               "scenarios": "How often Home Assistant reads which scenario is active."
+            }
+          },
+          "alarm_panel": {
+            "name": "Alarm panel",
+            "description": "Scenario number (0-49) the panel activates for each command. Leave empty to hide a command; without a disarm scenario the panel is not created.",
+            "data": {
+              "disarm": "Disarm scenario",
+              "arm_away": "Arm away scenario",
+              "arm_home": "Arm home scenario",
+              "arm_night": "Arm night scenario",
+              "arm_vacation": "Arm vacation scenario",
+              "arm_custom_bypass": "Arm custom bypass scenario"
             }
           }
         }

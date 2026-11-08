@@ -299,6 +299,22 @@ def build_options_schema(
     }
 
     if has_primelan:
+        # Alarm panel: one scenario id per command, like the Sdomotica panel.
+        # Empty fields = command not offered; no disarm scenario = no panel.
+        current_alarm = (current_options.alarm_panel if current_options else None) or {}
+        alarm_fields: dict = {}
+        for key in OptionsKey.AlarmPanel.ALL:
+            marker = vol.Optional(key, description = {"suggested_value": current_alarm.get(key)})
+            alarm_fields[marker] = NumberSelector(NumberSelectorConfig(
+                min = 0,
+                max = 49,
+                mode = NumberSelectorMode.BOX,
+            ))
+        schema[vol.Optional(OptionsKey.ALARM_PANEL)] = section(
+            vol.Schema(alarm_fields), {"collapsed": not current_alarm},
+        )
+
+    if has_primelan:
         schema[vol.Required(
             OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT,
             default = panel_log_events_fetch_limit,
