@@ -306,6 +306,12 @@ def build_options_schema(
         vol.Required("scan_intervals"): section(vol.Schema(scan_interval_fields)),
     }
 
+    # Areas never configured keep the panel's default name ("AREA 013"...).
+    schema[vol.Required(
+        OptionsKey.HIDE_UNUSED_PARTITIONS,
+        default = bool(current_options.hide_unused_partitions) if current_options else False,
+    )] = bool
+
     if has_native and has_primelan:
         # Native sees every output of the panel; PrimeLAN only those enabled
         # for its user. Off = show only the PrimeLAN ones (like the panel apps).

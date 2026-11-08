@@ -9,6 +9,7 @@ native grows those features. Outputs come from native when it is configured
 """
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from types import MappingProxyType
 
@@ -24,6 +25,13 @@ from .models.system_faults import UnifiedSystemFaults
 from .models.zones import UnifiedZone
 
 from .exceptions import InimPrimeFeatureNotSupportedError
+
+
+_DEFAULT_PARTITION_LABEL = re.compile(r"^AREA\s*\d+$", re.IGNORECASE)
+
+
+def _is_default_partition_label(label: str | None) -> bool:
+    return bool(label) and bool(_DEFAULT_PARTITION_LABEL.match(label.strip()))
 
 
 class InimPrimeGateway:
@@ -44,6 +52,8 @@ class InimPrimeGateway:
         # With both backends: False = only expose outputs PrimeLAN also
         # publishes (outputs enabled for the PrimeLAN user).
         self.show_hidden_outputs: bool = False
+        # Hide areas still named like the panel default ("AREA 013").
+        self.hide_unused_partitions: bool = False
 
         # Preferred backend for anything both sides support equally.
 
@@ -114,6 +124,16 @@ class InimPrimeGateway:
 
     @property
     def partitions(self) -> MappingProxyType[int, UnifiedPartition]:
+        partitions = self._preferred.partitions
+        if not self.hide_unused_partitions:
+            return partitions
+        return MappingProxyType({
+            pid: p for pid, p in partitions.items() if not _is_default_partition_label(p.label)
+        })
+
+    @property
+    def all_partitions(self) -> MappingProxyType[int, UnifiedPartition]:
+        """Every partition, including the hidden unused ones."""
         return self._preferred.partitions
 
     @property

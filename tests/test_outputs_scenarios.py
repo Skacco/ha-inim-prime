@@ -382,3 +382,22 @@ async def test_log_events_history_attribute(hass: HomeAssistant):
     assert len(events) == 40                       # = panel_log_events_fetch_limit
     assert events[0]["type"] == "Evento 49"        # newest first
     assert events[-1]["location"] == "Zona 10"
+
+
+
+async def test_hide_unused_partitions(hass: HomeAssistant):
+    from homeassistant.helpers import device_registry as dr
+    panel = FakePanel()
+    panel.partitions[3] = {"lb": "AREA       013", "st": 1, "am": 4}
+    entry = await _setup(hass, panel)
+    reg = dr.async_get(hass)
+    assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_3")})
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        hass.config_entries.async_update_entry(entry, options={**entry.options, "hide_unused_partitions": True})
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_3")}) is None
+    assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_1")})
+    assert set(entry.runtime_data.gateway.partitions) == {1, 2}

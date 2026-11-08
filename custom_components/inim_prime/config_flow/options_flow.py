@@ -31,6 +31,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
             alarm_panel = options.get("alarm_panel"),
             show_hidden_outputs = options.get("show_hidden_outputs"),
+            hide_unused_partitions = options.get("hide_unused_partitions"),
         )
 
 
