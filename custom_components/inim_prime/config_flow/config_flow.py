@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -17,6 +19,55 @@ from .options_flow import InimPrimeOptionsFlowHandler
 from .schemas import build_connection_schema, build_options_schema
 from ..const import DOMAIN
 from ..entry_data import get_entry_data, get_entry_options
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _describe_error(err: BaseException) -> str:
+    """Short, user-readable reason for a failed connection test."""
+    if isinstance(err, (asyncio.TimeoutError, TimeoutError)):
+        return "timeout (panel not reachable on that address/port, or wrong protocol settings)"
+    if isinstance(err, ConnectionRefusedError):
+        return "connection refused (port closed)"
+    text = str(err).strip()
+    return f"{type(err).__name__}: {text}" if text else type(err).__name__
+
+
+async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> tuple[dict[str, str], dict[str, str]]:
+    """Test each configured backend separately.
+
+    Returns (errors, placeholders) so the form can say which part failed
+    and why.
+    """
+    errors: dict[str, str] = {}
+    placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
+
+    if flow_data.native is not None:
+        try:
+            if get_serial:
+                flow_data.serial_number = await test_native_connection_and_get_serial(flow_data.native, flow_data.host)
+            else:
+                await test_native_connection(flow_data.native, flow_data.host)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("INIM Prime: Native connection test to %s:%s failed", flow_data.host, flow_data.native.port, exc_info = True)
+            placeholders["native_error"] = _describe_error(err)
+
+    if flow_data.primelan is not None:
+        try:
+            await test_primelan_connection(flow_data.primelan, flow_data.host)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("INIM Prime: PrimeLAN connection test to %s failed", flow_data.host, exc_info = True)
+            placeholders["primelan_error"] = _describe_error(err)
+
+    native_failed = bool(placeholders["native_error"])
+    primelan_failed = bool(placeholders["primelan_error"])
+    if native_failed and primelan_failed:
+        errors["base"] = "both_cannot_connect"
+    elif native_failed:
+        errors["base"] = "native_cannot_connect"
+    elif primelan_failed:
+        errors["base"] = "primelan_cannot_connect"
+    return errors, placeholders
 
 
 @config_entries.HANDLERS.register(DOMAIN)
@@ -96,6 +147,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # ------------------------------------------------------------------
     async def async_step_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -118,18 +170,9 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                     use_https = primelan_conf[DataKey.Primelan.USE_HTTPS],
                 )
 
-            try:
-                if self._data.native is not None:
-                    # Native present -> serial number is retrieved here,
-                    # never asked to the user.
-                    self._data.serial_number = await test_native_connection_and_get_serial(self._data.native, self._data.host)
-
-                if self._data.primelan is not None:
-                    await test_primelan_connection(self._data.primelan, self._data.host)
-
-            except Exception:
-                errors["base"] = "cannot_connect"
-            else:
+            # Native present -> serial number is retrieved here, never asked.
+            errors, placeholders = await _run_connection_tests(self._data, get_serial = True)
+            if not errors:
                 await self.async_set_unique_id(self._data.serial_number)
                 self._abort_if_unique_id_configured()
                 return await self.async_step_options()
@@ -144,6 +187,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             step_id = "connection",
             data_schema = schema,
             errors = errors,
+            description_placeholders = placeholders,
         )
 
     # ------------------------------------------------------------------
@@ -272,6 +316,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
     async def async_step_reconfigure_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -300,19 +345,10 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                     use_https = primelan_conf[DataKey.Primelan.USE_HTTPS],
                 )
 
-            try:
-                if self._data.native is not None:
-                    # Reconfigure never touches the serial number -- it's
-                    # carried over from the existing entry, only the
-                    # connection itself is verified here.
-                    await test_native_connection(self._data.native, self._data.host)
-
-                if self._data.primelan is not None:
-                    await test_primelan_connection(self._data.primelan, self._data.host)
-
-            except Exception:
-                errors["base"] = "cannot_connect"
-            else:
+            # Reconfigure never touches the serial number, only the
+            # connection itself is verified here.
+            errors, placeholders = await _run_connection_tests(self._data, get_serial = False)
+            if not errors:
                 return await self.async_step_reconfigure_options()
 
         schema = vol.Schema(
@@ -325,6 +361,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             step_id = "reconfigure_connection",
             data_schema = schema,
             errors = errors,
+            description_placeholders = placeholders,
         )
 
     async def async_step_reconfigure_options(self, user_input: dict[str, Any] | None = None):
