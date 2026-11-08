@@ -349,3 +349,17 @@ async def test_alarm_panel_reports_refused_command(hass: HomeAssistant):
     assert st.attributes["last_command"]["success"] is False
     assert events and events[0]["success"] is False and events[0]["command"] == "arm_vacation"
     assert events[0]["open_zones"] == ["Ingresso"]
+
+
+async def test_stale_output_entities_removed(hass: HomeAssistant):
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    reg = er.async_get(hass)
+    assert _eid(hass, "switch", f"{SERIAL}_output_31")
+    # output 31 disappears (e.g. hidden) -> its entity is removed on reload
+    del panel.outputs[31]
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+    assert _eid(hass, "switch", f"{SERIAL}_output_31") is None
+    assert _eid(hass, "light", f"{SERIAL}_output_570")  # still there
