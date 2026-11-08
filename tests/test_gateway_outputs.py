@@ -122,8 +122,21 @@ async def test_native_output_without_label_does_not_crash():
     async def board_labels(*a, **k):
         return {1005: "SIRENA"}  # only on-board outputs, like the library
 
+    async def terminal_labels(*a, **k):
+        return {6: "STATO IMPIANTO  "}
+
     with patch.object(t, "get_terminal_statuses", statuses), \
-         patch.object(t, "get_zone_labels", empty), patch.object(t, "get_zone_settings", empty), \
+         patch.object(native_compat, "_original_get_zone_labels", terminal_labels), \
+         patch.object(t, "get_zone_settings", empty), \
+         patch.object(native_compat, "_original_get_output_labels", board_labels), \
+         patch.object(t.Output, "decode", lambda **kw: kw):
+        terminals = await t.initialize_terminals(protocol=None)
+    assert terminals[6]["label"] == "STATO IMPIANTO"
+
+    # no description anywhere -> empty label, no crash
+    with patch.object(t, "get_terminal_statuses", statuses), \
+         patch.object(native_compat, "_original_get_zone_labels", empty), \
+         patch.object(t, "get_zone_settings", empty), \
          patch.object(native_compat, "_original_get_output_labels", board_labels), \
          patch.object(t.Output, "decode", lambda **kw: kw):
         terminals = await t.initialize_terminals(protocol=None)
@@ -140,3 +153,22 @@ async def test_native_outputs_named_from_primelan():
     # PrimeLAN asked only once for labels
     await gw.update_outputs()
     assert primelan.calls == ["update"]
+
+
+async def test_hidden_outputs_filter():
+    native, primelan = FakeBackend("native"), FakeBackend("primelan")
+    native._outputs = {31: UnifiedOutput(31, "CHIUSURA", False), 42: UnifiedOutput(42, "STATO IMPIANTO", True)}
+    primelan._outputs = {31: UnifiedOutput(31, "CHIUSURA", False)}
+    gw = InimPrimeGateway(native=native, primelan=primelan)
+    await gw.update_outputs()
+    assert set(gw.outputs) == {31}           # default: only outputs PrimeLAN publishes
+    gw.show_hidden_outputs = True
+    assert set(gw.outputs) == {31, 42}
+
+
+def test_hidden_outputs_option_only_with_both():
+    from custom_components.inim_prime.config_flow.schemas import build_options_schema
+    keys = lambda **kw: {str(k) for k in build_options_schema(**kw)}
+    assert "show_hidden_outputs" in keys(has_native=True, has_primelan=True)
+    assert "show_hidden_outputs" not in keys(has_native=True, has_primelan=False)
+    assert "show_hidden_outputs" not in keys(has_native=False, has_primelan=True)

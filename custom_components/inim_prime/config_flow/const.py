@@ -20,6 +20,7 @@ class DataKey:
 
 class OptionsKey:
     PANEL_LOG_EVENTS_FETCH_LIMIT: Final = "panel_log_events_fetch_limit"
+    SHOW_HIDDEN_OUTPUTS: Final = "show_hidden_outputs"
     SCAN_INTERVALS: Final = "scan_intervals"
     ALARM_PANEL: Final = "alarm_panel"
 

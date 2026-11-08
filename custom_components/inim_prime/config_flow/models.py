@@ -70,6 +70,7 @@ class ConfigOptions:
     scenarios_scan_interval: int | None = None
     panel_log_events_fetch_limit: int | None = None
     alarm_panel: dict[str, int] | None = None
+    show_hidden_outputs: bool | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
         assert self.zones_scan_interval is not None
@@ -95,6 +96,8 @@ class ConfigOptions:
             options["panel_log_events_fetch_limit"] = self.panel_log_events_fetch_limit
         if self.alarm_panel:
             options["alarm_panel"] = self.alarm_panel
+        if self.show_hidden_outputs is not None:
+            options["show_hidden_outputs"] = self.show_hidden_outputs
         return options
 
 class ScanIntervalsDefault(TypedDict):
