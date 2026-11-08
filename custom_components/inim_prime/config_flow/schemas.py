@@ -46,8 +46,13 @@ def build_native_schema(
         current_use_outer_frame: bool | None = None,
         current_use_custom_pin: bool | None = None,
         require_password: bool = True,
+        ask_outer_frame: bool = True,
 ) -> dict:
     """Build the native-protocol connection schema.
+
+    ask_outer_frame=False hides the "Use Outer Frame" field: when PrimeLAN is
+    also configured the panel necessarily has a PrimeLAN card, so the outer
+    frame is always used.
 
     include_host=False is used when the host is asked once at the top
     level and shared with the PrimeLAN section (see build_connection_schema).
@@ -61,10 +66,11 @@ def build_native_schema(
     )] = int
 
     # Use outer frame
-    schema[vol.Required(
-        DataKey.Native.USE_OUTER_FRAME,
-        default = current_use_outer_frame if current_use_outer_frame is not None else NATIVE_USE_OUTER_FRAME_DEFAULT,
-    )] = bool
+    if ask_outer_frame:
+        schema[vol.Required(
+            DataKey.Native.USE_OUTER_FRAME,
+            default = current_use_outer_frame if current_use_outer_frame is not None else NATIVE_USE_OUTER_FRAME_DEFAULT,
+        )] = bool
 
     # Password
     if require_password:
@@ -140,6 +146,7 @@ def build_connection_schema(
                 vol.Schema(
                     build_native_schema(
                         require_password = True,
+                        ask_outer_frame = not flow_data.use_primelan,
                     )
                 )
             )
@@ -151,6 +158,7 @@ def build_connection_schema(
                         current_use_outer_frame = flow_data.native.use_outer_frame,
                         current_use_custom_pin = flow_data.native.pin is not None,
                         require_password = False,
+                        ask_outer_frame = not flow_data.use_primelan,
                     )
                 )
             )

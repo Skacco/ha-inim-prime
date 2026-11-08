@@ -106,7 +106,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._data.native = NativeConfig(
                     port = native_conf[DataKey.Native.PORT],
                     password = native_conf[DataKey.Native.PASSWORD],
-                    use_outer_frame = native_conf[DataKey.Native.USE_OUTER_FRAME],
+                    # With PrimeLAN configured the panel has a PrimeLAN card -> outer frame.
+                    use_outer_frame = True if self._data.use_primelan else native_conf[DataKey.Native.USE_OUTER_FRAME],
                     pin = native_conf[DataKey.Native.PIN] if native_conf[DataKey.Native.USE_CUSTOM_PIN] else None,
                 )
 
@@ -287,7 +288,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._data.native = NativeConfig(
                     port = native_conf[DataKey.Native.PORT],
                     password = new_password,
-                    use_outer_frame = native_conf[DataKey.Native.USE_OUTER_FRAME],
+                    # With PrimeLAN configured the panel has a PrimeLAN card -> outer frame.
+                    use_outer_frame = True if self._data.use_primelan else native_conf[DataKey.Native.USE_OUTER_FRAME],
                     pin = new_pin,
                 )
 

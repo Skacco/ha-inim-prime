@@ -37,7 +37,7 @@
             },
             "data_description": {
               "port": "TCP port the panel's Native protocol listens on.",
-              "use_outer_frame": "Enable if your panel mounts a PrimeLAN network card.",
+              "use_outer_frame": "Enable if the panel uses a PrimeLAN network card (not the onboard LAN). Set automatically when PrimeLAN is also configured.",
               "password": "Native protocol password. Leave at the default unless you've changed it on the panel.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "PIN code used to authenticate with the panel."
@@ -130,7 +130,7 @@
             },
             "data_description": {
               "port": "TCP port the panel's Native protocol listens on.",
-              "use_outer_frame": "Enable if your panel mounts a PrimeLAN network card.",
+              "use_outer_frame": "Enable if the panel uses a PrimeLAN network card (not the onboard LAN). Set automatically when PrimeLAN is also configured.",
               "password": "Leave blank to keep the current password.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "Leave blank to keep the current PIN."
