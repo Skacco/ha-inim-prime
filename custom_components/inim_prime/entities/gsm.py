@@ -17,7 +17,6 @@ def create_gsm_device_info(
         name = "GSM",
         model = "Prime GSM",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
-        via_device = (domain, serial_number),
         sw_version = sw_version,
     )
 

@@ -256,3 +256,13 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
     assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+
+
+async def test_zone_devices_linked_to_panel(hass: HomeAssistant):
+    from homeassistant.helpers import device_registry as dr
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    reg = dr.async_get(hass)
+    panel_dev = reg.async_get_device(identifiers={(DOMAIN, SERIAL)})
+    zone_dev = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zone_1")})
+    assert panel_dev and zone_dev and zone_dev.via_device_id == panel_dev.id

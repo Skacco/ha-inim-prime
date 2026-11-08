@@ -18,4 +18,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             if not output.dimmable:
                 entities.append(OutputSwitch(outputs_coordinator, output))
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup

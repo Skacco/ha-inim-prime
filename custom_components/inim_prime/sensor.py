@@ -41,4 +41,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     if scenarios_coordinator is not None:
         entities.append(ActiveScenarioSensor(scenarios_coordinator))
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup

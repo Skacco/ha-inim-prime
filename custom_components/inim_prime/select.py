@@ -11,4 +11,4 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         for partition in partitions_coordinator.gateway.partitions.values():
             entities.append(PartitionArmingStatusSelect(partitions_coordinator, partition))
 
-    async_add_entities(entities, update_before_add = True)
+    async_add_entities(entities)  # coordinators already refreshed before setup
