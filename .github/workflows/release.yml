@@ -33,4 +33,13 @@ jobs:
             echo "Release $VERSION already exists"
             exit 0
           fi
-          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+          # Notes: commit subjects since the previous release (no links).
+          PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV" >/dev/null; then
+            RANGE="$PREV..$GITHUB_SHA"
+          else
+            RANGE="$GITHUB_SHA~1..$GITHUB_SHA"
+          fi
+          git log --no-merges --format='- %s' "$RANGE" > notes.md
+          [ -s notes.md ] || echo "- Version $VERSION" > notes.md
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
