@@ -18,6 +18,7 @@ from .adapters.primelan_adapter import PrimelanAdapter
 from .models.gsm import UnifiedGSM
 from .models.log_events import UnifiedLogEvent
 from .models.outputs import UnifiedOutput
+from .models.scenarios import UnifiedScenario
 from .models.partitions import UnifiedPartition, UnifiedArmingStatus
 from .models.system_faults import UnifiedSystemFaults
 from .models.zones import UnifiedZone
@@ -68,7 +69,11 @@ class InimPrimeGateway:
 
     @property
     def supports_outputs(self) -> bool:
-        return self._native is not None
+        return self._native is not None or self._primelan is not None
+
+    @property
+    def supports_scenarios(self) -> bool:
+        return self._primelan is not None
 
     @property
     def backends_active(self) -> list[str]:
@@ -107,7 +112,14 @@ class InimPrimeGateway:
 
     @property
     def outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
+        # PrimeLAN is preferred for outputs: it reports dimming levels too.
+        if self._primelan is not None:
+            return self._primelan.outputs
         return self._native.outputs if self._native is not None else None
+
+    @property
+    def scenarios(self) -> MappingProxyType[int, UnifiedScenario] | None:
+        return self._primelan.scenarios if self._primelan is not None else None
 
     @property
     def gsm(self) -> UnifiedGSM | None:
@@ -146,9 +158,16 @@ class InimPrimeGateway:
         return await self._preferred.update_partitions()
 
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
-        if self._native is None:
-            raise InimPrimeFeatureNotSupportedError("Outputs requires Native")
-        return await self._native.update_outputs()
+        if self._primelan is not None:
+            return await self._primelan.update_outputs()
+        if self._native is not None:
+            return await self._native.update_outputs()
+        raise InimPrimeFeatureNotSupportedError("Outputs require Native or PrimeLAN")
+
+    async def update_scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
+        if self._primelan is None:
+            raise InimPrimeFeatureNotSupportedError("Scenarios require PrimeLAN")
+        return await self._primelan.update_scenarios()
 
     async def update_gsm(self) -> UnifiedGSM:
         if self._primelan is None:
@@ -225,8 +244,20 @@ class InimPrimeGateway:
     async def set_output(
             self,
             output_id: int,
-            state: bool
+            state: bool,
+            level: int | None = None,
     ) -> None:
-        if self._native is None:
-            raise InimPrimeFeatureNotSupportedError("Output set requires Native")
-        await self._native.set_output(output_id, state)
+        # Output ids come from whichever backend reports them (see `outputs`),
+        # so commands must go to that same backend.
+        if self._primelan is not None:
+            await self._primelan.set_output(output_id, state, level)
+            return
+        if self._native is not None:
+            await self._native.set_output(output_id, state)
+            return
+        raise InimPrimeFeatureNotSupportedError("Output set requires Native or PrimeLAN")
+
+    async def activate_scenario(self, scenario_id: int) -> None:
+        if self._primelan is None:
+            raise InimPrimeFeatureNotSupportedError("Scenarios require PrimeLAN")
+        await self._primelan.activate_scenario(scenario_id)

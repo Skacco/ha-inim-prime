@@ -3,6 +3,7 @@ from .entities.panel import PanelSupplyVoltageSensor, BypassedZonesCountSensor, 
     PartitionsAlarmMemoryCountSensor
 from .entities.partition import PartitionStateSensor
 from .entities.zone import ZoneStateSensor
+from .entities.scenario import ActiveScenarioSensor
 from .runtime_data import InimPrimeConfigEntry
 
 
@@ -11,6 +12,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     partitions_coordinator = entry.runtime_data.coordinators.partitions
     gsm_coordinator = entry.runtime_data.coordinators.gsm
     system_faults_coordinator = entry.runtime_data.coordinators.system_faults
+    scenarios_coordinator = entry.runtime_data.coordinators.scenarios
 
     entities = []
 
@@ -35,5 +37,8 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         entities.append(GSMOperatorSensor(gsm_coordinator))
         entities.append(GSMSignalStrengthSensor(gsm_coordinator))
         entities.append(GSMCreditSensor(gsm_coordinator))
+
+    if scenarios_coordinator is not None:
+        entities.append(ActiveScenarioSensor(scenarios_coordinator))
 
     async_add_entities(entities, update_before_add = True)

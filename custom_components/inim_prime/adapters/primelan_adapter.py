@@ -21,6 +21,15 @@ from inim.prime.primelan.models.system_faults import (
     SystemFault as PrimelanSystemFault,
     SystemFaultsStatus as PrimelanSystemFaultsStatus
 )
+from inim.prime.primelan.models.output import (
+    OutputSetRequest,
+    OutputStatus as PrimelanOutputStatus,
+    OutputType as PrimelanOutputType,
+)
+from inim.prime.primelan.models.scenario import (
+    ActivateScenarioRequest,
+    ScenarioStatus as PrimelanScenarioStatus,
+)
 from inim.prime.primelan.models.zone import (
     ZoneState as PrimelanZoneState,
     ZoneStatus as PrimelanZoneStatus,
@@ -31,6 +40,12 @@ from ..models.gsm import (
 )
 from ..models.log_events import (
     UnifiedLogEvent,
+)
+from ..models.outputs import (
+    UnifiedOutput,
+)
+from ..models.scenarios import (
+    UnifiedScenario,
 )
 from ..models.partitions import (
     UnifiedPartitionState,
@@ -116,6 +131,25 @@ def _partition_to_unified(partition: PrimelanPartitionStatus) -> UnifiedPartitio
 
     return unified_partition
 
+def _output_to_unified(output: PrimelanOutputStatus) -> UnifiedOutput:
+    dimmable = output.type == PrimelanOutputType.DIMMING
+    return UnifiedOutput(
+        output_id = output.id,
+        label = (output.name or "").strip(),
+        state = output.state > 0,
+        level = max(0, min(100, output.state)) if dimmable else None,
+        dimmable = dimmable,
+    )
+
+
+def _scenario_to_unified(scenario: PrimelanScenarioStatus) -> UnifiedScenario:
+    return UnifiedScenario(
+        scenario_id = scenario.id,
+        label = (scenario.name or "").strip(),
+        active = scenario.state,
+    )
+
+
 class PrimelanAdapter:
     """Wraps a connected inim.prime.primelan.InimPrimeClient instance."""
 
@@ -123,6 +157,8 @@ class PrimelanAdapter:
         "_client",
         "_zones",
         "_partitions",
+        "_outputs",
+        "_scenarios",
         "_gsm",
         "_system_faults",
     )
@@ -132,6 +168,8 @@ class PrimelanAdapter:
 
         self._zones: dict[int, UnifiedZone] = {}
         self._partitions: dict[int, UnifiedPartition] = {}
+        self._outputs: dict[int, UnifiedOutput] = {}
+        self._scenarios: dict[int, UnifiedScenario] = {}
         self._gsm: UnifiedGSM | None = None
         self._system_faults: UnifiedSystemFaults | None = None
 
@@ -154,6 +192,14 @@ class PrimelanAdapter:
     @property
     def partitions(self) -> MappingProxyType[int, UnifiedPartition]:
         return MappingProxyType[int, UnifiedPartition](self._partitions)
+
+    @property
+    def outputs(self) -> MappingProxyType[int, UnifiedOutput]:
+        return MappingProxyType[int, UnifiedOutput](self._outputs)
+
+    @property
+    def scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
+        return MappingProxyType[int, UnifiedScenario](self._scenarios)
 
     @property
     def gsm(self) -> UnifiedGSM | None:
@@ -201,6 +247,22 @@ class PrimelanAdapter:
             partitions[partition_id] = _partition_to_unified(partition)
         self._partitions = partitions
         return self.partitions
+
+    async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
+        primelan_outputs = await self._client.get_outputs_status()
+        self._outputs = {
+            output_id: _output_to_unified(output)
+            for output_id, output in primelan_outputs.items()
+        }
+        return self.outputs
+
+    async def update_scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
+        primelan_scenarios = await self._client.get_scenarios_status()
+        self._scenarios = {
+            scenario_id: _scenario_to_unified(scenario)
+            for scenario_id, scenario in primelan_scenarios.items()
+        }
+        return self.scenarios
 
     async def update_gsm(self) -> UnifiedGSM:
         primelan_gsm = await self._client.get_gsm_status()
@@ -325,6 +387,43 @@ class PrimelanAdapter:
             await self.reset_partition_memory(partition.partition_id)
 
 
+
+    ### Outputs
+    async def set_output(
+            self,
+            output_id: int,
+            state: bool,
+            level: int | None = None,
+    ) -> None:
+        """Switch an output. For dimmable outputs `level` (1..100) sets the
+        brightness; turning a dimmer on without a level restores the last
+        known level, or 100 if unknown."""
+        if output_id not in self._outputs:
+            raise KeyError(f"Unknown output id: {output_id}")
+
+        output = self._outputs[output_id]
+
+        if not state:
+            value = 0
+        elif output.dimmable:
+            if level is None:
+                level = output.level if output.level else 100
+            value = max(1, min(100, int(level)))
+        else:
+            value = 1
+
+        await self._client.set_output(
+            OutputSetRequest(output_id = output_id, value = value)
+        )
+
+    ### Scenarios
+    async def activate_scenario(self, scenario_id: int) -> None:
+        if scenario_id not in self._scenarios:
+            raise KeyError(f"Unknown scenario id: {scenario_id}")
+
+        await self._client.activate_scenario(
+            ActivateScenarioRequest(scenario_id = scenario_id)
+        )
 
     # ------------------------------------------------------------------
     # PrimeLAN-exclusive features

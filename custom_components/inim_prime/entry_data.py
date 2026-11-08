@@ -37,6 +37,8 @@ class ScanIntervalsData(TypedDict):
     gsm: NotRequired[int]
     system_faults: NotRequired[int]
     panel_log_events: NotRequired[int]
+    outputs: NotRequired[int]
+    scenarios: NotRequired[int]
 
 
 class InimPrimeOptionsData(TypedDict):

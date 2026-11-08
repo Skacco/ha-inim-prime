@@ -18,6 +18,9 @@ from .const import (
     SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT,
+    OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT,
+    SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
 )
 from .coordinators import (
     InimPrimeGSMUpdateCoordinator,
@@ -25,6 +28,8 @@ from .coordinators import (
     InimPrimeZonesUpdateCoordinator,
     InimPrimePanelLogEventsCoordinator,
     InimPrimeSystemFaultsUpdateCoordinator,
+    InimPrimeOutputsUpdateCoordinator,
+    InimPrimeScenariosUpdateCoordinator,
 )
 from .entry_data import (
     get_entry_options,
@@ -46,6 +51,7 @@ PLATFORMS = [
     "select",
     "button",
     "event",
+    "light",
 ]
 
 
@@ -117,6 +123,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     system_faults_coordinator: InimPrimeSystemFaultsUpdateCoordinator | None = None
     gsm_coordinator: InimPrimeGSMUpdateCoordinator | None = None
     panel_log_events_coordinator: InimPrimePanelLogEventsCoordinator | None = None
+    outputs_coordinator: InimPrimeOutputsUpdateCoordinator | None = None
+    scenarios_coordinator: InimPrimeScenariosUpdateCoordinator | None = None
 
     if inim_gateway.supports_zones:
         zones_coordinator = InimPrimeZonesUpdateCoordinator(
@@ -158,6 +166,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             gateway = inim_gateway,
         )
 
+    if inim_gateway.supports_outputs:
+        default_outputs_interval = (
+            OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+            if data.get("primelan") else OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT
+        )
+        outputs_coordinator = InimPrimeOutputsUpdateCoordinator(
+            hass = hass,
+            update_interval = timedelta(milliseconds = scan_intervals.get("outputs", default_outputs_interval)),
+            entry = entry,
+            gateway = inim_gateway,
+        )
+
+    if inim_gateway.supports_scenarios:
+        scenarios_coordinator = InimPrimeScenariosUpdateCoordinator(
+            hass = hass,
+            update_interval = timedelta(milliseconds = scan_intervals.get("scenarios", SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT)),
+            entry = entry,
+            gateway = inim_gateway,
+        )
+
     if zones_coordinator is not None:
         await zones_coordinator.async_config_entry_first_refresh()
 
@@ -169,6 +197,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     if gsm_coordinator is not None:
         await gsm_coordinator.async_config_entry_first_refresh()
+
+    if outputs_coordinator is not None:
+        await outputs_coordinator.async_config_entry_first_refresh()
+
+    if scenarios_coordinator is not None:
+        await scenarios_coordinator.async_config_entry_first_refresh()
 
     if panel_log_events_coordinator is not None:
         await panel_log_events_coordinator.async_startup()
@@ -184,6 +218,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             gsm = gsm_coordinator,
             system_faults = system_faults_coordinator,
             panel_log_events = panel_log_events_coordinator,
+            outputs = outputs_coordinator,
+            scenarios = scenarios_coordinator,
         ),
     )
 

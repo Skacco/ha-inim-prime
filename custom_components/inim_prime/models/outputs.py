@@ -5,6 +5,9 @@ class UnifiedOutput:
     output_id: int
     label: str
     state: bool | None
+    # Dimming level 0..100, only for dimmable outputs reported by PrimeLAN.
+    level: int | None = None
+    dimmable: bool = False
 
     ### Special methods
     def __hash__(self) -> int:

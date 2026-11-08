@@ -8,6 +8,8 @@ from .coordinators import (
     InimPrimeGSMUpdateCoordinator,
     InimPrimeSystemFaultsUpdateCoordinator,
     InimPrimePanelLogEventsCoordinator,
+    InimPrimeOutputsUpdateCoordinator,
+    InimPrimeScenariosUpdateCoordinator,
 )
 
 from .gateway import InimPrimeGateway
@@ -26,6 +28,8 @@ class InimPrimeCoordinators:
     gsm: InimPrimeGSMUpdateCoordinator | None = None
     system_faults: InimPrimeSystemFaultsUpdateCoordinator | None = None
     panel_log_events: InimPrimePanelLogEventsCoordinator | None = None
+    outputs: InimPrimeOutputsUpdateCoordinator | None = None
+    scenarios: InimPrimeScenariosUpdateCoordinator | None = None
 
     def all(self) -> list:
         """All coordinators that exist, for shutdown/iteration."""
@@ -33,6 +37,7 @@ class InimPrimeCoordinators:
             c for c in (
                 self.zones, self.partitions, self.gsm,
                 self.system_faults, self.panel_log_events,
+                self.outputs, self.scenarios,
             ) if c is not None
         ]
 
