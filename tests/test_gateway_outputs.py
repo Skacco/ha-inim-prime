@@ -58,3 +58,38 @@ def test_outer_frame_hidden_with_primelan():
 
     assert "use_outer_frame" not in native_keys(True)
     assert "use_outer_frame" in native_keys(False)
+
+
+async def test_connection_errors_say_which_backend_failed():
+    from unittest.mock import patch
+    from custom_components.inim_prime.config_flow import config_flow as cf
+    from custom_components.inim_prime.config_flow.models import ConfigData, NativeConfig, PrimelanConfig
+
+    data = ConfigData(host="192.0.2.1", use_native=True, use_primelan=True,
+                      native=NativeConfig(6004, "pass", True, None),
+                      primelan=PrimelanConfig("k", False))
+
+    async def boom(*a, **k):
+        raise TimeoutError()
+
+    async def ok(*a, **k):
+        return "SER1"
+
+    with patch.object(cf, "test_native_connection_and_get_serial", boom), \
+         patch.object(cf, "test_primelan_connection", ok):
+        errors, ph = await cf._run_connection_tests(data, get_serial=True)
+    assert errors == {"base": "native_cannot_connect"}
+    assert "timeout" in ph["native_error"] and ph["primelan_error"] == ""
+
+    async def refused(*a, **k):
+        raise ConnectionRefusedError()
+
+    with patch.object(cf, "test_native_connection_and_get_serial", ok), \
+         patch.object(cf, "test_primelan_connection", refused):
+        errors, ph = await cf._run_connection_tests(data, get_serial=True)
+    assert errors == {"base": "primelan_cannot_connect"} and data.serial_number == "SER1"
+
+    with patch.object(cf, "test_native_connection_and_get_serial", boom), \
+         patch.object(cf, "test_primelan_connection", refused):
+        errors, _ = await cf._run_connection_tests(data, get_serial=True)
+    assert errors == {"base": "both_cannot_connect"}

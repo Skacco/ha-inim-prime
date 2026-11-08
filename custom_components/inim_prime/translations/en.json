@@ -197,7 +197,10 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the INIM Prime panel."
+      "cannot_connect": "Failed to connect to the INIM Prime panel.",
+      "native_cannot_connect": "Native connection failed: {native_error}. Check host, port, password and that the native protocol is reachable.",
+      "primelan_cannot_connect": "PrimeLAN connection failed: {primelan_error}. Check host, API key, HTTPS setting and that the Web API is enabled.",
+      "both_cannot_connect": "Native connection failed: {native_error}. PrimeLAN connection failed: {primelan_error}."
     },
     "abort": {
       "already_configured": "This INIM Prime panel is already configured.",
