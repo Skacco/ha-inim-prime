@@ -311,3 +311,41 @@ async def test_alarm_panel_no_custom_bypass_while_scenario_lags(hass: HomeAssist
     assert "armed_custom_bypass" not in seen
     assert "arming" in seen
     assert hass.states.get(eid).state == "armed_vacation"
+
+
+
+async def test_alarm_panel_reports_refused_command(hass: HomeAssistant):
+    """Scenario never activates (e.g. open zones) -> event with open zones."""
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+    events = []
+    hass.bus.async_listen("inim_prime_alarm_command_result", lambda e: events.append(e.data))
+
+    original = panel.request
+
+    async def refusing(cmd, **params):
+        if cmd == "set_scenarios_mode":
+            panel.calls.append((cmd, params))
+            return {}  # panel accepts the request but doesn't arm
+        if cmd == "get_zones_status":
+            return {"zone": [{"id": "1", "lb": "Ingresso", "tl": "1", "st": "2", "mm": "0", "by": "0"}]}
+        return await original(cmd, **params)
+
+    async def no_sleep(*_):
+        return None
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=refusing), \
+         patch("custom_components.inim_prime.entities.alarm_panel.asyncio.sleep", no_sleep):
+        entry = hass.config_entries.async_entries(DOMAIN)[0]
+        await entry.runtime_data.coordinators.zones.async_refresh()
+        await hass.services.async_call("alarm_control_panel", "alarm_arm_vacation", {"entity_id": eid}, blocking=True)
+        await hass.async_block_till_done()
+
+    st = hass.states.get(eid)
+    assert st.state == "disarmed"
+    assert st.attributes["last_command"]["success"] is False
+    assert events and events[0]["success"] is False and events[0]["command"] == "arm_vacation"
+    assert events[0]["open_zones"] == ["Ingresso"]

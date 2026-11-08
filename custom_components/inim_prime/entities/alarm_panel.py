@@ -17,7 +17,13 @@ from ..coordinators import (
     InimPrimePartitionsUpdateCoordinator,
     InimPrimeScenariosUpdateCoordinator,
 )
+from ..const import DOMAIN
 from ..models.partitions import UnifiedArmingStatus, UnifiedPartitionState
+from ..models.zones import UnifiedZoneState
+
+# Fired when the panel doesn't switch to the requested scenario
+# (typically because some zones are open and not bypassed).
+EVENT_COMMAND_RESULT = f"{DOMAIN}_alarm_command_result"
 
 _COMMAND_STATE: dict[str, AlarmControlPanelState] = {
     "disarm": AlarmControlPanelState.DISARMED,
@@ -84,6 +90,7 @@ class ScenarioAlarmPanel(
 
         self._pending: tuple[str, float] | None = None  # (command, deadline)
         self._armed_snapshot: frozenset[int] | None = None
+        self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{self.coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
 
@@ -164,6 +171,7 @@ class ScenarioAlarmPanel(
         return {
             "active_scenario_id": active,
             "active_scenario": scenarios[active].label if active in scenarios else None,
+            "last_command": self._last_command,
             "armed_partitions": [
                 p.label for p in self._partitions
                 if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
@@ -177,13 +185,37 @@ class ScenarioAlarmPanel(
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
         self.async_write_ha_state()
         # The panel needs a moment to switch scenario: poll it briefly.
-        for _ in range(8):
+        success = False
+        for _ in range(10):
             await self.coordinator.async_refresh()
             if self._active_scenario_id() == target:
+                success = True
                 break
             await asyncio.sleep(1)
         await self._partitions_coordinator.async_refresh()
+
+        open_zones = [] if success else self._open_zones()
+        self._pending = None
+        self._last_command = {
+            "command": command,
+            "scenario_id": target,
+            "success": success,
+            "open_zones": open_zones,
+        }
+        self.hass.bus.async_fire(EVENT_COMMAND_RESULT, {
+            "entity_id": self.entity_id,
+            **self._last_command,
+        })
         self.async_write_ha_state()
+
+    def _open_zones(self) -> list[str]:
+        """Zones currently open and not bypassed (likely why arming failed)."""
+        zones = getattr(self.coordinator.gateway, "zones", None) or {}
+        return [
+            zone.label or f"Zone {zone.zone_id}"
+            for zone in zones.values()
+            if zone.state == UnifiedZoneState.ALARM and not zone.bypass
+        ]
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
         await self._run("disarm")
