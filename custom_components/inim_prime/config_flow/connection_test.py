@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .. import native_compat  # noqa: F401
 from inim.prime.native.client import Client as NativeClient
 from inim.prime.primelan.client import InimPrimeClient
 

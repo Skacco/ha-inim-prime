@@ -9,6 +9,7 @@ native grows those features. Outputs come from native when it is configured
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from types import MappingProxyType
 
 from .adapters.native_adapter import NativeAdapter
@@ -37,6 +38,9 @@ class InimPrimeGateway:
 
         self._native = native
         self._primelan = primelan
+        # Output labels from PrimeLAN, used to name native outputs whose
+        # label the native library can't read (see native_compat).
+        self._primelan_output_labels: dict[int, str] | None = None
 
         # Preferred backend for anything both sides support equally.
 
@@ -115,7 +119,14 @@ class InimPrimeGateway:
         # used only when native isn't configured. Native has no dimming, so
         # dimmers are on/off when native is active.
         if self._native is not None:
-            return self._native.outputs
+            outputs = self._native.outputs
+            labels = self._primelan_output_labels
+            if labels and any(not o.label for o in outputs.values()):
+                outputs = MappingProxyType({
+                    oid: (replace(o, label = labels.get(oid, "")) if not o.label else o)
+                    for oid, o in outputs.items()
+                })
+            return outputs
         return self._primelan.outputs if self._primelan is not None else None
 
     @property
@@ -160,7 +171,14 @@ class InimPrimeGateway:
 
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
         if self._native is not None:
-            return await self._native.update_outputs()
+            await self._native.update_outputs()
+            if self._primelan is not None and self._primelan_output_labels is None:
+                try:
+                    primelan_outputs = await self._primelan.update_outputs()
+                    self._primelan_output_labels = {oid: o.label for oid, o in primelan_outputs.items()}
+                except Exception:  # noqa: BLE001 - labels are cosmetic, retry next time
+                    pass
+            return self.outputs
         if self._primelan is not None:
             return await self._primelan.update_outputs()
         raise InimPrimeFeatureNotSupportedError("Outputs require Native or PrimeLAN")
