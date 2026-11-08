@@ -113,6 +113,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     inim_gateway = _build_gateway(data)
     inim_gateway.show_hidden_outputs = bool(entry.options.get("show_hidden_outputs", False))
+    inim_gateway.hide_unused_partitions = bool(entry.options.get("hide_unused_partitions", False))
     await inim_gateway.connect()
 
     ###
@@ -234,8 +235,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     _link_child_devices(hass, entry)
     _remove_stale_output_entities(hass, entry, inim_gateway)
+    _remove_hidden_partition_devices(hass, entry, inim_gateway)
 
     return True
+
+
+def _remove_hidden_partition_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Remove devices (and their entities) of areas hidden as unused."""
+    shown = set(gateway.partitions)
+    hidden = set(gateway.all_partitions) - shown
+    if not hidden:
+        return
+    serial_number = entry.data["serial_number"]
+    device_registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        for domain, identifier in device.identifiers:
+            if domain != DOMAIN or not identifier.startswith(f"{serial_number}_partition_"):
+                continue
+            suffix = identifier[len(f"{serial_number}_partition_"):]
+            if suffix.isdigit() and int(suffix) in hidden:
+                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
 
 
 def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:

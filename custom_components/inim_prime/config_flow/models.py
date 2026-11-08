@@ -71,6 +71,7 @@ class ConfigOptions:
     panel_log_events_fetch_limit: int | None = None
     alarm_panel: dict[str, int] | None = None
     show_hidden_outputs: bool | None = None
+    hide_unused_partitions: bool | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
         assert self.zones_scan_interval is not None
@@ -98,6 +99,8 @@ class ConfigOptions:
             options["alarm_panel"] = self.alarm_panel
         if self.show_hidden_outputs is not None:
             options["show_hidden_outputs"] = self.show_hidden_outputs
+        if self.hide_unused_partitions is not None:
+            options["hide_unused_partitions"] = self.hide_unused_partitions
         return options
 
 class ScanIntervalsDefault(TypedDict):

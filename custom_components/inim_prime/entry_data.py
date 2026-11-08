@@ -45,6 +45,7 @@ class InimPrimeOptionsData(TypedDict):
     scan_intervals: ScanIntervalsData
     alarm_panel: NotRequired[dict[str, int]]
     show_hidden_outputs: NotRequired[bool]
+    hide_unused_partitions: NotRequired[bool]
     panel_log_events_fetch_limit: NotRequired[int]
 
 

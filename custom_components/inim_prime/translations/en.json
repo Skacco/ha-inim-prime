@@ -61,11 +61,13 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)"
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)",
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user."
+          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user.",
+          "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {
           "scan_intervals": {
@@ -156,11 +158,13 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)"
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)",
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user."
+          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user.",
+          "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {
           "scan_intervals": {
@@ -215,11 +219,13 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)"
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (outputs not available for the linked user)",
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user."
+          "show_hidden_outputs": "Native reads every output of the panel, PrimeLAN only those enabled for its user.",
+          "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {
           "scan_intervals": {
