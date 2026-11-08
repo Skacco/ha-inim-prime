@@ -40,7 +40,7 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
     and why.
     """
     errors: dict[str, str] = {}
-    placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
+    placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
 
     if flow_data.native is not None:
         try:
@@ -59,14 +59,14 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
             _LOGGER.warning("INIM Prime: PrimeLAN connection test to %s failed", flow_data.host, exc_info = True)
             placeholders["primelan_error"] = _describe_error(err)
 
-    native_failed = bool(placeholders["native_error"])
-    primelan_failed = bool(placeholders["primelan_error"])
-    if native_failed and primelan_failed:
-        errors["base"] = "both_cannot_connect"
-    elif native_failed:
-        errors["base"] = "native_cannot_connect"
-    elif primelan_failed:
-        errors["base"] = "primelan_cannot_connect"
+    if placeholders["native_error"] or placeholders["primelan_error"]:
+        parts = []
+        if flow_data.native is not None:
+            parts.append("Native: " + (f"FAILED ({placeholders['native_error']})" if placeholders["native_error"] else "OK"))
+        if flow_data.primelan is not None:
+            parts.append("PrimeLAN: " + (f"FAILED ({placeholders['primelan_error']})" if placeholders["primelan_error"] else "OK"))
+        placeholders["status"] = " | ".join(parts)
+        errors["base"] = "connection_failed"
     return errors, placeholders
 
 
@@ -147,7 +147,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # ------------------------------------------------------------------
     async def async_step_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -316,7 +316,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
     async def async_step_reconfigure_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
