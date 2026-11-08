@@ -1,3 +1,6 @@
+> **Fork maintained by [skaccox](https://github.com/skaccox).** Adds outputs (switch/light), scenarios (buttons + active scenario sensor), a scenario-driven alarm control panel and configurable outputs/scenarios scan intervals.
+> Based on [Pitscheider/ha-inim-prime](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0).
+
 # Introduction
 This custom integration allows Home Assistant to communicate with **Inim Prime alarm panels** via the PrimeLAN network interface.   
 It provides monitoring and limited control of panels, partitions, zones, diagnostics, and event logs by using the official Inim Web API.   
@@ -103,7 +106,7 @@ If you haven't installed HACS yet, you can do so by following the guide availabl
 ### Adding the custom repository   
 Once you have installed HACS in your Home Assistant setup, you have to add this repository to it.   
 Firstly, open the HACS dashboard, which should be reachable by clicking on `HACS` sidebar on the left. Then click on the three dots in the upper right corner and press `Custom repositories`.    
-There you should have a field labelled `Repository` in which you have to paste the link of this repository, `https://github.com/Pitscheider/ha_inim_prime`. Then, in the `Type` menu, choose `Integration`.   
+There you should have a field labelled `Repository` in which you have to paste the link of this repository, `https://github.com/skaccox/ha-inim-prime`. Then, in the `Type` menu, choose `Integration`.   
 Press `ADD` and you should be able to see the added repository in the list.   
 You can then close the `Custom repositories` window.   
 ### Install the integration   
@@ -113,7 +116,7 @@ Click on it, press `DOWNLOAD` and then `DOWNLOAD` again.
 ### Reboot Home Assistant   
 Once the integration has been downloaded, in the Home Assistant `Settings` you should have a repair warning that says `Restart required`. Just restart your Home Assistant instance to finish the installation.   
 ## Install the integration manually (not recommended)   
-If you want to install the integration manually (bear in mind that you will not receive update notifications, and you will not be able to perform update automatically), you can do so by downloading the latest release source code here: [https://github.com/Pitscheider/ha_inim_prime/releases/latest](https://github.com/Pitscheider/ha_inim_prime/releases/latest)    
+If you want to install the integration manually (bear in mind that you will not receive update notifications, and you will not be able to perform update automatically), you can do so by downloading the latest release source code here: [https://github.com/skaccox/ha-inim-prime](https://github.com/skaccox/ha-inim-prime)    
 Once you have downloaded the source code, you can copy the `custom_components` in your Home Assistant `config` directory.   
 In case you already have a `custom_components` folder there, you can simply copy the `inim_prime` folder inside the downloaded one and copy it there.   
 Reboot your Home Assistant instance and the integration should be installed.   
@@ -126,10 +129,10 @@ In order to add the integration, some information regarding the panel and the in
 Firstly, paste the serial number you have obtained during the panel configuration in the `serial_number` field. Double check it, as it is important that you have written it correctly. At the current state the `serial_number` field is not checked by the integration, so that might be any string value you decide. However it is highly reccomended to paste a unique identifier, since this field cannot be changed later and it is used to differentiate multiple setups (in case you want to manage multiple Prime panels). Moreover it is used to determine where to store data related to the integration. For those reasons, I strongly suggest to use the panel's serial number. In case you don't have access to it, the network MAC Address might be a good alternative.
 
 Then, in the `host` field you should type the IP address or the hostname of your Inim Prime panel.   
-In case your Inim Prime panel uses DHCP, be sure to reserve a static IP for the panel or set up a DNS record for it (read the [Check network settings](https://github.com/Pitscheider/ha_inim_prime?tab=readme-ov-file#check-network-settings) section above).   
+In case your Inim Prime panel uses DHCP, be sure to reserve a static IP for the panel or set up a DNS record for it (read the [Check network settings](https://github.com/skaccox/ha-inim-prime?tab=readme-ov-file#check-network-settings) section above).   
 I suggest to keep the `use_https` flag enabled as it enables encrypted communication between Home Assistant and the Inim Prime panel.   
 In the `api_key` field just paste the API Key you obtained in Prime/STUDIO as described above.
-Once you have filled in the mandatory connection parameters you can proceed with the configuration of the options. You can discover more about the options available in the [Options](https://github.com/Pitscheider/ha_inim_prime?tab=readme-ov-file#options) section available below. If unsure, leave the default settings, and complete the configuration.
+Once you have filled in the mandatory connection parameters you can proceed with the configuration of the options. You can discover more about the options available in the [Options](https://github.com/skaccox/ha-inim-prime?tab=readme-ov-file#options) section available below. If unsure, leave the default settings, and complete the configuration.
 The initial configuration might take a while. It is expected, as the Inim Prime panel is not exactly fast 😅.   
 ### Finishing the setup   
 Once the initial configuration has been completed you should be able to see all the devices created by the integration that you might rename and assign to a Home Assistant Area. Once you have finished, just press on `Finish`.   
