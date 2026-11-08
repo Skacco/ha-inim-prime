@@ -148,3 +148,17 @@ class InimPrimePanelLogEventsCoordinator(InimPrimeBaseCoordinator):
     async def async_startup(self) -> None:
         """Load persisted data before first refresh."""
         self.last_panel_log_events = await self.async_load_last_panel_log_events()
+        # First run (nothing stored yet): read the current log once, without
+        # firing events, so the history list isn't empty until the next event.
+        if not self.last_panel_log_events:
+            try:
+                current, _ = await async_fetch_panel_log_events(
+                    last_panel_log_events = [],
+                    gateway = self.gateway,
+                    limit = self.panel_log_events_fetch_limit,
+                )
+                if current:
+                    self.last_panel_log_events = current
+                    await self.async_save_current_panel_log_events(current)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("Initial panel log read failed: %s", err)
