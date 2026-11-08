@@ -20,6 +20,9 @@ from ..const import (
     GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT,
+    OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     NATIVE_PASSWORD_DEFAULT,
     PRIMELAN_USE_HTTPS_DEFAULT,
     NATIVE_USE_CUSTOM_PIN_DEFAULT,
@@ -199,6 +202,8 @@ def build_options_schema(
         gsm = GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT,
         system_faults = SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
         panel_log_events = PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+        outputs = OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT if has_native else OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+        scenarios = SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     )
 
     if current_options is not None:
@@ -210,6 +215,8 @@ def build_options_schema(
         ):
             scan_intervals_defaults["zones"] = current_options.zones_scan_interval if current_options.zones_scan_interval is not None else scan_intervals_defaults["zones"]
             scan_intervals_defaults["partitions"] = current_options.partitions_scan_interval if current_options.partitions_scan_interval is not None else scan_intervals_defaults["partitions"]
+            scan_intervals_defaults["outputs"] = current_options.outputs_scan_interval if current_options.outputs_scan_interval is not None else scan_intervals_defaults["outputs"]
+        scan_intervals_defaults["scenarios"] = current_options.scenarios_scan_interval if current_options.scenarios_scan_interval is not None else scan_intervals_defaults["scenarios"]
         scan_intervals_defaults["gsm"] = current_options.gsm_scan_interval if current_options.gsm_scan_interval is not None else scan_intervals_defaults["gsm"]
         scan_intervals_defaults["system_faults"] = current_options.system_faults_scan_interval if current_options.system_faults_scan_interval is not None else scan_intervals_defaults["system_faults"]
         scan_intervals_defaults["panel_log_events"] = current_options.panel_log_events_scan_interval if current_options.panel_log_events_scan_interval is not None else scan_intervals_defaults["panel_log_events"]
@@ -235,9 +242,28 @@ def build_options_schema(
             mode = NumberSelectorMode.BOX,
             unit_of_measurement = "milliseconds",
         )),
+        vol.Required(
+            OptionsKey.ScanIntervals.OUTPUTS,
+            default = scan_intervals_defaults["outputs"],
+        ): NumberSelector(NumberSelectorConfig(
+            min = SCAN_INTERVAL_MIN,
+            max = SCAN_INTERVAL_MAX,
+            mode = NumberSelectorMode.BOX,
+            unit_of_measurement = "milliseconds",
+        )),
     }
 
     if has_primelan:
+        scan_interval_fields[vol.Required(
+            OptionsKey.ScanIntervals.SCENARIOS,
+            default = scan_intervals_defaults["scenarios"],
+        )] = NumberSelector(NumberSelectorConfig(
+            min = SCAN_INTERVAL_MIN,
+            max = SCAN_INTERVAL_MAX,
+            mode = NumberSelectorMode.BOX,
+            unit_of_measurement = "milliseconds",
+        ))
+
         scan_interval_fields[vol.Required(
             OptionsKey.ScanIntervals.GSM,
             default = scan_intervals_defaults["gsm"],

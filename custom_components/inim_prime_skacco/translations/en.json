@@ -75,14 +75,18 @@
               "partitions": "Partitions Scan Interval (milliseconds)",
               "gsm": "GSM Scan Interval (milliseconds)",
               "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)"
+              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
+              "outputs": "Outputs Scan Interval (milliseconds)",
+              "scenarios": "Scenarios Scan Interval (milliseconds)"
             },
             "data_description": {
               "zones": "How often Home Assistant sends API requests to fetch zone status.",
               "partitions": "How often Home Assistant sends API requests to fetch partition status.",
               "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
               "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events."
+              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
+              "outputs": "How often Home Assistant reads the outputs status.",
+              "scenarios": "How often Home Assistant reads which scenario is active."
             }
           }
         }
@@ -152,14 +156,18 @@
               "partitions": "Partitions Scan Interval (milliseconds)",
               "gsm": "GSM Scan Interval (milliseconds)",
               "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)"
+              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
+              "outputs": "Outputs Scan Interval (milliseconds)",
+              "scenarios": "Scenarios Scan Interval (milliseconds)"
             },
             "data_description": {
               "zones": "How often Home Assistant sends API requests to fetch zone status.",
               "partitions": "How often Home Assistant sends API requests to fetch partition status.",
               "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
               "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events."
+              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
+              "outputs": "How often Home Assistant reads the outputs status.",
+              "scenarios": "How often Home Assistant reads which scenario is active."
             }
           }
         }
@@ -193,14 +201,18 @@
               "partitions": "Partitions Scan Interval (milliseconds)",
               "gsm": "GSM Scan Interval (milliseconds)",
               "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)"
+              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
+              "outputs": "Outputs Scan Interval (milliseconds)",
+              "scenarios": "Scenarios Scan Interval (milliseconds)"
             },
             "data_description": {
               "zones": "How often Home Assistant sends API requests to fetch zone status.",
               "partitions": "How often Home Assistant sends API requests to fetch partition status.",
               "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
               "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events."
+              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
+              "outputs": "How often Home Assistant reads the outputs status.",
+              "scenarios": "How often Home Assistant reads which scenario is active."
             }
           }
         }

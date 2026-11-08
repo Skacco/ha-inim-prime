@@ -137,3 +137,42 @@ async def test_unload(hass: HomeAssistant):
     entry = await _setup(hass, panel)
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
         assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    coords = entry.runtime_data.coordinators
+    # Entry created before these options existed -> PrimeLAN defaults (Sdomotica-like)
+    assert coords.outputs.update_interval.total_seconds() == 30
+    assert coords.scenarios.update_interval.total_seconds() == 10
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        fields = result["data_schema"].schema["scan_intervals"].schema.schema
+        keys = {str(k): k.default() for k in fields}
+        assert keys["outputs"] == 30000 and keys["scenarios"] == 10000
+        assert keys["partitions"] == 10000  # entry's stored value is kept
+
+        new = {**keys, "outputs": 2000, "scenarios": 4000}
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"scan_intervals": new, "panel_log_events_fetch_limit": 40},
+        )
+        await hass.async_block_till_done()
+
+    assert entry.options["scan_intervals"]["outputs"] == 2000
+    coords = entry.runtime_data.coordinators
+    assert coords.outputs.update_interval.total_seconds() == 2
+    assert coords.scenarios.update_interval.total_seconds() == 4
+
+
+async def test_new_primelan_defaults():
+    from custom_components.inim_prime_skacco.config_flow.schemas import build_options_schema
+    schema = build_options_schema(has_native=False, has_primelan=True)
+    fields = list(schema.values())[0].schema.schema
+    d = {str(k): k.default() for k in fields}
+    assert (d["zones"], d["partitions"], d["outputs"], d["scenarios"]) == (5000, 5000, 30000, 10000)
+    schema = build_options_schema(has_native=True, has_primelan=True)
+    d = {str(k): k.default() for k in list(schema.values())[0].schema.schema}
+    assert (d["zones"], d["partitions"], d["outputs"]) == (500, 500, 500)

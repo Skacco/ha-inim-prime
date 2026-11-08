@@ -155,8 +155,10 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
             self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
             self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
+            self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
 
             if self._data.use_primelan:
+                self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]
                 self._options.gsm_scan_interval = scan_intervals[OptionsKey.ScanIntervals.GSM]
                 self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
                 self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
@@ -231,6 +233,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         self._options.gsm_scan_interval = scan_intervals.get("gsm")
         self._options.system_faults_scan_interval = scan_intervals.get("system_faults")
         self._options.panel_log_events_scan_interval = scan_intervals.get("panel_log_events")
+        self._options.outputs_scan_interval = scan_intervals.get("outputs")
+        self._options.scenarios_scan_interval = scan_intervals.get("scenarios")
         self._options.panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit")
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
@@ -326,8 +330,10 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
             self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
             self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
+            self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
 
             if self._data.use_primelan:
+                self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]
                 self._options.gsm_scan_interval = scan_intervals[OptionsKey.ScanIntervals.GSM]
                 self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
                 self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
@@ -336,6 +342,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 # Backend switched away from PrimeLAN: drop its
                 # PrimeLAN-only options rather than leaving stale values
                 # from the entry this flow was pre-filled from.
+                self._options.scenarios_scan_interval = None
                 self._options.gsm_scan_interval = None
                 self._options.system_faults_scan_interval = None
                 self._options.panel_log_events_scan_interval = None

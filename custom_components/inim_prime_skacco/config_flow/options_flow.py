@@ -21,6 +21,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             gsm_scan_interval = options["scan_intervals"].get("gsm"),
             system_faults_scan_interval = options["scan_intervals"].get("system_faults"),
             panel_log_events_scan_interval = options["scan_intervals"].get("panel_log_events"),
+            outputs_scan_interval = options["scan_intervals"].get("outputs"),
+            scenarios_scan_interval = options["scan_intervals"].get("scenarios"),
             panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
         )
 

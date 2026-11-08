@@ -28,5 +28,7 @@ class OptionsKey:
         GSM: Final[str] = "gsm"
         SYSTEM_FAULTS: Final[str] = "system_faults"
         PANEL_LOG_EVENTS: Final[str] = "panel_log_events"
+        OUTPUTS: Final[str] = "outputs"
+        SCENARIOS: Final[str] = "scenarios"
 
 

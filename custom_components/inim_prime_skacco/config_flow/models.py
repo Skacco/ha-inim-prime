@@ -66,6 +66,8 @@ class ConfigOptions:
     gsm_scan_interval: int | None = None
     system_faults_scan_interval: int | None = None
     panel_log_events_scan_interval: int | None = None
+    outputs_scan_interval: int | None = None
+    scenarios_scan_interval: int | None = None
     panel_log_events_fetch_limit: int | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
@@ -82,6 +84,10 @@ class ConfigOptions:
             scan_intervals["system_faults"] = self.system_faults_scan_interval
         if self.panel_log_events_scan_interval is not None:
             scan_intervals["panel_log_events"] = self.panel_log_events_scan_interval
+        if self.outputs_scan_interval is not None:
+            scan_intervals["outputs"] = self.outputs_scan_interval
+        if self.scenarios_scan_interval is not None:
+            scan_intervals["scenarios"] = self.scenarios_scan_interval
 
         options: InimPrimeOptionsData = {"scan_intervals": scan_intervals}
         if self.panel_log_events_fetch_limit is not None:
@@ -94,3 +100,5 @@ class ScanIntervalsDefault(TypedDict):
     gsm: int
     system_faults: int
     panel_log_events: int
+    outputs: int
+    scenarios: int
