@@ -229,10 +229,15 @@ async def test_alarm_panel_uses_scenarios(hass: HomeAssistant):
         assert ("set_scenarios_mode", {"p1": 0}) in panel.calls
         assert hass.states.get(eid).state == "disarmed"
 
-        # armed from the keypad without a mapped scenario -> custom bypass
+        # armed from the keypad without a mapped scenario -> arming for a few
+        # seconds (scenario being re-read), then custom bypass
         panel.partitions[1]["am"] = 1
         await entry_refresh(hass)
-        assert hass.states.get(eid).state == "armed_custom_bypass"
+        assert hass.states.get(eid).state == "arming"
+        import time as _t
+        with patch("custom_components.inim_prime.entities.alarm_panel.time.monotonic", return_value=_t.monotonic() + 60):
+            await entry_refresh(hass)
+            assert hass.states.get(eid).state == "armed_custom_bypass"
 
 
 async def entry_refresh(hass):
@@ -401,3 +406,35 @@ async def test_hide_unused_partitions(hass: HomeAssistant):
     assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_3")}) is None
     assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_1")})
     assert set(entry.runtime_data.gateway.partitions) == {1, 2}
+
+
+async def test_alarm_panel_keypad_arming_settles(hass: HomeAssistant):
+    """Armed from the keypad: partitions change before the scenario is read."""
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    entry = await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+    coords = entry.runtime_data.coordinators
+
+    # partitions armed, scenario not yet re-read (still "Spento")
+    for part in panel.partitions.values():
+        part["am"] = 1
+    original = panel.request
+
+    async def stale_scenarios(cmd, **params):
+        if cmd == "get_scenarios_status":
+            return {"sce": [{"id": str(i), "lb": s["lb"], "st": str(s["st"])} for i, s in panel.scenarios.items()]}
+        return await original(cmd, **params)
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=stale_scenarios):
+        await coords.partitions.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "arming"          # not custom bypass
+
+        # scenario now reported -> final state
+        panel.scenarios[0]["st"] = 0
+        panel.scenarios[1]["st"] = 1
+        await coords.scenarios.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "armed_vacation"

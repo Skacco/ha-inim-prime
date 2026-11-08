@@ -67,6 +67,9 @@ class ScenarioAlarmPanel(
     # After a command, how long to wait for the panel to report the new
     # scenario before falling back to the plain partition-based state.
     _PENDING_TIMEOUT = 20.0
+    # When partitions change on their own (keypad, app, timers) the scenario
+    # is read again; until then, mismatches are shown as arming/disarming.
+    _SETTLE_TIME = 5.0
 
     def __init__(
             self,
@@ -90,6 +93,7 @@ class ScenarioAlarmPanel(
 
         self._pending: tuple[str, float] | None = None  # (command, deadline)
         self._armed_snapshot: frozenset[int] | None = None
+        self._settle_until: float = 0.0
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{self.coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
@@ -99,6 +103,7 @@ class ScenarioAlarmPanel(
         self.async_on_remove(
             self._partitions_coordinator.async_add_listener(self._handle_partitions_update)
         )
+        self._armed_snapshot = self._armed_set()
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -109,14 +114,18 @@ class ScenarioAlarmPanel(
         # Partitions (native) update much faster than the active scenario
         # (PrimeLAN). When the armed set changes, re-read the scenario right
         # away so the state doesn't briefly show "custom bypass".
-        armed = frozenset(
-            p.partition_id for p in self._partitions
-            if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
-        )
+        armed = self._armed_set()
         if self._armed_snapshot is not None and armed != self._armed_snapshot:
+            self._settle_until = time.monotonic() + self._SETTLE_TIME
             self.hass.async_create_task(self.coordinator.async_request_refresh())
         self._armed_snapshot = armed
         self.async_write_ha_state()
+
+    def _armed_set(self) -> frozenset[int]:
+        return frozenset(
+            p.partition_id for p in self._partitions
+            if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        )
 
     # ------------------------------------------------------------------
     @property
@@ -152,17 +161,25 @@ class ScenarioAlarmPanel(
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         all_disarmed = all(status == UnifiedArmingStatus.DISARMED for status in known)
 
+        settling = time.monotonic() < self._settle_until
+        transition = (
+            AlarmControlPanelState.DISARMING if all_disarmed
+            else AlarmControlPanelState.ARMING
+        )
+
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
-                return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+                return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
-                return AlarmControlPanelState.DISARMED
+                return transition if settling else AlarmControlPanelState.DISARMED
             return mapped
 
         if not known:
             return None
-        return AlarmControlPanelState.DISARMED if all_disarmed else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+        if all_disarmed:
+            return AlarmControlPanelState.DISARMED
+        return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -181,9 +198,16 @@ class ScenarioAlarmPanel(
     # ------------------------------------------------------------------
     async def _run(self, command: str) -> None:
         target = self._commands[command]
-        await self.coordinator.gateway.activate_scenario(target)
+        # Set before sending: native partitions can change while the request
+        # is still in flight.
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
         self.async_write_ha_state()
+        try:
+            await self.coordinator.gateway.activate_scenario(target)
+        except Exception:
+            self._pending = None
+            self.async_write_ha_state()
+            raise
         # The panel needs a moment to switch scenario: poll it briefly.
         success = False
         for _ in range(10):
