@@ -45,3 +45,16 @@ async def test_primelan_only_uses_primelan_for_outputs():
 async def test_native_only_has_outputs_but_no_scenarios():
     gw = InimPrimeGateway(native=FakeBackend("native"))
     assert gw.supports_outputs and not gw.supports_scenarios
+
+
+def test_outer_frame_hidden_with_primelan():
+    from custom_components.inim_prime.config_flow.models import ConfigData
+    from custom_components.inim_prime.config_flow.schemas import build_connection_schema
+
+    def native_keys(use_primelan):
+        schema = build_connection_schema(flow_data=ConfigData(use_native=True, use_primelan=use_primelan))
+        native = next(v for k, v in schema.items() if str(k) == "native")
+        return {str(k) for k in native.schema.schema}
+
+    assert "use_outer_frame" not in native_keys(True)
+    assert "use_outer_frame" in native_keys(False)
