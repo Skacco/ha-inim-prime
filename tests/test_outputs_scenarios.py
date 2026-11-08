@@ -331,7 +331,7 @@ async def test_alarm_panel_reports_refused_command(hass: HomeAssistant):
             panel.calls.append((cmd, params))
             return {}  # panel accepts the request but doesn't arm
         if cmd == "get_zones_status":
-            return {"zone": [{"id": "1", "lb": "Ingresso", "tl": "1", "st": "2", "mm": "0", "by": "0"}]}
+            return {"zone": [{"id": "1", "lb": "Ingresso", "tl": "1", "st": "2", "mm": "0", "by": "1"}]}
         return await original(cmd, **params)
 
     async def no_sleep(*_):
