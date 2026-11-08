@@ -31,7 +31,9 @@ _DEFAULT_PARTITION_LABEL = re.compile(r"^AREA\s*\d+$", re.IGNORECASE)
 
 
 def _is_default_partition_label(label: str | None) -> bool:
-    return bool(label) and bool(_DEFAULT_PARTITION_LABEL.match(label.strip()))
+    # The panel pads names with spaces and NUL bytes ("AREA       013 \x00").
+    cleaned = (label or "").replace("\x00", "").strip()
+    return bool(cleaned) and bool(_DEFAULT_PARTITION_LABEL.match(cleaned))
 
 
 class InimPrimeGateway:

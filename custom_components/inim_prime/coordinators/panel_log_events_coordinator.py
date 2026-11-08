@@ -60,7 +60,8 @@ class InimPrimePanelLogEventsCoordinator(InimPrimeBaseCoordinator):
 
     @property
     def panel_log_events_fetch_limit(self):
-        return self.entry_options["panel_log_events_fetch_limit"]
+        # The options form stores numbers as float (40.0).
+        return int(self.entry_options["panel_log_events_fetch_limit"])
 
     async def _async_update_data(self):
         try:

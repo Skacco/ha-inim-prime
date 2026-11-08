@@ -393,7 +393,7 @@ async def test_log_events_history_attribute(hass: HomeAssistant):
 async def test_hide_unused_partitions(hass: HomeAssistant):
     from homeassistant.helpers import device_registry as dr
     panel = FakePanel()
-    panel.partitions[3] = {"lb": "AREA       013", "st": 1, "am": 4}
+    panel.partitions[3] = {"lb": "AREA       013 \x00", "st": 1, "am": 4}
     entry = await _setup(hass, panel)
     reg = dr.async_get(hass)
     assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_3")})
