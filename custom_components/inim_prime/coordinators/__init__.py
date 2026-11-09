@@ -6,3 +6,4 @@ from .panel_log_events_coordinator import InimPrimePanelLogEventsCoordinator
 from .outputs_coordinator import InimPrimeOutputsUpdateCoordinator
 from .scenarios_coordinator import InimPrimeScenariosUpdateCoordinator
 from .timers_coordinator import InimPrimeTimersUpdateCoordinator
+from .thermostats_coordinator import InimPrimeThermostatsUpdateCoordinator

@@ -179,6 +179,8 @@ class NativeAdapter:
         "_last_reconnect_attempt",
         "_timer_labels",
         "_timers",
+        "_thermostat_names",
+        "_thermostats",
     )
 
     def __init__(self, client: NativeClient) -> None:
@@ -192,6 +194,8 @@ class NativeAdapter:
         self._last_reconnect_attempt: float | None = None
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
+        self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
+        self._thermostats: dict = {}
 
     async def _call_with_reconnect(self, coro_factory):
         try:
@@ -225,6 +229,57 @@ class NativeAdapter:
         """Read raw panel memory (used e.g. for the module-name table)."""
         async with self._client._lock:
             return await self._client._protocol.read_memory(address, length)
+
+    # ------------------------------------------------------------------
+    # Thermostats (temperature sensors)
+    # ------------------------------------------------------------------
+    async def _read_labels(self, address: int, count: int) -> dict[int, str]:
+        from ..const import MODULE_LABEL_SIZE
+        data = await self.read_memory(address, count * MODULE_LABEL_SIZE)
+        labels: dict[int, str] = {}
+        for i in range(count):
+            raw = data[i * MODULE_LABEL_SIZE:(i + 1) * MODULE_LABEL_SIZE]
+            name = raw.split(b"\x00", 1)[0].decode("latin-1").strip()
+            if name:
+                labels[i + 1] = name
+        return labels
+
+    async def _thermostat_status(self) -> bytes:
+        from inim.prime.native.const import FrameOperation
+        from ..const import THERMOSTAT_STATUS_OPERATION, THERMOSTAT_STATUS_LENGTH
+        # operation (4 LE) + master PIN (6) + padding (2); a read-only status
+        # command (the same Prime/STUDIO uses for its thermostat page).
+        payload = THERMOSTAT_STATUS_OPERATION.to_bytes(4, "little") + b"\x74\x00\x00\x00\x00\x00\x00\x00"
+        async with self._client._lock:
+            return await self._client._protocol.exchange_payload(
+                payload = payload,
+                operation = FrameOperation.COMMAND,
+                response_payload_length = THERMOSTAT_STATUS_LENGTH,
+            )
+
+    async def update_thermostats(self) -> dict:
+        from ..const import (
+            KEYPAD_LABELS_ADDRESS, KEYPAD_LABELS_COUNT,
+            SENSOR_LABELS_ADDRESS, SENSOR_LABELS_COUNT,
+        )
+        from ..models.thermostats import (
+            UnifiedThermostat, parse_temperatures, thermostat_name,
+        )
+        if self._thermostat_names is None:
+            keypad = await self._read_labels(KEYPAD_LABELS_ADDRESS, KEYPAD_LABELS_COUNT)
+            sensor = await self._read_labels(SENSOR_LABELS_ADDRESS, SENSOR_LABELS_COUNT)
+            self._thermostat_names = (keypad, sensor)
+        keypad, sensor = self._thermostat_names
+        status = await self._thermostat_status()
+        self._thermostats = {
+            index: UnifiedThermostat(index, thermostat_name(index, keypad, sensor), temperature)
+            for index, temperature in parse_temperatures(status).items()
+        }
+        return self._thermostats
+
+    @property
+    def thermostats(self) -> dict:
+        return self._thermostats
 
     @property
     def serial_number(self) -> Optional[str]:

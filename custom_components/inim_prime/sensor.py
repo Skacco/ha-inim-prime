@@ -4,6 +4,7 @@ from .entities.panel import PanelSupplyVoltageSensor, BypassedZonesCountSensor, 
 from .entities.partition import PartitionStateSensor
 from .entities.zone import ZoneStateSensor
 from .entities.scenario import ActiveScenarioSensor
+from .entities.thermostat import ThermostatTemperatureSensor
 from .runtime_data import InimPrimeConfigEntry
 
 
@@ -40,5 +41,12 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
 
     if scenarios_coordinator is not None:
         entities.append(ActiveScenarioSensor(scenarios_coordinator))
+
+    thermostats_coordinator = entry.runtime_data.coordinators.thermostats
+    if thermostats_coordinator is not None:
+        for thermostat in thermostats_coordinator.gateway.thermostats.values():
+            entities.append(ThermostatTemperatureSensor(
+                thermostats_coordinator, thermostat.index, thermostat.name,
+            ))
 
     async_add_entities(entities)  # coordinators already refreshed before setup

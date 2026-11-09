@@ -60,3 +60,14 @@ SHUTTER_PULSE_MS: Final[int] = 500
 MODULE_LABELS_ADDRESS: Final[int] = 335799424
 MODULE_LABEL_SIZE: Final[int] = 16
 MODULE_LABELS_COUNT: Final[int] = 30
+
+# Thermostats (temperature sensors). The status command returns the live
+# temperatures; the names come from two contiguous label tables (keypads then
+# sensors). Addresses/command found by decrypting a Prime/STUDIO capture.
+THERMOSTAT_STATUS_OPERATION: Final[int] = 0x2B
+THERMOSTAT_STATUS_LENGTH: Final[int] = 122
+KEYPAD_LABELS_ADDRESS: Final[int] = 335801888
+KEYPAD_LABELS_COUNT: Final[int] = 30
+SENSOR_LABELS_ADDRESS: Final[int] = 335802368
+SENSOR_LABELS_COUNT: Final[int] = 15
+THERMOSTATS_SCAN_INTERVAL_DEFAULT: Final[int] = 30000

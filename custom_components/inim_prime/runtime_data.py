@@ -11,6 +11,7 @@ from .coordinators import (
     InimPrimeOutputsUpdateCoordinator,
     InimPrimeScenariosUpdateCoordinator,
     InimPrimeTimersUpdateCoordinator,
+    InimPrimeThermostatsUpdateCoordinator,
 )
 
 from .gateway import InimPrimeGateway
@@ -32,6 +33,7 @@ class InimPrimeCoordinators:
     outputs: InimPrimeOutputsUpdateCoordinator | None = None
     scenarios: InimPrimeScenariosUpdateCoordinator | None = None
     timers: InimPrimeTimersUpdateCoordinator | None = None
+    thermostats: InimPrimeThermostatsUpdateCoordinator | None = None
 
     def all(self) -> list:
         """All coordinators that exist, for shutdown/iteration."""
@@ -39,7 +41,7 @@ class InimPrimeCoordinators:
             c for c in (
                 self.zones, self.partitions, self.gsm,
                 self.system_faults, self.panel_log_events,
-                self.outputs, self.scenarios, self.timers,
+                self.outputs, self.scenarios, self.timers, self.thermostats,
             ) if c is not None
         ]
 

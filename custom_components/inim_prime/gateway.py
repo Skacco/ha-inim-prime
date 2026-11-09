@@ -185,6 +185,19 @@ class InimPrimeGateway:
         """Every partition, including the hidden unused ones."""
         return self._preferred.partitions
 
+    @property
+    def supports_thermostats(self) -> bool:
+        return self._native is not None
+
+    @property
+    def thermostats(self) -> dict:
+        return self._native.thermostats if self._native is not None else {}
+
+    async def update_thermostats(self) -> dict:
+        if self._native is None:
+            return {}
+        return await self._native.update_thermostats()
+
     async def module_labels(self, count: int) -> dict[int, str]:
         """Domotic-module names from native memory ({module_number: name}).
 

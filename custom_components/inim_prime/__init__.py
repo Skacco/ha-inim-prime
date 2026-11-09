@@ -25,6 +25,7 @@ from .const import (
     OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT,
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     TIMERS_SCAN_INTERVAL_DEFAULT,
+    THERMOSTATS_SCAN_INTERVAL_DEFAULT,
 )
 from .coordinators import (
     InimPrimeGSMUpdateCoordinator,
@@ -35,6 +36,7 @@ from .coordinators import (
     InimPrimeOutputsUpdateCoordinator,
     InimPrimeScenariosUpdateCoordinator,
     InimPrimeTimersUpdateCoordinator,
+    InimPrimeThermostatsUpdateCoordinator,
 )
 from .entry_data import (
     get_entry_options,
@@ -144,6 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     outputs_coordinator: InimPrimeOutputsUpdateCoordinator | None = None
     scenarios_coordinator: InimPrimeScenariosUpdateCoordinator | None = None
     timers_coordinator: InimPrimeTimersUpdateCoordinator | None = None
+    thermostats_coordinator: InimPrimeThermostatsUpdateCoordinator | None = None
 
     if inim_gateway.supports_zones:
         zones_coordinator = InimPrimeZonesUpdateCoordinator(
@@ -238,6 +241,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
         await panel_log_events_coordinator.async_startup()
         await panel_log_events_coordinator.async_config_entry_first_refresh()
 
+    # Thermostats are optional and not on every panel. Probe once without
+    # blocking setup: keep the coordinator only if the panel actually returns
+    # thermostats (the status command fails cleanly on panels without any).
+    if inim_gateway.supports_thermostats:
+        _thermostats = InimPrimeThermostatsUpdateCoordinator(
+            hass = hass,
+            update_interval = timedelta(milliseconds = THERMOSTATS_SCAN_INTERVAL_DEFAULT),
+            entry = entry,
+            gateway = inim_gateway,
+        )
+        await _thermostats.async_refresh()
+        if _thermostats.last_update_success and inim_gateway.thermostats:
+            thermostats_coordinator = _thermostats
+
     # Typed, no hass.data[DOMAIN][entry.entry_id] bookkeeping, no manual
     # cleanup of a dict key on unload -- HA clears runtime_data for us.
     entry.runtime_data = InimPrimeRuntimeData(
@@ -251,6 +268,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             outputs = outputs_coordinator,
             scenarios = scenarios_coordinator,
             timers = timers_coordinator,
+            thermostats = thermostats_coordinator,
         ),
     )
 
