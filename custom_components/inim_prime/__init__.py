@@ -114,7 +114,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
         config_entry_id = entry.entry_id,
         identifiers = {(DOMAIN, data["serial_number"])},
         name = "Inim Prime Panel",
-        model = "Prime Panel",
+        model = "Inim Prime Panel",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         serial_number = data["serial_number"],
     )
@@ -464,7 +464,7 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
             identifiers = {(DOMAIN, f"{serial_number}_{key}")},
             name = name,
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
-            model = f"Prime {name}",
+            model = f"Inim Prime {name}",
         )
         if device.via_device_id != panel.id:
             device = device_registry.async_update_device(device.id, via_device_id = panel.id)

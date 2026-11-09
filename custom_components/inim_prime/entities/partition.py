@@ -25,7 +25,7 @@ def create_partition_device_info(
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_partitions")},
         name = "Partitions",
-        model = "Prime Partitions",
+        model = "Inim Prime Partitions",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 

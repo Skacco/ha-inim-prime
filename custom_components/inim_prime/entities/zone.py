@@ -19,7 +19,7 @@ def create_zone_device_info(
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_zones")},
         name = "Zones",
-        model = "Prime Zones",
+        model = "Inim Prime Zones",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 
