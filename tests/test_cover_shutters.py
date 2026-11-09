@@ -1,4 +1,4 @@
-"""Roller-shutter discovery, fw 5.00 magic tolerance, and time-driven moves."""
+"""Shutter discovery, fw 5.00 magic / type-0x02 tolerance, pulse control."""
 import asyncio
 from types import SimpleNamespace
 
@@ -34,109 +34,43 @@ def test_inner_magic_accepts_firmware_5_variant():
     assert not InnerHeader(magic=b"\x50\x53").is_magic_valid  # outer magic
 
 
+def test_virtual_type_02_decoded_as_output():
+    native_compat.apply()
+    from inim.prime.native.models.terminals import TerminalStatus, TerminalType
+    assert TerminalStatus.decode_type(bytes([0x02, 0, 8, 0, 1])) == TerminalType.OUTPUT
+    assert TerminalStatus.decode_type(bytes([0x01, 0, 0, 0, 0])) == TerminalType.OUTPUT
+    assert TerminalStatus.decode_type(bytes([0x00, 0, 8, 0, 1])) == TerminalType.SINGLE_ZONE
+    assert TerminalStatus.decode_type(bytes([0x03, 0, 8, 0, 1])) == TerminalType.DOUBLE_ZONE
+
+
 class _FakeGateway:
-    def __init__(self, outputs):
-        self.outputs = outputs
+    def __init__(self):
         self.calls = []
 
     async def set_output(self, output_id, state, level=None):
         self.calls.append((output_id, state))
-        self.outputs[output_id].state = state
 
 
-def _make_cover(monkeypatch, clock):
-    outputs = {588: _out("Mod.dom 01 T04"), 587: _out("Mod.dom 01 T03")}
-    gateway = _FakeGateway(outputs)
+def _make_cover(open_cmd, close_cmd):
+    gateway = _FakeGateway()
     coordinator = SimpleNamespace(gateway=gateway, serial_number="SER", last_update_success=True)
-    cover = InimPrimeShutterCover(coordinator, 1, open_id=588, close_id=587)
-    monkeypatch.setattr("custom_components.inim_prime.cover.time.monotonic", lambda: clock["t"])
-    timers = []
-    cover.hass = SimpleNamespace(
-        loop=SimpleNamespace(
-            call_later=lambda delay, cb: timers.append((delay, cb))
-            or SimpleNamespace(cancel=lambda: None),
-        ),
-        async_create_task=lambda coro: asyncio.ensure_future(coro),
-    )
-    monkeypatch.setattr(cover, "async_write_ha_state", lambda: None)
-    return cover, gateway, timers
+    cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd)
+    cover._pulse = 0  # no real delay in tests
+    return cover, gateway
 
 
-async def test_full_close_runs_full_travel_and_calibrates(monkeypatch):
-    clock = {"t": 0.0}
-    cover, gateway, timers = _make_cover(monkeypatch, clock)
-    # position unknown (50, not calibrated)
-    await cover.async_close_cover()
-    # open relay off first, then close relay on
-    assert gateway.calls == [(588, False), (587, True)]
-    assert cover.is_closing
-    # a precise stop is scheduled for the full close travel (16.5 s) + margin
-    assert any(abs(delay - (16.5 + 1.5)) < 0.01 for delay, _ in timers)
-
-    # fire the precise stop timer
-    clock["t"] = 18.0
-    stop_cb = timers[0][1]
-    stop_cb()
-    await asyncio.sleep(0)
-    assert cover.current_cover_position == 0
-    assert cover.is_closed is True
-    assert gateway.calls[-2:] == [(588, False), (587, False)]  # relays released
-
-
-async def test_open_tracks_position_until_stop(monkeypatch):
-    clock = {"t": 0.0}
-    cover, gateway, timers = _make_cover(monkeypatch, clock)
-    cover._position = 0.0
-    cover._calibrated = True
+async def test_open_close_pulse_mapped_commands():
+    cover, gateway = _make_cover(open_cmd=998, close_cmd=997)
     await cover.async_open_cover()
-    assert (588, True) in gateway.calls
-    assert cover.is_opening
-    # half the 17 s open travel -> ~50 %
-    clock["t"] = 8.5
-    assert 45 <= cover.current_cover_position <= 55
-    # full travel elapsed, fire stop -> fully open
-    clock["t"] = 19.0
-    timers[0][1]()
-    await asyncio.sleep(0)
-    assert cover.current_cover_position == 100
-    assert cover._moving == 0
+    assert gateway.calls == [(998, True), (998, False)]   # pulse on the open command
+    gateway.calls.clear()
+    await cover.async_close_cover()
+    assert gateway.calls == [(997, True), (997, False)]   # pulse on the close command
+    assert cover.is_closed is None                        # no position feedback
 
 
-async def test_follows_external_move_when_idle(monkeypatch):
-    clock = {"t": 0.0}
-    cover, gateway, _ = _make_cover(monkeypatch, clock)
-    cover._position = 0.0
-    cover._calibrated = True
-    # wall button opens: open relay turns on without an HA command
-    gateway.outputs[588].state = True
-    cover._handle_coordinator_update()
-    assert cover.is_opening
-    clock["t"] = 8.5
-    assert 45 <= cover.current_cover_position <= 55
-
-
-async def test_per_shutter_time_number_edits_shared_dict(monkeypatch):
-    from custom_components.inim_prime.number import InimPrimeShutterTimeNumber
-    times = {"open": 17.0, "close": 16.5}
-    num = InimPrimeShutterTimeNumber("SER", 1, "open", times)
-    monkeypatch.setattr(num, "async_write_ha_state", lambda: None)
-    assert num.native_value == 17.0
-    await num.async_set_native_value(12.0)
-    assert times["open"] == 12.0          # shared dict updated
-    # a cover sharing the same dict now uses the new time
-    coordinator = SimpleNamespace(gateway=_FakeGateway({}), serial_number="SER")
-    cover = InimPrimeShutterCover(coordinator, 1, open_id=588, close_id=587, times=times)
-    assert cover._travel(1) == 12.0
-    assert cover._travel(-1) == 16.5
-
-
-def test_switch_excludes_shutter_motor_terminals():
-    from custom_components.inim_prime.cover import discover_shutters as ds
-    outputs = {
-        587: _out("Mod.dom 01 T03"), 588: _out("Mod.dom 01 T04"),
-        603: _out("Luce palla"), 7: _out("CARRAIO"),
-    }
-    shutter_terminals = {oid for t in ds(outputs).values() for oid in t.values()}
-    assert shutter_terminals == {587, 588}
-    exposed = [oid for oid in outputs if oid not in shutter_terminals]
-    assert exposed == [603, 7]  # lights/other outputs stay, motor relays gone
+def test_cover_unavailable_without_full_mapping():
+    cover, _ = _make_cover(open_cmd=998, close_cmd=None)
+    assert cover.available is False
+    cover2, _ = _make_cover(open_cmd=998, close_cmd=997)
+    assert cover2.available is True

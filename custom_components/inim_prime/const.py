@@ -50,6 +50,6 @@ TIMERS_SCAN_INTERVAL_DEFAULT: Final[int] = 10000
 # (terminal T04 = open, T03 = close). Full-travel times are the panel's own
 # programmed values; HA estimates position from them. The extra margin is held
 # at the end of a full open/close to recalibrate to 0 % / 100 %.
-SHUTTER_OPEN_TIME_MS: Final[int] = 17000
-SHUTTER_CLOSE_TIME_MS: Final[int] = 16500
-SHUTTER_EXTRA_TIME_MS: Final[int] = 1500
+# Length of the trigger pulse sent to a shutter command output; the Smart
+# module runs the full travel on its own from that pulse.
+SHUTTER_PULSE_MS: Final[int] = 500

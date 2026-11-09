@@ -72,6 +72,7 @@ class ConfigOptions:
     alarm_panel: dict[str, int] | None = None
     show_hidden_outputs: bool | None = None
     hide_unused_partitions: bool | None = None
+    shutter_commands: dict | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
         assert self.zones_scan_interval is not None
@@ -101,6 +102,8 @@ class ConfigOptions:
             options["show_hidden_outputs"] = self.show_hidden_outputs
         if self.hide_unused_partitions is not None:
             options["hide_unused_partitions"] = self.hide_unused_partitions
+        if self.shutter_commands:
+            options["shutter_commands"] = self.shutter_commands
         return options
 
 class ScanIntervalsDefault(TypedDict):

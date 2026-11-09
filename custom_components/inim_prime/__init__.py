@@ -60,7 +60,6 @@ PLATFORMS = [
     "light",
     "alarm_control_panel",
     "cover",
-    "number",
 ]
 
 
@@ -266,8 +265,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_devices(hass, entry, inim_gateway)
+    _remove_stale_number_entities(hass, entry)
 
     return True
+
+
+def _remove_stale_number_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove the old per-shutter travel-time numbers (the number platform is
+    gone now that shutters are command-driven)."""
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.domain == "number":
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _remove_hidden_partition_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:

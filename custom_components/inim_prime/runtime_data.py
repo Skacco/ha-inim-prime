@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 
@@ -47,8 +47,5 @@ class InimPrimeCoordinators:
 class InimPrimeRuntimeData:
     gateway: InimPrimeGateway
     coordinators: InimPrimeCoordinators
-    # Per-shutter travel times in seconds: {module: {"open": s, "close": s}}.
-    # Shared, mutable: the cover reads it, the number entities edit it live.
-    shutter_times: dict = field(default_factory=dict)
 
 type InimPrimeConfigEntry = ConfigEntry[InimPrimeRuntimeData]

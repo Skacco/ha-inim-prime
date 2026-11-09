@@ -5,6 +5,7 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     TextSelector, TextSelectorType, TextSelectorConfig,
     NumberSelector, NumberSelectorConfig, NumberSelectorMode,
+    SelectSelector, SelectSelectorConfig, SelectSelectorMode, SelectOptionDict,
 )
 
 from .const import (
@@ -207,6 +208,8 @@ def build_options_schema(
         current_options: ConfigOptions | None = None,
         migrating_from_native: bool | None = None,
         migrating_from_primelan: bool | None = None,
+        shutters: list[int] | None = None,
+        output_choices: list[tuple[int, str]] | None = None,
 ) -> dict:
     """Build the options schema, only including fields the active backend(s) support.
 
@@ -356,4 +359,30 @@ def build_options_schema(
             max = PANEL_LOG_EVENTS_FETCH_LIMIT_MAX,
             mode = NumberSelectorMode.BOX,
         ))
+
+    # Roller shutters: map each one to the panel's open / close command outputs.
+    # The Smart modules run the full travel from a single trigger, so HA just
+    # pulses the chosen command output.
+    if shutters and output_choices:
+        option_items = [
+            SelectOptionDict(value = str(oid), label = name) for oid, name in output_choices
+        ]
+        current_map = (current_options.shutter_commands if current_options else None) or {}
+        shutter_fields: dict = {}
+        for module in shutters:
+            cur = current_map.get(str(module)) or current_map.get(module) or {}
+            for kind in ("open", "close"):
+                key = f"{module:02d}_{kind}"
+                value = cur.get(kind)
+                shutter_fields[vol.Optional(
+                    key,
+                    description = {"suggested_value": str(value)} if value not in (None, "") else {},
+                )] = SelectSelector(SelectSelectorConfig(
+                    options = option_items,
+                    mode = SelectSelectorMode.DROPDOWN,
+                ))
+        if shutter_fields:
+            schema[vol.Optional(OptionsKey.SHUTTERS)] = section(
+                vol.Schema(shutter_fields), {"collapsed": not current_map},
+            )
     return schema

@@ -103,6 +103,10 @@
               "arm_vacation": "Arm vacation scenario",
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
+          },
+          "shutters": {
+            "name": "Roller shutters",
+            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Leave empty to leave a shutter unmapped."
           }
         }
       },
@@ -200,6 +204,10 @@
               "arm_vacation": "Arm vacation scenario",
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
+          },
+          "shutters": {
+            "name": "Roller shutters",
+            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Leave empty to leave a shutter unmapped."
           }
         }
       }
@@ -261,6 +269,10 @@
               "arm_vacation": "Arm vacation scenario",
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
+          },
+          "shutters": {
+            "name": "Roller shutters",
+            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Leave empty to leave a shutter unmapped."
           }
         }
       }

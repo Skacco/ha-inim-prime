@@ -46,6 +46,7 @@ class InimPrimeOptionsData(TypedDict):
     alarm_panel: NotRequired[dict[str, int]]
     show_hidden_outputs: NotRequired[bool]
     hide_unused_partitions: NotRequired[bool]
+    shutter_commands: NotRequired[dict]
     panel_log_events_fetch_limit: NotRequired[int]
 
 
