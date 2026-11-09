@@ -374,6 +374,28 @@
           "description": "Wrap the write in the begin/end commands Prime/STUDIO sends."
         }
       }
+    },
+    "debug_probe_commands": {
+      "name": "Debug: probe commands",
+      "description": "Native protocol: send plain commands (operation + data, no PIN) and return the answers. Unknown commands may change the panel: use with care.",
+      "fields": {
+        "operations": {
+          "name": "Operations",
+          "description": "List of operation codes."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Data bytes as hex, sent with every operation."
+        },
+        "response_length": {
+          "name": "Response length",
+          "description": "Expected response payload length (optional)."
+        },
+        "delay": {
+          "name": "Delay",
+          "description": "Pause between commands."
+        }
+      }
     }
   }
 }

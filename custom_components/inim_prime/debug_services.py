@@ -30,6 +30,7 @@ SERVICE_READ_MEMORY = "debug_read_memory"
 SERVICE_RAW_COMMAND = "debug_raw_command"
 SERVICE_MEMORY_DIFF = "debug_memory_diff"
 SERVICE_WRITE_MEMORY = "debug_write_memory"
+SERVICE_PROBE_COMMANDS = "debug_probe_commands"
 _SNAPSHOTS: dict[tuple[int, int], bytes] = {}
 
 _TERMINAL_RANGE = vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009))
@@ -88,6 +89,14 @@ def _write_request(address: int, data: bytes) -> bytes:
         + b"\x01\x00\x11"
     )
     return header + bytes([sum(header) & 0xFF]) + data
+
+
+PROBE_COMMANDS_SCHEMA = vol.Schema({
+    vol.Required("operations"): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min = 0, max = 0xFFFF))]),
+    vol.Optional("data", default = ""): cv.string,
+    vol.Optional("response_length"): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 1024)),
+    vol.Optional("delay", default = 0.3): vol.All(vol.Coerce(float), vol.Range(min = 0, max = 5)),
+})
 
 
 def _native_client(hass: HomeAssistant):
@@ -217,6 +226,31 @@ async def _write_memory(hass: HomeAssistant, call: ServiceCall) -> ServiceRespon
     return result
 
 
+async def _probe_commands(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Send plain commands (4-byte operation + data, no PIN) like Prime/STUDIO's
+    monitoring does (e.g. 0x0d + 00 = system status) and return the answers.
+    Stops at the first connection error."""
+    client = _native_client(hass)
+    try:
+        data = bytes.fromhex(call.data["data"].replace(" ", ""))
+    except ValueError as err:
+        raise ServiceValidationError("data must be hex bytes") from err
+    results = {}
+    for operation in call.data["operations"]:
+        payload = operation.to_bytes(4, "little") + data
+        try:
+            async with client._lock:
+                response = await client._protocol.exchange_payload(
+                    payload, FrameOperation.COMMAND, call.data.get("response_length"),
+                )
+            results[f"{operation:#04x}"] = response.hex(" ")
+        except Exception as err:  # noqa: BLE001 - report and stop
+            results[f"{operation:#04x}"] = f"error: {err}"
+            break
+        await asyncio.sleep(call.data["delay"])
+    return {"results": results}
+
+
 async def _raw_command(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     client = _native_client(hass)
     try:
@@ -242,6 +276,7 @@ def async_register(hass: HomeAssistant) -> None:
         (SERVICE_RAW_COMMAND, _raw_command, RAW_COMMAND_SCHEMA),
         (SERVICE_MEMORY_DIFF, _memory_diff, MEMORY_DIFF_SCHEMA),
         (SERVICE_WRITE_MEMORY, _write_memory, WRITE_MEMORY_SCHEMA),
+        (SERVICE_PROBE_COMMANDS, _probe_commands, PROBE_COMMANDS_SCHEMA),
     ):
         async def _handler(call: ServiceCall, _h = handler) -> ServiceResponse:
             return await _h(hass, call)

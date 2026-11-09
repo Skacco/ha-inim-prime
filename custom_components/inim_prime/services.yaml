@@ -70,3 +70,18 @@ debug_write_memory:
     session:
       selector:
         boolean:
+debug_probe_commands:
+  fields:
+    operations:
+      required: true
+      selector:
+        object:
+    data:
+      selector:
+        text:
+    response_length:
+      selector:
+        number: {min: 1, max: 1024, mode: box}
+    delay:
+      selector:
+        number: {min: 0, max: 5, step: 0.1, unit_of_measurement: s}
