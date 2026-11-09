@@ -41,6 +41,7 @@ from .entry_data import (
     PrimelanConfigData, InimPrimeOptionsData, ScanIntervalsData,
 )
 from .gateway import InimPrimeGateway
+from .cover import discover_shutters
 from .runtime_data import (
     InimPrimeConfigEntry,
     InimPrimeCoordinators,
@@ -301,13 +302,19 @@ def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
     outputs = gateway.outputs
     if outputs is None:
         return
+    # Motor relays of shutter covers are no longer offered as switches.
+    shutter_terminals = {
+        oid
+        for terminals in discover_shutters(dict(outputs)).values()
+        for oid in terminals.values()
+    }
     prefix = f"{entry.data['serial_number']}_output_"
     entity_registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
         if entity.domain not in ("switch", "light") or not entity.unique_id.startswith(prefix):
             continue
         suffix = entity.unique_id[len(prefix):]
-        if suffix.isdigit() and int(suffix) not in outputs:
+        if suffix.isdigit() and (int(suffix) not in outputs or int(suffix) in shutter_terminals):
             entity_registry.async_remove(entity.entity_id)
 
 

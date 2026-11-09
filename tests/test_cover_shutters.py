@@ -128,3 +128,15 @@ async def test_per_shutter_time_number_edits_shared_dict(monkeypatch):
     cover = InimPrimeShutterCover(coordinator, 1, open_id=588, close_id=587, times=times)
     assert cover._travel(1) == 12.0
     assert cover._travel(-1) == 16.5
+
+
+def test_switch_excludes_shutter_motor_terminals():
+    from custom_components.inim_prime.cover import discover_shutters as ds
+    outputs = {
+        587: _out("Mod.dom 01 T03"), 588: _out("Mod.dom 01 T04"),
+        603: _out("Luce palla"), 7: _out("CARRAIO"),
+    }
+    shutter_terminals = {oid for t in ds(outputs).values() for oid in t.values()}
+    assert shutter_terminals == {587, 588}
+    exposed = [oid for oid in outputs if oid not in shutter_terminals]
+    assert exposed == [603, 7]  # lights/other outputs stay, motor relays gone
