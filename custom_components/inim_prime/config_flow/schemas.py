@@ -362,9 +362,10 @@ def build_options_schema(
         ))
 
     # Roller shutters: one section per shutter, titled with the shutter's name
-    # (read from the panel), each holding Apri / Chiudi / Stop dropdowns that
-    # list the panel's command outputs. The Smart module runs the full travel
-    # from a single trigger, so HA just pulses the chosen command output.
+    # (read from the panel), each holding Open / Close (and optional 25/50/75 %)
+    # dropdowns that list the panel's command outputs. The Smart module runs the
+    # full travel from a single trigger, so HA just pulses the chosen command
+    # output; the module has no stop, so none is offered.
     if shutters and output_choices:
         option_items = [
             SelectOptionDict(value = str(oid), label = name) for oid, name in output_choices
@@ -375,7 +376,7 @@ def build_options_schema(
             cur = current_map.get(str(module)) or current_map.get(module) or {}
             section_key = shutter_section_key(module, names.get(module))
             fields: dict = {}
-            for kind in ("open", "close", "stop", "p25", "p50", "p75"):
+            for kind in ("open", "close", "p25", "p50", "p75"):
                 value = cur.get(kind)
                 fields[vol.Optional(
                     kind,

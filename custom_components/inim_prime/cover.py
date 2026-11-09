@@ -77,7 +77,7 @@ def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
         except (TypeError, ValueError):
             continue
         entry_map: dict = {}
-        for kind in ("open", "close", "stop", "p25", "p50", "p75"):
+        for kind in ("open", "close", "p25", "p50", "p75"):
             value = (cmds or {}).get(kind)
             if value not in (None, ""):
                 try:
@@ -109,7 +109,6 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             module,
             open_cmd = mapping.get(module, {}).get("open"),
             close_cmd = mapping.get(module, {}).get("close"),
-            stop_cmd = mapping.get(module, {}).get("stop"),
             presets = {
                 25: mapping.get(module, {}).get("p25"),
                 50: mapping.get(module, {}).get("p50"),
@@ -137,7 +136,6 @@ class InimPrimeShutterCover(
         *,
         open_cmd: int | None,
         close_cmd: int | None,
-        stop_cmd: int | None = None,
         presets: dict[int, int | None] | None = None,
         name: str | None = None,
     ) -> None:
@@ -145,7 +143,6 @@ class InimPrimeShutterCover(
         self._module = module
         self._open_cmd = open_cmd
         self._close_cmd = close_cmd
-        self._stop_cmd = stop_cmd
         self._pulse = SHUTTER_PULSE_MS / 1000
         # Map target position (%) -> command output. 0 = close, 100 = open,
         # plus any configured partial-open presets (e.g. 25/50/75 %).
@@ -159,17 +156,11 @@ class InimPrimeShutterCover(
                 self._positions[percent] = cmd
         # Optimistic position (no feedback from the Smart module).
         self._position: int | None = None
-        # Last movement command sent -- a Smart module stops when the same
-        # command is pulsed again, so this is the stop when no dedicated stop
-        # output is mapped.
-        self._last_cmd: int | None = None
 
+        # These Smart modules have no stop (INIM Home has none either): a
+        # command runs the full travel and can't be interrupted. So only
+        # open/close, plus the position slider when partial presets exist.
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
-        # Stop is possible either via a dedicated command or by re-pulsing the
-        # last movement command (Smart modules stop on a repeated impulse).
-        if stop_cmd is not None or (open_cmd is not None and close_cmd is not None):
-            features |= CoverEntityFeature.STOP
-        # Offer the position slider only when at least one partial preset exists.
         if any(p not in (0, 100) for p in self._positions):
             features |= CoverEntityFeature.SET_POSITION
         self._attr_supported_features = features
@@ -215,9 +206,7 @@ class InimPrimeShutterCover(
 
     async def _go_to(self, position: int) -> None:
         self._position = position
-        cmd = self._positions.get(position)
-        self._last_cmd = cmd
-        await self._trigger(cmd)
+        await self._trigger(self._positions.get(position))
         self.async_write_ha_state()
 
     async def async_open_cover(self, **kwargs: Any) -> None:
@@ -231,8 +220,3 @@ class InimPrimeShutterCover(
         target = int(kwargs[ATTR_POSITION])
         nearest = min(self._positions, key = lambda p: abs(p - target))
         await self._go_to(nearest)
-
-    async def async_stop_cover(self, **kwargs: Any) -> None:
-        # Dedicated stop command if mapped; otherwise re-pulse the last movement
-        # command, which stops a Smart module mid-travel.
-        await self._trigger(self._stop_cmd if self._stop_cmd is not None else self._last_cmd)

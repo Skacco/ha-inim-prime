@@ -87,7 +87,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
 def _extract_shutter_commands(data: dict) -> dict:
     """Pull the per-shutter sections out of the submitted options and return
-    {"<module>": {"open": id, "close": id, "stop": id}} (filled fields only)."""
+    {"<module>": {"open": id, "close": id}} (filled fields only)."""
     result: dict[str, dict[str, int]] = {}
     for key in list(data.keys()):
         match = _SECTION_KEY.match(key)
@@ -96,7 +96,7 @@ def _extract_shutter_commands(data: dict) -> dict:
         section = data.pop(key)
         module = str(int(match.group(1)))
         commands: dict[str, int] = {}
-        for kind in ("open", "close", "stop", "p25", "p50", "p75"):
+        for kind in ("open", "close", "p25", "p50", "p75"):
             value = section.get(kind)
             if value in (None, ""):
                 continue

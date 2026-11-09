@@ -51,44 +51,33 @@ class _FakeGateway:
         self.calls.append((output_id, state))
 
 
-def _make_cover(open_cmd, close_cmd, stop_cmd=None, presets=None):
+def _make_cover(open_cmd, close_cmd, presets=None):
     gateway = _FakeGateway()
     coordinator = SimpleNamespace(gateway=gateway, serial_number="SER", last_update_success=True)
     cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd,
-                                  stop_cmd=stop_cmd, presets=presets)
+                                  presets=presets)
     cover._pulse = 0  # no real delay in tests
-    import types
     cover.async_write_ha_state = lambda: None
     return cover, gateway
 
 
-async def test_open_close_stop_pulse_mapped_commands():
-    cover, gateway = _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)
+async def test_open_close_pulse_mapped_commands():
+    cover, gateway = _make_cover(open_cmd=998, close_cmd=997)
     await cover.async_open_cover()
     assert gateway.calls == [(998, True), (998, False)]   # pulse on the open command
+    assert cover.is_closed is False                       # last command was open (100%)
     gateway.calls.clear()
     await cover.async_close_cover()
     assert gateway.calls == [(997, True), (997, False)]   # pulse on the close command
-    gateway.calls.clear()
-    await cover.async_stop_cover()
-    assert gateway.calls == [(575, True), (575, False)]   # pulse on the stop command
     assert cover.is_closed is True                        # last command was close (0%)
 
 
-def test_stop_feature_available_with_open_close():
+def test_no_stop_feature():
+    # These Smart modules have no stop command, so the cover never offers STOP.
     from homeassistant.components.cover import CoverEntityFeature
-    # Stop is offered with a dedicated command OR with open+close (re-impulse).
-    assert _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)[0].supported_features & CoverEntityFeature.STOP
-    assert _make_cover(open_cmd=998, close_cmd=997)[0].supported_features & CoverEntityFeature.STOP
-    assert not (_make_cover(open_cmd=998, close_cmd=None)[0].supported_features & CoverEntityFeature.STOP)
-
-
-async def test_stop_without_dedicated_command_repulses_last_move():
-    cover, gateway = _make_cover(open_cmd=998, close_cmd=997)  # no stop command
-    await cover.async_open_cover()
-    gateway.calls.clear()
-    await cover.async_stop_cover()                 # re-pulses the last move (open)
-    assert gateway.calls == [(998, True), (998, False)]
+    assert not (_make_cover(open_cmd=998, close_cmd=997)[0].supported_features & CoverEntityFeature.STOP)
+    assert not (_make_cover(open_cmd=998, close_cmd=997,
+                            presets={25: 575})[0].supported_features & CoverEntityFeature.STOP)
 
 
 def test_cover_unavailable_without_full_mapping():
