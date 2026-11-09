@@ -51,22 +51,33 @@ class _FakeGateway:
         self.calls.append((output_id, state))
 
 
-def _make_cover(open_cmd, close_cmd):
+def _make_cover(open_cmd, close_cmd, stop_cmd=None):
     gateway = _FakeGateway()
     coordinator = SimpleNamespace(gateway=gateway, serial_number="SER", last_update_success=True)
-    cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd)
+    cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd, stop_cmd=stop_cmd)
     cover._pulse = 0  # no real delay in tests
     return cover, gateway
 
 
-async def test_open_close_pulse_mapped_commands():
-    cover, gateway = _make_cover(open_cmd=998, close_cmd=997)
+async def test_open_close_stop_pulse_mapped_commands():
+    cover, gateway = _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)
     await cover.async_open_cover()
     assert gateway.calls == [(998, True), (998, False)]   # pulse on the open command
     gateway.calls.clear()
     await cover.async_close_cover()
     assert gateway.calls == [(997, True), (997, False)]   # pulse on the close command
+    gateway.calls.clear()
+    await cover.async_stop_cover()
+    assert gateway.calls == [(575, True), (575, False)]   # pulse on the stop command
     assert cover.is_closed is None                        # no position feedback
+
+
+def test_stop_feature_only_when_mapped():
+    from homeassistant.components.cover import CoverEntityFeature
+    with_stop, _ = _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)
+    assert with_stop.supported_features & CoverEntityFeature.STOP
+    without_stop, _ = _make_cover(open_cmd=998, close_cmd=997)
+    assert not (without_stop.supported_features & CoverEntityFeature.STOP)
 
 
 def test_cover_unavailable_without_full_mapping():

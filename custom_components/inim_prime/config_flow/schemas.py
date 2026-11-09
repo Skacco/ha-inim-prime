@@ -371,7 +371,7 @@ def build_options_schema(
         shutter_fields: dict = {}
         for module in shutters:
             cur = current_map.get(str(module)) or current_map.get(module) or {}
-            for kind in ("open", "close"):
+            for kind in ("open", "close", "stop"):
                 key = f"{module:02d}_{kind}"
                 value = cur.get(kind)
                 shutter_fields[vol.Optional(

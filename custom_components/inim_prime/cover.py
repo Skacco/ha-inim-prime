@@ -76,7 +76,7 @@ def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
         except (TypeError, ValueError):
             continue
         entry_map: dict[str, int] = {}
-        for kind in ("open", "close"):
+        for kind in ("open", "close", "stop"):
             value = (cmds or {}).get(kind)
             if value not in (None, ""):
                 try:
@@ -100,6 +100,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             module,
             open_cmd = mapping.get(module, {}).get("open"),
             close_cmd = mapping.get(module, {}).get("close"),
+            stop_cmd = mapping.get(module, {}).get("stop"),
         )
         for module in sorted(shutters)
     ]
@@ -113,7 +114,6 @@ class InimPrimeShutterCover(
     _attr_has_entity_name = True
     _attr_name = None  # the cover IS the device
     _attr_device_class = CoverDeviceClass.SHUTTER
-    _attr_supported_features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
 
     def __init__(
         self,
@@ -122,12 +122,19 @@ class InimPrimeShutterCover(
         *,
         open_cmd: int | None,
         close_cmd: int | None,
+        stop_cmd: int | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._module = module
         self._open_cmd = open_cmd
         self._close_cmd = close_cmd
+        self._stop_cmd = stop_cmd
         self._pulse = SHUTTER_PULSE_MS / 1000
+
+        features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
+        if stop_cmd is not None:
+            features |= CoverEntityFeature.STOP
+        self._attr_supported_features = features
 
         serial_number = coordinator.serial_number
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
@@ -165,3 +172,6 @@ class InimPrimeShutterCover(
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         await self._trigger(self._close_cmd)
+
+    async def async_stop_cover(self, **kwargs: Any) -> None:
+        await self._trigger(self._stop_cmd)

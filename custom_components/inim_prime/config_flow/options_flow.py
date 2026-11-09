@@ -19,7 +19,7 @@ def _parse_shutter_section(section: dict | None) -> dict:
         if value in (None, "") or "_" not in key:
             continue
         module_str, _, kind = key.partition("_")
-        if kind not in ("open", "close"):
+        if kind not in ("open", "close", "stop"):
             continue
         try:
             module = str(int(module_str))
