@@ -1,6 +1,8 @@
+import asyncio
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers import entity_registry as er
@@ -119,7 +121,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     inim_gateway = _build_gateway(data)
     inim_gateway.show_hidden_outputs = bool(entry.options.get("show_hidden_outputs", False))
     inim_gateway.hide_unused_partitions = bool(entry.options.get("hide_unused_partitions", False))
-    await inim_gateway.connect()
+    # The panel can reset the native TCP link (one client at a time) or drop
+    # the PrimeLAN HTTP connection. Treat a connect failure as "not ready" so
+    # Home Assistant retries with backoff instead of leaving the entry failed.
+    try:
+        await inim_gateway.connect()
+    except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
+        raise ConfigEntryNotReady(
+            f"Cannot connect to INIM Prime panel yet: {err}"
+        ) from err
 
     ###
     ### Coordinators
