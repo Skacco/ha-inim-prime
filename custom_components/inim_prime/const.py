@@ -44,6 +44,11 @@ INIM_PRIME_MODEL_ZONE = "Prime Zone"
 OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT: Final[int] = 30000
 OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT: Final[int] = 500
 SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT: Final[int] = 10000
+# When BOTH backends are configured, the live data comes from Native, so the
+# PrimeLAN-only pollers (GSM, system faults, event log) can run much slower by
+# default to cut PrimeLAN traffic. Scenarios stay faster (they drive the alarm
+# panel). The user can still override any of these in the options.
+PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT: Final[int] = 60000
 TIMERS_SCAN_INTERVAL_DEFAULT: Final[int] = 10000
 
 # Roller shutters ("tapparelle"): Smart modules driven via their motor relays

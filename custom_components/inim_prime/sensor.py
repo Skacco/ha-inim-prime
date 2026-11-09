@@ -66,16 +66,17 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         )
         if native_coordinator is not None:
             entities.append(BackendLastUpdateSensor(
-                native_coordinator, serial_number, "Ultimo aggiornamento Native", "last_update_native",
+                native_coordinator, serial_number, "Connessione Native ultimo aggiornamento", "native_last_update",
             ))
     if entry.data.get("primelan"):
+        # Scenarios block setup (fresh at startup); faults/GSM are deferred.
         primelan_coordinator = _first(
-            coordinators.system_faults, coordinators.scenarios,
+            coordinators.scenarios, coordinators.system_faults,
             coordinators.gsm, coordinators.panel_log_events,
         )
         if primelan_coordinator is not None:
             entities.append(BackendLastUpdateSensor(
-                primelan_coordinator, serial_number, "Ultimo aggiornamento PrimeLAN", "last_update_primelan",
+                primelan_coordinator, serial_number, "Connessione PrimeLAN ultimo aggiornamento", "primelan_last_update",
             ))
 
     async_add_entities(entities)  # coordinators already refreshed before setup

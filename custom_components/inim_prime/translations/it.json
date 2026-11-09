@@ -74,22 +74,22 @@
             "name": "Intervalli di scansione",
             "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
             "data": {
-              "zones": "Intervallo scansione zone (millisecondi)",
-              "partitions": "Intervallo scansione partizioni (millisecondi)",
-              "gsm": "Intervallo scansione GSM (millisecondi)",
-              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
-              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
-              "outputs": "Intervallo scansione uscite (millisecondi)",
-              "scenarios": "Intervallo scansione scenari (millisecondi)"
+              "zones": "Intervallo scansione zone (Native/PrimeLAN)",
+              "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
+              "gsm": "Intervallo scansione GSM (PrimeLAN)",
+              "system_faults": "Intervallo scansione guasti di sistema (PrimeLAN)",
+              "panel_log_events": "Intervallo scansione eventi registro (PrimeLAN)",
+              "outputs": "Intervallo scansione uscite (Native/PrimeLAN)",
+              "scenarios": "Intervallo scansione scenari (PrimeLAN)"
             },
             "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
-              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
-              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
-              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
-              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
           "alarm_panel": {
@@ -175,22 +175,22 @@
             "name": "Intervalli di scansione",
             "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.\nNota: il backend Native supporta intervalli molto più bassi di PrimeLAN per Zone e Partizioni. Se hai appena aggiunto o rimosso Native, i valori predefiniti qui sotto sono stati adeguati di conseguenza.",
             "data": {
-              "zones": "Intervallo scansione zone (millisecondi)",
-              "partitions": "Intervallo scansione partizioni (millisecondi)",
-              "gsm": "Intervallo scansione GSM (millisecondi)",
-              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
-              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
-              "outputs": "Intervallo scansione uscite (millisecondi)",
-              "scenarios": "Intervallo scansione scenari (millisecondi)"
+              "zones": "Intervallo scansione zone (Native/PrimeLAN)",
+              "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
+              "gsm": "Intervallo scansione GSM (PrimeLAN)",
+              "system_faults": "Intervallo scansione guasti di sistema (PrimeLAN)",
+              "panel_log_events": "Intervallo scansione eventi registro (PrimeLAN)",
+              "outputs": "Intervallo scansione uscite (Native/PrimeLAN)",
+              "scenarios": "Intervallo scansione scenari (PrimeLAN)"
             },
             "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
-              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
-              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
-              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
-              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
           "alarm_panel": {
@@ -240,22 +240,22 @@
             "name": "Intervalli di scansione",
             "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
             "data": {
-              "zones": "Intervallo scansione zone (millisecondi)",
-              "partitions": "Intervallo scansione partizioni (millisecondi)",
-              "gsm": "Intervallo scansione GSM (millisecondi)",
-              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
-              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
-              "outputs": "Intervallo scansione uscite (millisecondi)",
-              "scenarios": "Intervallo scansione scenari (millisecondi)"
+              "zones": "Intervallo scansione zone (Native/PrimeLAN)",
+              "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
+              "gsm": "Intervallo scansione GSM (PrimeLAN)",
+              "system_faults": "Intervallo scansione guasti di sistema (PrimeLAN)",
+              "panel_log_events": "Intervallo scansione eventi registro (PrimeLAN)",
+              "outputs": "Intervallo scansione uscite (Native/PrimeLAN)",
+              "scenarios": "Intervallo scansione scenari (PrimeLAN)"
             },
             "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
-              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
-              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
-              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
-              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native se configurato, altrimenti PrimeLAN.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
           "alarm_panel": {

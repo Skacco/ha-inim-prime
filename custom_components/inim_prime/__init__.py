@@ -295,6 +295,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_hidden_partition_entities(hass, entry, inim_gateway)
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_renamed_state_entities(hass, entry)
+    _remove_old_connectivity_entities(hass, entry)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
     _rename_shutter_entities(hass, entry)
@@ -417,6 +418,22 @@ def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry
                         device.id, remove_config_entry_id = entry.entry_id
                     )
                     break
+
+
+def _remove_old_connectivity_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove the first-generation "last update" timestamp sensors (unique_id
+    ..._last_update_native/_last_update_primelan), renamed to "Connessione …
+    ultimo aggiornamento" with a new unique_id so HA creates them fresh with the
+    right name instead of keeping the stuck old one ("Ultimo aggiornamento …")."""
+    serial_number = entry.data["serial_number"]
+    old_ids = {
+        f"{serial_number}_last_update_native",
+        f"{serial_number}_last_update_primelan",
+    }
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.unique_id in old_ids:
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _remove_renamed_state_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:

@@ -74,22 +74,22 @@
             "name": "Scan intervals",
             "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.",
             "data": {
-              "zones": "Zones Scan Interval (milliseconds)",
-              "partitions": "Partitions Scan Interval (milliseconds)",
-              "gsm": "GSM Scan Interval (milliseconds)",
-              "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
-              "outputs": "Outputs Scan Interval (milliseconds)",
-              "scenarios": "Scenarios Scan Interval (milliseconds)"
+              "zones": "Zones Scan Interval (Native/PrimeLAN)",
+              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "gsm": "GSM Scan Interval (PrimeLAN)",
+              "system_faults": "System Faults Scan Interval (PrimeLAN)",
+              "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
+              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant sends API requests to fetch zone status.",
-              "partitions": "How often Home Assistant sends API requests to fetch partition status.",
-              "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
-              "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
-              "outputs": "How often Home Assistant reads the outputs status.",
-              "scenarios": "How often Home Assistant reads which scenario is active."
+              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
+              "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
+              "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
           "alarm_panel": {
@@ -175,22 +175,22 @@
             "name": "Scan intervals",
             "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.\nNote: the Native backend supports much lower intervals than PrimeLAN for Zones and Partitions. If you've just added or removed Native, the defaults below have been adjusted accordingly.",
             "data": {
-              "zones": "Zones Scan Interval (milliseconds)",
-              "partitions": "Partitions Scan Interval (milliseconds)",
-              "gsm": "GSM Scan Interval (milliseconds)",
-              "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
-              "outputs": "Outputs Scan Interval (milliseconds)",
-              "scenarios": "Scenarios Scan Interval (milliseconds)"
+              "zones": "Zones Scan Interval (Native/PrimeLAN)",
+              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "gsm": "GSM Scan Interval (PrimeLAN)",
+              "system_faults": "System Faults Scan Interval (PrimeLAN)",
+              "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
+              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant sends API requests to fetch zone status.",
-              "partitions": "How often Home Assistant sends API requests to fetch partition status.",
-              "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
-              "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
-              "outputs": "How often Home Assistant reads the outputs status.",
-              "scenarios": "How often Home Assistant reads which scenario is active."
+              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
+              "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
+              "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
           "alarm_panel": {
@@ -240,22 +240,22 @@
             "name": "Scan intervals",
             "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.",
             "data": {
-              "zones": "Zones Scan Interval (milliseconds)",
-              "partitions": "Partitions Scan Interval (milliseconds)",
-              "gsm": "GSM Scan Interval (milliseconds)",
-              "system_faults": "System Faults Scan Interval (milliseconds)",
-              "panel_log_events": "Panel Log Events Scan Interval (milliseconds)",
-              "outputs": "Outputs Scan Interval (milliseconds)",
-              "scenarios": "Scenarios Scan Interval (milliseconds)"
+              "zones": "Zones Scan Interval (Native/PrimeLAN)",
+              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "gsm": "GSM Scan Interval (PrimeLAN)",
+              "system_faults": "System Faults Scan Interval (PrimeLAN)",
+              "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
+              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant sends API requests to fetch zone status.",
-              "partitions": "How often Home Assistant sends API requests to fetch partition status.",
-              "gsm": "How often Home Assistant sends API requests to fetch GSM status.",
-              "system_faults": "How often Home Assistant sends API requests to fetch system faults.",
-              "panel_log_events": "How often Home Assistant sends API requests to fetch new panel log events.",
-              "outputs": "How often Home Assistant reads the outputs status.",
-              "scenarios": "How often Home Assistant reads which scenario is active."
+              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
+              "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
+              "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
           "alarm_panel": {

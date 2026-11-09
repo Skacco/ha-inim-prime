@@ -24,6 +24,7 @@ from ..const import (
     OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT,
     OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT,
     NATIVE_PASSWORD_DEFAULT,
     PRIMELAN_USE_HTTPS_DEFAULT,
     NATIVE_USE_CUSTOM_PIN_DEFAULT,
@@ -220,12 +221,18 @@ def build_options_schema(
     isn't configured for this entry.
     """
     panel_log_events_fetch_limit = PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
+    # With both backends the live data is on Native, so the PrimeLAN-only pollers
+    # (GSM, faults, log) default to a slower interval to cut PrimeLAN traffic.
+    both_backends = has_native and has_primelan
+    gsm_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT
+    faults_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+    log_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
     scan_intervals_defaults = ScanIntervalsDefault(
         zones = ZONES_SCAN_INTERVAL_NATIVE_DEFAULT if has_native else ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT,
         partitions = PARTITIONS_SCAN_INTERVAL_NATIVE_DEFAULT if has_native else PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
-        gsm = GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT,
-        system_faults = SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
-        panel_log_events = PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+        gsm = gsm_default,
+        system_faults = faults_default,
+        panel_log_events = log_default,
         outputs = OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT if has_native else OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
         scenarios = SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     )

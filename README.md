@@ -168,10 +168,11 @@ Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
 Numero massimo di eventi scaricati quando vengono rilevati nuovi log. Consigliato il valore predefinito; l'integrazione ne scarica automaticamente di più se serve. Non è in tempo reale (il recupero è asincrono).
 
 ## Intervalli di scansione
-Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico):
-- **Zone** (default 5s) · **Partizioni** (default 10s) · **GSM** (default 30s) · **Guasti di sistema** (default 15s) · **Eventi registro** (default 15s) · **Uscite** · **Scenari**
+Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni campo indica il **backend** usato: **Zone / Partizioni / Uscite** sono lette dal **Native** se configurato (locale, veloce), altrimenti da **PrimeLAN**; **GSM / Guasti / Eventi registro / Scenari** sono **solo PrimeLAN**.
 
-⚠️ Il backend **Native** supporta intervalli molto più bassi di PrimeLAN per zone e partizioni.
+⚠️ Il backend **Native** supporta intervalli molto più bassi di PrimeLAN per zone, partizioni e uscite (polling locale).
+
+ℹ️ Quando usi **entrambi** i backend, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
 
 ## Pannello allarme
 Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** della centrale. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello allarme non viene creato**.
@@ -203,7 +204,7 @@ L'integrazione raggruppa le entità in pochi dispositivi.
 ## Centrale Inim Prime
 Rappresenta la centrale.
 - **Sensori:** Zone escluse, Memoria allarme zone, Memoria allarme partizioni, Scenario attivo.
-- **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per backend (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling del backend è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Ultimo aggiornamento Native/PrimeLAN** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici): restano "congelati" sull'ultimo momento buono quando il link cade. Di questi ne compare uno per ogni backend configurato — due se usi entrambi.
+- **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per backend (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling del backend è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni backend configurato — due se usi entrambi.
 - **Registro eventi** (event entity): traccia i log della centrale. Non è in tempo reale (vedi sezione sulla card del registro).
 - **Pulsanti:** Annulla esclusioni zone, Azzera memorie partizioni, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
