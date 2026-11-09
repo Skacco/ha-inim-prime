@@ -27,6 +27,10 @@ from .models.zones import UnifiedZone
 
 from .exceptions import InimPrimeFeatureNotSupportedError
 
+# "Mod.dom 01 T01", "ModDomot 09 T02", ... -- a domotic module's internal
+# terminals, reported as zones by the panel but not real alarm zones.
+_MODULE_ZONE_LABEL = re.compile(r"(?i)^mod\.?dom(?:ot)?\s*\d+\s*t\d")
+
 
 _DEFAULT_PARTITION_LABEL = re.compile(r"^AREA\s*\d+$", re.IGNORECASE)
 
@@ -156,7 +160,16 @@ class InimPrimeGateway:
     # ------------------------------------------------------------------
     @property
     def zones(self) -> MappingProxyType[int, UnifiedZone]:
-        return self._preferred.zones
+        zones = self._preferred.zones
+        # The domotic modules' internal T01/T02 terminals show up as "zones"
+        # (e.g. "Mod.dom 01 T01") but aren't real alarm zones -- hide them.
+        filtered = {
+            zid: z for zid, z in zones.items()
+            if not _MODULE_ZONE_LABEL.match((z.label or "").replace("\x00", "").strip())
+        }
+        if len(filtered) == len(zones):
+            return zones
+        return MappingProxyType(filtered)
 
     @property
     def partitions(self) -> MappingProxyType[int, UnifiedPartition]:

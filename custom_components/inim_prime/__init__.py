@@ -265,9 +265,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_devices(hass, entry, inim_gateway)
+    _remove_hidden_zone_devices(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
 
     return True
+
+
+def _remove_hidden_zone_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Remove zone devices that are no longer exposed (e.g. the domotic
+    modules' internal T01/T02 terminals, which aren't real zones)."""
+    shown = set(gateway.zones)
+    serial_number = entry.data["serial_number"]
+    prefix = f"{serial_number}_zone_"
+    device_registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        for domain, identifier in device.identifiers:
+            if domain != DOMAIN or not identifier.startswith(prefix):
+                continue
+            suffix = identifier[len(prefix):]
+            if suffix.isdigit() and int(suffix) not in shown:
+                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
 
 
 def _remove_stale_number_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
