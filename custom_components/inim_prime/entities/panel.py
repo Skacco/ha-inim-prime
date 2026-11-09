@@ -5,8 +5,10 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.components.event import EventEntity
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from ..const import INIM_PRIME_DEVICE_MANUFACTURER, DOMAIN
 from ..coordinators import InimPrimePanelLogEventsCoordinator, InimPrimeSystemFaultsUpdateCoordinator, \
@@ -26,6 +28,45 @@ def create_panel_device_info(
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         serial_number = serial_number,
     )
+
+
+class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Connectivity of one backend (Native or PrimeLAN), from whether its
+    coordinator's last poll succeeded.
+
+    Stays visible (never "unavailable") when the link drops, so you can see it is
+    off, and records the last successful poll time in the 'ultimo_ok' attribute.
+    Lives on the panel device as a diagnostic entity."""
+
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, serial_number: str, name: str, suffix: str) -> None:
+        super().__init__(coordinator)
+        self._attr_name = name
+        self._attr_unique_id = f"{serial_number}_{suffix}"
+        self._attr_device_info = create_panel_device_info(serial_number)
+        self._last_ok = dt_util.utcnow() if coordinator.last_update_success else None
+
+    @property
+    def available(self) -> bool:
+        # Report on/off even when the backend is down (don't inherit the
+        # coordinator's availability, which would hide the sensor on failure).
+        return True
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.coordinator.last_update_success)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        if self.coordinator.last_update_success:
+            self._last_ok = dt_util.utcnow()
+        super()._handle_coordinator_update()
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {"ultimo_ok": self._last_ok.isoformat() if self._last_ok else None}
 
 
 SYSTEM_FAULT_NAMES: dict[UnifiedSystemFault, str] = {
