@@ -72,7 +72,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
             "data": {
               "zones": "Zones Scan Interval (Native/PrimeLAN)",
               "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
@@ -173,7 +173,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.\nNote: the Native backend supports much lower intervals than PrimeLAN for Zones and Partitions. If you've just added or removed Native, the defaults below have been adjusted accordingly.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.\nNote: if you've just added or removed Native, the defaults below have been adjusted accordingly.",
             "data": {
               "zones": "Zones Scan Interval (Native/PrimeLAN)",
               "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
@@ -238,7 +238,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "Controls how often Home Assistant sends API requests to the panel (lower values increase traffic). For details on which entities each interval affects, see the integration README.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
             "data": {
               "zones": "Zones Scan Interval (Native/PrimeLAN)",
               "partitions": "Partitions Scan Interval (Native/PrimeLAN)",

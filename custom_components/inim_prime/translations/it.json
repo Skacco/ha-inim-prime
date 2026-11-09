@@ -72,7 +72,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Intervalli di scansione",
-            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
+            "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il Native se configurato, altrimenti PrimeLAN; GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
             "data": {
               "zones": "Intervallo scansione zone (Native/PrimeLAN)",
               "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
@@ -238,7 +238,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Intervalli di scansione",
-            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
+            "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il Native se configurato, altrimenti PrimeLAN; GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
             "data": {
               "zones": "Intervallo scansione zone (Native/PrimeLAN)",
               "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
