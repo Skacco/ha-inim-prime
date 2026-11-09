@@ -282,9 +282,9 @@ def _remove_stale_timer_entities(hass: HomeAssistant, entry: InimPrimeConfigEntr
     prefix = f"{entry.data['serial_number']}_timer_"
     entity_registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        if entity.domain != "binary_sensor" or not entity.unique_id.startswith(prefix):
+        if entity.domain not in ("binary_sensor", "switch") or not entity.unique_id.startswith(prefix):
             continue
-        suffix = entity.unique_id[len(prefix):]
+        suffix = entity.unique_id[len(prefix):].removesuffix("_enabled")
         if suffix.isdigit() and int(suffix) not in timers:
             entity_registry.async_remove(entity.entity_id)
 

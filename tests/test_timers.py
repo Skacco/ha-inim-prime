@@ -69,3 +69,35 @@ async def test_timer_labels_reread_until_stable(monkeypatch):
     gateway = InimPrimeGateway(native = na.NativeAdapter(client))
     timers = await gateway.update_timers()
     assert {t.label for t in timers.values()} == {"CARRAIO", "Chiusura zip", "Astro per fari"}
+
+
+async def test_set_timer_enabled_writes_one_bit(monkeypatch):
+    monkeypatch.setattr(na, "_sleep", _no_sleep)
+    client, _ = _fake_client()
+    mask = bytearray([0xFF, 0xFF, 0, 0, 0, 0])
+    writes = []
+
+    async def read_memory(address, length):
+        offset = address - na.TIMERS_ENABLED_ADDRESS
+        return bytes(mask[offset:offset + length])
+
+    async def exchange_payload(payload, operation, length):
+        address = int.from_bytes(payload[:8], "little")
+        data = payload[20:]
+        assert payload[16:19] == b"\x01\x00\x11" and payload[19] == sum(payload[:19]) & 0xFF
+        writes.append((address, data))
+        mask[address - na.TIMERS_ENABLED_ADDRESS] = data[0]
+        return bytes([sum(data) & 0xFF])
+
+    client._protocol.read_memory = read_memory
+    client._protocol.exchange_payload = exchange_payload
+    gateway = InimPrimeGateway(native = na.NativeAdapter(client))
+
+    await gateway.set_timer_enabled(3, False)
+    assert writes == [(na.TIMERS_ENABLED_ADDRESS, b"\xf7")]
+    await gateway.set_timer_enabled(3, False)  # already off: no write
+    assert len(writes) == 1
+    await gateway.set_timer_enabled(9, False)
+    assert writes[-1] == (na.TIMERS_ENABLED_ADDRESS + 1, b"\xfd")
+    await gateway.set_timer_enabled(3, True)
+    assert writes[-1] == (na.TIMERS_ENABLED_ADDRESS, b"\xff")

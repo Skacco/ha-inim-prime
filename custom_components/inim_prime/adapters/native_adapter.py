@@ -14,6 +14,7 @@ from types import MappingProxyType
 from typing import Optional
 
 from inim.prime.native.client import Client as NativeClient
+from inim.prime.native.const import FrameOperation
 from inim.prime.native.models.partitions import (
     ArmingStatus as NativeArmingStatus,
     Partition as NativePartition,
@@ -256,6 +257,34 @@ class NativeAdapter:
                 return current
             previous = current
         return previous
+
+    async def _write_memory(self, address: int, data: bytes) -> None:
+        """Write raw bytes, as Prime/STUDIO does (without its programming
+        session, which makes the panel drop its connections for a while)."""
+        header = (
+            address.to_bytes(8, "little")
+            + len(data).to_bytes(4, "little")
+            + len(data).to_bytes(4, "little")
+            + b"\x01\x00\x11"
+        )
+        request = header + bytes([sum(header) & 0xFF]) + data
+        async with self._client._lock:
+            ack = await self._client._protocol.exchange_payload(request, FrameOperation.READ, 1)
+        if not ack or ack[0] != sum(data) & 0xFF:
+            raise ConnectionError(f"Panel did not confirm the write at {address:#x}")
+
+    async def set_timer_enabled(self, timer_id: int, enabled: bool) -> None:
+        if not 0 <= timer_id < TIMERS_COUNT:
+            raise ValueError(f"Invalid timer {timer_id}")
+
+        async def _do() -> None:
+            address = TIMERS_ENABLED_ADDRESS + timer_id // 8
+            current = (await self._read_memory(address, 1))[0]
+            bit = 1 << (timer_id % 8)
+            new = current | bit if enabled else current & ~bit
+            if new != current:
+                await self._write_memory(address, bytes([new]))
+        await self._call_with_reconnect(_do)
 
     async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
         async def _do() -> MappingProxyType[int, UnifiedTimer]:

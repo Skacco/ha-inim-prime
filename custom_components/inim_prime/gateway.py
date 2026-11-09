@@ -121,6 +121,11 @@ class InimPrimeGateway:
         await self._native.update_timers()
         return self.timers
 
+    async def set_timer_enabled(self, timer_id: int, enabled: bool) -> None:
+        if self._native is None:
+            raise InimPrimeFeatureNotSupportedError("Timers require the native protocol")
+        await self._native.set_timer_enabled(timer_id, enabled)
+
     @property
     def backends_active(self) -> list[str]:
         active = []
