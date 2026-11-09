@@ -337,6 +337,25 @@ Then press on `Show visual editor` and select the `log
 _events` entity of your panel. Then click on `Save`.   
 You should now be able to see a list of logs with their related attributes.   
 You can obviously change the card options as you desire, the one I provided is a basic configuration that should work.   
+### Log table without any custom card   
+If you'd rather not install a custom card, the built-in **Markdown** card can render the log as a table straight from the event entity's `events` attribute. Create a Markdown card (Edit dashboard → Add card → Markdown) and paste:   
+```yaml
+type: markdown
+title: Registro centrale
+entity_id:
+  - event.inim_prime_panel_log_events
+content: >
+  | Ora | Evento | Chi | Come |
+
+  |---|---|---|---|
+
+  {% for e in state_attr('event.inim_prime_panel_log_events', 'events') or [] -%}
+
+  | {{ as_timestamp(e.timestamp) | timestamp_custom('%d/%m %H:%M:%S') }} | {{ e.type }} | {{ e.location or '' }} | {{ e.agent or '' }} |
+
+  {% endfor %}
+```
+Replace `event.inim_prime_panel_log_events` with your panel's own event entity id (it is `event.<panel name> Log Events`). The `events` attribute holds the most recent log entries, each with `timestamp`, `type`, `location` and `agent`; adjust the columns and the date format (`%d/%m %H:%M:%S`) to taste. Put the card in a **Panel**-type view if you want it full-width.   
 # About the API   
 This integration communicates with the Inim Prime panel using a Python library created by Pitscheider, available here:   
 https://github.com/Pitscheider/inim_prime_api   
