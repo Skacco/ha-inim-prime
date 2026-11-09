@@ -10,10 +10,19 @@ class FakeBackend:
         self.name = name
         self.calls = []
         self._outputs = {1: UnifiedOutput(1, name, False)}
+        # Terminal id -> label (PrimeLAN side). Defaults to one label per
+        # output keyed by its id; set explicitly to model an id/terminal split.
+        self._terminal_labels = None
 
     @property
     def outputs(self):
         return MappingProxyType(self._outputs)
+
+    @property
+    def output_terminal_labels(self):
+        if self._terminal_labels is not None:
+            return MappingProxyType(self._terminal_labels)
+        return MappingProxyType({oid: o.label for oid, o in self._outputs.items()})
 
     async def update_outputs(self):
         self.calls.append("update")
@@ -160,10 +169,13 @@ async def test_hidden_outputs_filter():
     native._outputs = {31: UnifiedOutput(31, "CHIUSURA", False), 42: UnifiedOutput(42, "STATO IMPIANTO", True)}
     primelan._outputs = {31: UnifiedOutput(31, "CHIUSURA", False)}
     gw = InimPrimeGateway(native=native, primelan=primelan)
+    # PrimeLAN publishes CHIUSURA; its PrimeLAN output id (9) differs from the
+    # physical terminal (31) that native uses -- the join must be on terminal.
+    primelan._terminal_labels = {31: "CHIUSURA"}
     await gw.update_outputs()
-    assert set(gw.outputs) == {31}           # default: only outputs PrimeLAN publishes
+    assert set(gw.outputs) == {31}           # default: only outputs PrimeLAN publishes (matched on terminal)
     gw.show_hidden_outputs = True
-    assert set(gw.outputs) == {31, 42}
+    assert set(gw.outputs) == {31, 42}       # opt-in: also native-only outputs
 
 
 def test_hidden_outputs_option_only_with_both():

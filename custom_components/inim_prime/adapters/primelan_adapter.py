@@ -158,6 +158,7 @@ class PrimelanAdapter:
         "_zones",
         "_partitions",
         "_outputs",
+        "_output_terminal_labels",
         "_scenarios",
         "_gsm",
         "_system_faults",
@@ -169,6 +170,10 @@ class PrimelanAdapter:
         self._zones: dict[int, UnifiedZone] = {}
         self._partitions: dict[int, UnifiedPartition] = {}
         self._outputs: dict[int, UnifiedOutput] = {}
+        # Physical terminal id -> label, used to match PrimeLAN outputs against
+        # native ones (native keys outputs by terminal id, PrimeLAN by its own
+        # output id, so the two only line up on the terminal).
+        self._output_terminal_labels: dict[int, str] = {}
         self._scenarios: dict[int, UnifiedScenario] = {}
         self._gsm: UnifiedGSM | None = None
         self._system_faults: UnifiedSystemFaults | None = None
@@ -196,6 +201,15 @@ class PrimelanAdapter:
     @property
     def outputs(self) -> MappingProxyType[int, UnifiedOutput]:
         return MappingProxyType[int, UnifiedOutput](self._outputs)
+
+    @property
+    def output_terminal_labels(self) -> MappingProxyType[int, str]:
+        """Terminal id -> label for every output PrimeLAN publishes.
+
+        Keyed by the physical terminal so it can be matched against native
+        outputs (which are keyed by terminal id, not by PrimeLAN output id).
+        """
+        return MappingProxyType[int, str](self._output_terminal_labels)
 
     @property
     def scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
@@ -253,6 +267,10 @@ class PrimelanAdapter:
         self._outputs = {
             output_id: _output_to_unified(output)
             for output_id, output in primelan_outputs.items()
+        }
+        self._output_terminal_labels = {
+            output.terminal: (output.name or "").strip()
+            for output in primelan_outputs.values()
         }
         return self.outputs
 

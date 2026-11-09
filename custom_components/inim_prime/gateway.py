@@ -60,8 +60,9 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
-        # With both backends: False = only expose outputs PrimeLAN also
-        # publishes (outputs enabled for the PrimeLAN user).
+        # With both backends: False (default) = only expose outputs PrimeLAN
+        # also publishes (matched on terminal id), like the panel apps. True =
+        # also show the native-only outputs of the panel.
         self.show_hidden_outputs: bool = False
         # Hide areas still named like the panel default ("AREA 013").
         self.hide_unused_partitions: bool = False
@@ -238,8 +239,13 @@ class InimPrimeGateway:
             # user (filter) and as a fallback for names.
             if self._primelan is not None and self._primelan_output_labels is None:
                 try:
-                    primelan_outputs = await self._primelan.update_outputs()
-                    self._primelan_output_labels = {oid: o.label for oid, o in primelan_outputs.items()}
+                    await self._primelan.update_outputs()
+                    # Keyed by terminal id (same key native uses), so the two
+                    # backends line up: PrimeLAN numbers outputs by its own id,
+                    # native by terminal id, and only the terminal matches.
+                    self._primelan_output_labels = dict(
+                        self._primelan.output_terminal_labels
+                    )
                 except Exception:  # noqa: BLE001 - labels are cosmetic, retry next time
                     pass
             return self.outputs
