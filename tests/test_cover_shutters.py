@@ -75,12 +75,20 @@ async def test_open_close_stop_pulse_mapped_commands():
     assert cover.is_closed is True                        # last command was close (0%)
 
 
-def test_stop_feature_only_when_mapped():
+def test_stop_feature_available_with_open_close():
     from homeassistant.components.cover import CoverEntityFeature
-    with_stop, _ = _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)
-    assert with_stop.supported_features & CoverEntityFeature.STOP
-    without_stop, _ = _make_cover(open_cmd=998, close_cmd=997)
-    assert not (without_stop.supported_features & CoverEntityFeature.STOP)
+    # Stop is offered with a dedicated command OR with open+close (re-impulse).
+    assert _make_cover(open_cmd=998, close_cmd=997, stop_cmd=575)[0].supported_features & CoverEntityFeature.STOP
+    assert _make_cover(open_cmd=998, close_cmd=997)[0].supported_features & CoverEntityFeature.STOP
+    assert not (_make_cover(open_cmd=998, close_cmd=None)[0].supported_features & CoverEntityFeature.STOP)
+
+
+async def test_stop_without_dedicated_command_repulses_last_move():
+    cover, gateway = _make_cover(open_cmd=998, close_cmd=997)  # no stop command
+    await cover.async_open_cover()
+    gateway.calls.clear()
+    await cover.async_stop_cover()                 # re-pulses the last move (open)
+    assert gateway.calls == [(998, True), (998, False)]
 
 
 def test_cover_unavailable_without_full_mapping():
