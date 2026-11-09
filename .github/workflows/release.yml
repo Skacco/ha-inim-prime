@@ -35,11 +35,15 @@ jobs:
           fi
           # Notes: commit subjects since the previous release (no links).
           PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
-          if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV" >/dev/null; then
+          # Use the previous release only if it is in this branch's history
+          # (after a history rewrite it may not be); otherwise just this commit.
+          if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV" >/dev/null \
+             && git merge-base --is-ancestor "refs/tags/$PREV" "$GITHUB_SHA"; then
             RANGE="$PREV..$GITHUB_SHA"
           else
             RANGE="$GITHUB_SHA~1..$GITHUB_SHA"
           fi
-          git log --no-merges --format='- %s' "$RANGE" > notes.md
+          # Skip the version-bump commits ("Release x.y.z ...").
+          git log --no-merges --format='- %s' "$RANGE" | grep -v '^- Release [0-9]' > notes.md || true
           [ -s notes.md ] || echo "- Version $VERSION" > notes.md
           gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md
