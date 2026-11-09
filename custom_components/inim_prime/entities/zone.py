@@ -14,12 +14,12 @@ def create_zone_device_info(
         serial_number: str,
         domain: str = DOMAIN,
 ) -> DeviceInfo:
-    # All zones share one "Zones" device (like Timers / Thermostats); each
-    # entity is named after its zone, so the zone name still shows everywhere.
+    # All zones share one "Zona" device (like Timers / Thermostats); the device
+    # name prefixes each entity ("Zona Basculante"), so keep it singular.
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_zones")},
-        name = "Zones",
-        model = "Inim Prime Zones",
+        name = "Zona",
+        model = "Inim Prime Zona",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 
@@ -28,8 +28,7 @@ class ZoneStateBinarySensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     BinarySensorEntity,
 ):
-    # No has_entity_name, so the grouped "Zones" device name is not prepended;
-    # the entity is named after the zone only (no "Zone"/"Zones" prefix).
+    # Named after the zone; the grouping device name ("Zona") is prefixed by HA.
     def __init__(
             self,
             coordinator: InimPrimeZonesUpdateCoordinator,
@@ -39,17 +38,12 @@ class ZoneStateBinarySensor(
 
         self.zone_id = zone.zone_id
         self._attr_name = zone.label
-        self._attr_suggested_object_id = f"zone {zone.label}"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_triggered"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        # Clean display name, but keep the "zone_" prefix in the entity_id.
-        return self._attr_suggested_object_id
 
     @property
     def is_on(self) -> bool | None:
@@ -80,16 +74,12 @@ class ZoneStateSensor(
 
         self.zone_id = zone.zone_id
         self._attr_name = f"{zone.label} State"
-        self._attr_suggested_object_id = f"zone {zone.label} state"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_state"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def native_value(self) -> str | None:
@@ -116,16 +106,12 @@ class ZoneAlarmMemoryBinarySensor(
 
         self.zone_id = zone.zone_id
         self._attr_name = f"{zone.label} Alarm Memory"
-        self._attr_suggested_object_id = f"zone {zone.label} alarm memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_alarm_memory"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def is_on(self) -> bool | None:
@@ -151,16 +137,12 @@ class ZoneBypassSwitch(
 
         self.zone_id = zone.zone_id
         self._attr_name = f"{zone.label} Bypass"
-        self._attr_suggested_object_id = f"zone {zone.label} bypass"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_bypass"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def is_on(self) -> bool | None:

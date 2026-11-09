@@ -286,7 +286,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
-    _reset_grouped_entity_naming(hass, entry)
     _rename_shutter_entities(hass, entry)
     _remove_unmapped_shutter_covers(hass, entry, inim_gateway)
 
@@ -337,39 +336,6 @@ def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -
         desired = f"cover.{slugify(name)}"
         if entity.entity_id != desired and entity_registry.async_get(desired) is None:
             entity_registry.async_update_entity(entity.entity_id, new_entity_id = desired)
-
-
-def _reset_grouped_entity_naming(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Stop the grouping device name being prepended to zone/partition/shutter
-    names after the upgrade.
-
-    These entities used has_entity_name=True (per-item devices) before grouping.
-    Home Assistant stores that flag in the entity registry and does not always
-    clear it when the code drops it, so the grouping device name
-    ("Zones"/"Partitions"/"Shutters") stays glued in front of the friendly name.
-    We clear the flag AND, when the shown name still differs from the plain
-    label, pin the registry name to that label so the display is correct on every
-    HA version. User-renamed entities (name already set) are left alone."""
-    serial_number = entry.data["serial_number"]
-    prefixes = (
-        f"{serial_number}_zone_",
-        f"{serial_number}_partition_",
-        f"{serial_number}_shutter_",
-    )
-    entity_registry = er.async_get(hass)
-    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        if not entity.unique_id.startswith(prefixes):
-            continue
-        if entity.has_entity_name:
-            entity_registry.async_update_entity(entity.entity_id, has_entity_name = False)
-        # Belt-and-suspenders: if the live name still shows a prefix (stale flag
-        # the line above couldn't clear on this HA version), pin the plain label.
-        label = entity.original_name
-        if not label or entity.name is not None:
-            continue
-        state = hass.states.get(entity.entity_id)
-        if state is not None and state.attributes.get("friendly_name") != label:
-            entity_registry.async_update_entity(entity.entity_id, name = label)
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
@@ -510,8 +476,8 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
             device = device_registry.async_update_device(device.id, via_device_id = panel.id)
         return device
 
-    zones_group = group("zones", "Zones")
-    partitions_group = group("partitions", "Partitions")
+    zones_group = group("zones", "Zona")
+    partitions_group = group("partitions", "Partizione")
     group_ids = {zones_group.id, partitions_group.id}
 
     # The Shutters group exists only when the panel has shutters (its cover

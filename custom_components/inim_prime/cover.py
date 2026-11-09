@@ -181,7 +181,6 @@ class InimPrimeShutterCover(
         self._attr_name = name.strip() if name and name.strip() else f"Tapparella {module:02d}"
         # entity_id derives from the shutter name (e.g. cover.tenda_sala), not
         # from the module number.
-        self._attr_suggested_object_id = self._attr_name
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_shutters")},
@@ -190,9 +189,6 @@ class InimPrimeShutterCover(
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def available(self) -> bool:

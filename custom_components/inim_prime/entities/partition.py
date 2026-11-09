@@ -20,12 +20,12 @@ def create_partition_device_info(
         serial_number: str,
         domain: str = DOMAIN,
 ) -> DeviceInfo:
-    # All partitions share one "Partitions" device (like Timers / Thermostats);
-    # each entity is named after its partition, so the name still shows.
+    # All partitions share one "Partizione" device; the device name prefixes
+    # each entity ("Partizione Casetta State"), so keep it singular.
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_partitions")},
-        name = "Partitions",
-        model = "Inim Prime Partitions",
+        name = "Partizione",
+        model = "Inim Prime Partizione",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 
@@ -47,17 +47,12 @@ class PartitionStateSensor(
 
         self.partition_id = partition.partition_id
         self._attr_name = f"{partition.label} State"
-        self._attr_suggested_object_id = f"partition {partition.label} state"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_state"
 
         self._attr_device_info = create_partition_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        # Clean display name, but keep the "partition_" prefix in the entity_id.
-        return self._attr_suggested_object_id
 
     @property
     def native_value(self) -> str | None:
@@ -83,16 +78,12 @@ class PartitionArmingStatusSelect(
 
         self.partition_id = partition.partition_id
         self._attr_name = f"{partition.label} Arming Status"
-        self._attr_suggested_object_id = f"partition {partition.label} arming status"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_arming_status"
 
         self._attr_device_info = create_partition_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def current_option(self) -> str | None:
@@ -126,16 +117,12 @@ class ResetPartitionMemoryButton(
 
         self.partition_id = partition.partition_id
         self._attr_name = f"{partition.label} Reset Memory"
-        self._attr_suggested_object_id = f"partition {partition.label} reset memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_reset_memory"
 
         self._attr_device_info = create_partition_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     async def async_press(self) -> None:
 
@@ -162,16 +149,12 @@ class PartitionAlarmMemoryBinarySensor(
 
         self.partition_id = partition.partition_id
         self._attr_name = f"{partition.label} Alarm Memory"
-        self._attr_suggested_object_id = f"partition {partition.label} alarm memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_alarm_memory"
 
         self._attr_device_info = create_partition_device_info(
             serial_number = self.coordinator.serial_number,
         )
 
-    @property
-    def suggested_object_id(self) -> str | None:
-        return self._attr_suggested_object_id
 
     @property
     def is_on(self) -> bool | None:
