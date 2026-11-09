@@ -152,7 +152,19 @@ Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traff
 Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** della centrale. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello allarme non viene creato**.
 
 ## Tapparelle
-Per ogni tapparella (rilevata dal suo modulo Mod.dom) imposti un nome opzionale e scegli l'**uscita comando** che la apre e quella che la chiude (es. "Apri tenda sala" / "Chiudi tenda sala"). Il modulo Smart esegue l'intera corsa da un singolo impulso e **non ha stop**. Puoi anche impostare i comandi **25/50/75%** per abilitare lo slider di posizione. Una tapparella senza comandi Apri/Chiudi non viene creata.
+Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale.
+
+**Prerequisito sulla centrale (INIM/SmartLiving).** Prima di configurare l'integrazione devi creare, sulla centrale, delle **uscite su terminali virtuali** — una per ogni posizione che vuoi comandare — e assegnare a ciascuna il relativo **comando di regolazione della tapparella**. Servono **5 uscite per ogni tapparella**, una per comando:
+
+- **Aperto** (apertura totale)
+- **Chiuso** (chiusura totale)
+- **1/4** (25%)
+- **1/2** (50%)
+- **3/4** (75%)
+
+Conviene dare a queste uscite nomi riconoscibili (es. "Apri tenda sala", "Chiudi tenda sala", "Tenda sala 1/2", …).
+
+**Configurazione nell'integrazione.** Per ogni tapparella (rilevata dal suo modulo Mod.dom) imposti un nome opzionale e scegli l'uscita-comando per ciascuna posizione: **Aperto** e **Chiuso** sono obbligatorie, **1/4 · 1/2 · 3/4** sono facoltative e, se impostate, abilitano lo slider di posizione. La tendina elenca solo le uscite-comando: i terminali motore grezzi (`Mod.dom XX T03/T04`), usati solo per rilevare le tapparelle, non sono selezionabili. Una tapparella senza i comandi Aperto/Chiuso non viene creata.
 
 ## Mostra uscite non disponibili via PrimeLAN
 Se spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato; se acceso mostra anche le uscite interne/scheda madre (sirena, aux…).

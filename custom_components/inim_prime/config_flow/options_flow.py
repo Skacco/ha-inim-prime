@@ -9,7 +9,7 @@ from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
 from .models import ConfigOptions, clean_alarm_panel
 from ..entry_data import get_entry_options, get_entry_data
-from ..cover import discover_shutters
+from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import build_options_schema, shutter_section_key
 
 # A shutter section key looks like "01 · TENDA SALA": the leading number is the
@@ -85,8 +85,16 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         if not all_outputs:
             return [], []
         shutters = sorted(discover_shutters(all_outputs))
+        # Exclude the shutter modules' raw motor terminals (Mod.dom XX T03/T04)
+        # from the command choices: they're only used to detect the shutters, and
+        # driving them directly doesn't work (the Smart module reclaims the relay).
+        # The command to pick is the virtual "Apri/Chiudi" output, not the motor.
         choices = sorted(
-            ((oid, (o.label or f"Output {oid}")) for oid, o in outputs.items()),
+            (
+                (oid, (o.label or f"Output {oid}"))
+                for oid, o in outputs.items()
+                if not _SHUTTER_LABEL.match((o.label or "").replace("\x00", "").strip())
+            ),
             key = lambda item: item[1].lower(),
         )
         return shutters, choices
