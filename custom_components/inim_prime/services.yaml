@@ -57,3 +57,16 @@ debug_memory_diff:
     max_changes:
       selector:
         number: {min: 1, max: 2000, mode: box}
+debug_write_memory:
+  fields:
+    address:
+      required: true
+      selector:
+        number: {min: 0, max: 4294967295, mode: box}
+    data:
+      required: true
+      selector:
+        text:
+    session:
+      selector:
+        boolean:

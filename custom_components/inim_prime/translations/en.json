@@ -356,6 +356,24 @@
           "description": "Maximum changed ranges returned."
         }
       }
+    },
+    "debug_write_memory": {
+      "name": "Debug: write memory",
+      "description": "Native protocol: write raw bytes to panel memory, like Prime/STUDIO does. Changes the panel: use with care.",
+      "fields": {
+        "address": {
+          "name": "Address",
+          "description": "Start address."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Bytes to write, as hex."
+        },
+        "session": {
+          "name": "Programming session",
+          "description": "Wrap the write in the begin/end commands Prime/STUDIO sends."
+        }
+      }
     }
   }
 }

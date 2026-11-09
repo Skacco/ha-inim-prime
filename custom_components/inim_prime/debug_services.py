@@ -17,7 +17,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
-from inim.prime.native.const import CommandOperation
+from inim.prime.native.const import CommandOperation, FrameOperation
 from inim.prime.native.operations.terminals.get_terminal_statuses import get_terminal_statuses
 from inim.prime.native.utils import Interval
 
@@ -29,6 +29,7 @@ SERVICE_WATCH_TERMINALS = "debug_watch_terminals"
 SERVICE_READ_MEMORY = "debug_read_memory"
 SERVICE_RAW_COMMAND = "debug_raw_command"
 SERVICE_MEMORY_DIFF = "debug_memory_diff"
+SERVICE_WRITE_MEMORY = "debug_write_memory"
 _SNAPSHOTS: dict[tuple[int, int], bytes] = {}
 
 _TERMINAL_RANGE = vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009))
@@ -63,6 +64,30 @@ MEMORY_DIFF_SCHEMA = vol.Schema({
     vol.Optional("snapshot", default = False): cv.boolean,
     vol.Optional("max_changes", default = 200): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 2000)),
 })
+
+
+WRITE_MEMORY_SCHEMA = vol.Schema({
+    vol.Required("address"): vol.Coerce(int),
+    vol.Required("data"): cv.string,
+    vol.Optional("session", default = True): cv.boolean,
+})
+
+# Seen in Prime/STUDIO "write only changes": a command 0x13 (data 00 = begin,
+# 01 = end) around memory writes. A write is a read request with the 2-byte
+# flag after the lengths set to 01 00, followed by the raw data; the panel
+# answers with one byte, the 8-bit sum of the data.
+_SESSION_BEGIN = bytes.fromhex("13 00 00 00 00")
+_SESSION_END = bytes.fromhex("13 00 00 00 01")
+
+
+def _write_request(address: int, data: bytes) -> bytes:
+    header = (
+        address.to_bytes(8, "little")
+        + len(data).to_bytes(4, "little")
+        + len(data).to_bytes(4, "little")
+        + b"\x01\x00\x11"
+    )
+    return header + bytes([sum(header) & 0xFF]) + data
 
 
 def _native_client(hass: HomeAssistant):
@@ -167,6 +192,31 @@ async def _memory_diff(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     return {"changes": changes}
 
 
+async def _write_memory(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    client = _native_client(hass)
+    try:
+        data = bytes.fromhex(call.data["data"].replace(" ", ""))
+    except ValueError as err:
+        raise ServiceValidationError("data must be hex bytes, e.g. 'f7'") from err
+    if not data or len(data) > 1024:
+        raise ServiceValidationError("data must be 1-1024 bytes")
+    protocol = client._protocol
+    result = {}
+    async with client._lock:
+        if call.data["session"]:
+            result["begin"] = (await protocol.exchange_payload(_SESSION_BEGIN, FrameOperation.COMMAND, 5)).hex(" ")
+        try:
+            ack = await protocol.exchange_payload(
+                _write_request(call.data["address"], data), FrameOperation.READ, 1,
+            )
+            result["ack"] = ack.hex(" ")
+            result["expected_ack"] = f"{sum(data) & 0xFF:02x}"
+        finally:
+            if call.data["session"]:
+                result["end"] = (await protocol.exchange_payload(_SESSION_END, FrameOperation.COMMAND, 5)).hex(" ")
+    return result
+
+
 async def _raw_command(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     client = _native_client(hass)
     try:
@@ -191,6 +241,7 @@ def async_register(hass: HomeAssistant) -> None:
         (SERVICE_READ_MEMORY, _read_memory, READ_MEMORY_SCHEMA),
         (SERVICE_RAW_COMMAND, _raw_command, RAW_COMMAND_SCHEMA),
         (SERVICE_MEMORY_DIFF, _memory_diff, MEMORY_DIFF_SCHEMA),
+        (SERVICE_WRITE_MEMORY, _write_memory, WRITE_MEMORY_SCHEMA),
     ):
         async def _handler(call: ServiceCall, _h = handler) -> ServiceResponse:
             return await _h(hass, call)
