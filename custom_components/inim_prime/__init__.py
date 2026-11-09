@@ -278,10 +278,12 @@ def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
 
 
 def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Show zones, partitions and GSM under the panel device.
+    """Group devices under the panel: Panel > Zones / Partitions > each one.
 
-    Home Assistant no longer accepts ``via_device`` in DeviceInfo, so the
-    link is set on the device registry once the devices exist.
+    Every zone and area stays its own device (so it can be assigned to a
+    room); two grouping devices keep them apart in the device page. Home
+    Assistant no longer accepts ``via_device`` in DeviceInfo, so the links are
+    set on the device registry once the devices exist.
     """
     device_registry = dr.async_get(hass)
     serial_number = entry.data["serial_number"]
@@ -289,9 +291,35 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
     panel = next((d for d in devices if (DOMAIN, serial_number) in d.identifiers), None)
     if panel is None:
         return
+
+    def group(key: str, name: str):
+        device = device_registry.async_get_or_create(
+            config_entry_id = entry.entry_id,
+            identifiers = {(DOMAIN, f"{serial_number}_{key}")},
+            name = name,
+            manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
+            model = f"Prime {name}",
+        )
+        if device.via_device_id != panel.id:
+            device = device_registry.async_update_device(device.id, via_device_id = panel.id)
+        return device
+
+    zones_group = group("zones", "Zones")
+    partitions_group = group("partitions", "Partitions")
+    group_ids = {zones_group.id, partitions_group.id}
+
     for device in devices:
-        if device.id != panel.id and device.via_device_id != panel.id:
-            device_registry.async_update_device(device.id, via_device_id = panel.id)
+        if device.id == panel.id or device.id in group_ids:
+            continue
+        identifiers = {identifier for domain, identifier in device.identifiers if domain == DOMAIN}
+        if any(i.startswith(f"{serial_number}_zone_") for i in identifiers):
+            parent = zones_group.id
+        elif any(i.startswith(f"{serial_number}_partition_") for i in identifiers):
+            parent = partitions_group.id
+        else:
+            parent = panel.id
+        if device.via_device_id != parent:
+            device_registry.async_update_device(device.id, via_device_id = parent)
 
 
 async def async_remove_config_entry_device(

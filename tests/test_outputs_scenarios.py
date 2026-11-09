@@ -270,7 +270,12 @@ async def test_zone_devices_linked_to_panel(hass: HomeAssistant):
     reg = dr.async_get(hass)
     panel_dev = reg.async_get_device(identifiers={(DOMAIN, SERIAL)})
     zone_dev = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zone_1")})
-    assert panel_dev and zone_dev and zone_dev.via_device_id == panel_dev.id
+    zones = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zones")})
+    parts = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partitions")})
+    part_dev = reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_1")})
+    assert zones.via_device_id == panel_dev.id and parts.via_device_id == panel_dev.id
+    assert zone_dev.via_device_id == zones.id
+    assert part_dev.via_device_id == parts.id
 
 
 async def test_alarm_panel_no_custom_bypass_while_scenario_lags(hass: HomeAssistant):
