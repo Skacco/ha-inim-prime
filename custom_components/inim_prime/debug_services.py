@@ -31,6 +31,7 @@ SERVICE_RAW_COMMAND = "debug_raw_command"
 SERVICE_MEMORY_DIFF = "debug_memory_diff"
 SERVICE_WRITE_MEMORY = "debug_write_memory"
 SERVICE_PROBE_COMMANDS = "debug_probe_commands"
+SERVICE_PRIMELAN_OUTPUTS = "debug_primelan_outputs"
 _SNAPSHOTS: dict[tuple[int, int], bytes] = {}
 
 _TERMINAL_RANGE = vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009))
@@ -266,6 +267,31 @@ async def _raw_command(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     return {"response": response.hex(" ") if response else ""}
 
 
+def _primelan_client(hass: HomeAssistant):
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        gateway = getattr(entry.runtime_data, "gateway", None)
+        primelan = getattr(gateway, "_primelan", None) if gateway else None
+        if primelan is not None:
+            return primelan._client
+    raise ServiceValidationError("No loaded Inim Prime entry with PrimeLAN")
+
+
+async def _primelan_outputs(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Dump the PrimeLAN output list (what the linked user has access to), to
+    compare it against the native terminals and decide which outputs to show."""
+    client = _primelan_client(hass)
+    statuses = await client.get_outputs_status()
+    outputs = {}
+    for pid, out in statuses.items():
+        outputs[str(pid)] = {
+            "terminal": getattr(out, "terminal", None),
+            "name": (getattr(out, "name", "") or "").strip(),
+            "state": getattr(out, "state", None),
+            "type": getattr(getattr(out, "type", None), "name", str(getattr(out, "type", ""))),
+        }
+    return {"count": len(outputs), "outputs": outputs}
+
+
 def async_register(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, SERVICE_READ_TERMINALS):
         return
@@ -277,6 +303,7 @@ def async_register(hass: HomeAssistant) -> None:
         (SERVICE_MEMORY_DIFF, _memory_diff, MEMORY_DIFF_SCHEMA),
         (SERVICE_WRITE_MEMORY, _write_memory, WRITE_MEMORY_SCHEMA),
         (SERVICE_PROBE_COMMANDS, _probe_commands, PROBE_COMMANDS_SCHEMA),
+        (SERVICE_PRIMELAN_OUTPUTS, _primelan_outputs, vol.Schema({})),
     ):
         async def _handler(call: ServiceCall, _h = handler) -> ServiceResponse:
             return await _h(hass, call)
