@@ -288,8 +288,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_old_grouped_devices(hass, entry)
     _reset_grouped_entity_naming(hass, entry)
     _rename_shutter_entities(hass, entry)
+    _remove_unmapped_shutter_covers(hass, entry, inim_gateway)
 
     return True
+
+
+def _remove_unmapped_shutter_covers(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Drop cover entities for shutters that aren't mapped (no open/close command).
+
+    An unmapped shutter can't be driven, so the cover platform no longer creates
+    it; remove any left over from before it was unmapped so it doesn't linger as
+    an unavailable entity."""
+    from .cover import discover_shutters, _shutter_commands
+
+    mapping = _shutter_commands(entry)
+    mapped = {
+        module for module in discover_shutters(dict(gateway.all_outputs or {}))
+        if mapping.get(module, {}).get("open") is not None
+        and mapping.get(module, {}).get("close") is not None
+    }
+    prefix = f"{entry.data['serial_number']}_shutter_"
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.domain != "cover" or not entity.unique_id.startswith(prefix):
+            continue
+        module = entity.unique_id[len(prefix):]
+        if module.isdigit() and int(module) not in mapped:
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:

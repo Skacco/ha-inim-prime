@@ -102,9 +102,17 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     mapping = _shutter_commands(entry)
     # Auto-name from the panel's module table (e.g. "TENDA SALA"); the manual
     # name in the options, if set, wins.
+    # Only expose shutters that are actually mapped (open + close commands set in
+    # the options). An unmapped shutter can't be driven, so showing it as an
+    # unavailable cover is just noise -- it stays out until it's configured.
+    mapped = [
+        module for module in sorted(shutters)
+        if mapping.get(module, {}).get("open") is not None
+        and mapping.get(module, {}).get("close") is not None
+    ]
     module_names: dict[int, str] = {}
-    if shutters:
-        module_names = await coordinator.gateway.module_labels(max(shutters))
+    if mapped:
+        module_names = await coordinator.gateway.module_labels(max(mapped))
     entities = [
         InimPrimeShutterCover(
             coordinator,
@@ -118,7 +126,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             },
             name = mapping.get(module, {}).get("name") or module_names.get(module),
         )
-        for module in sorted(shutters)
+        for module in mapped
     ]
     async_add_entities(entities)
 
