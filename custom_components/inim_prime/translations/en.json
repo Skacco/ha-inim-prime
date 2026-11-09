@@ -265,5 +265,75 @@
         }
       }
     }
+  },
+  "services": {
+    "debug_read_terminals": {
+      "name": "Debug: read terminals",
+      "description": "Native protocol: raw status (10 bytes) of each terminal, with its label.",
+      "fields": {
+        "start": {
+          "name": "First terminal",
+          "description": "First terminal id (0-1009)."
+        },
+        "end": {
+          "name": "Last terminal",
+          "description": "Last terminal id (0-1009)."
+        },
+        "only_labelled": {
+          "name": "Only labelled",
+          "description": "Skip terminals without a description."
+        }
+      }
+    },
+    "debug_watch_terminals": {
+      "name": "Debug: watch terminals",
+      "description": "Native protocol: poll terminals for a while and return every raw status change.",
+      "fields": {
+        "start": {
+          "name": "First terminal",
+          "description": "First terminal id (0-1009)."
+        },
+        "end": {
+          "name": "Last terminal",
+          "description": "Last terminal id (0-1009)."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "How long to watch."
+        },
+        "interval": {
+          "name": "Interval",
+          "description": "Polling interval."
+        }
+      }
+    },
+    "debug_read_memory": {
+      "name": "Debug: read memory",
+      "description": "Native protocol: read raw panel memory.",
+      "fields": {
+        "address": {
+          "name": "Address",
+          "description": "Start address."
+        },
+        "length": {
+          "name": "Length",
+          "description": "Bytes to read."
+        }
+      }
+    },
+    "debug_raw_command": {
+      "name": "Debug: raw command",
+      "description": "Native protocol: send a raw command. Can change the panel state: use with care.",
+      "fields": {
+        "operation": {
+          "name": "Operation",
+          "description": "Command operation code."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Command data as hex bytes."
+        }
+      }
+    }
   }
 }

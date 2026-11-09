@@ -1,0 +1,43 @@
+debug_read_terminals:
+  fields:
+    start:
+      selector:
+        number: {min: 0, max: 1009, mode: box}
+    end:
+      selector:
+        number: {min: 0, max: 1009, mode: box}
+    only_labelled:
+      selector:
+        boolean:
+debug_watch_terminals:
+  fields:
+    start:
+      selector:
+        number: {min: 0, max: 1009, mode: box}
+    end:
+      selector:
+        number: {min: 0, max: 1009, mode: box}
+    duration:
+      selector:
+        number: {min: 1, max: 120, unit_of_measurement: s}
+    interval:
+      selector:
+        number: {min: 0.2, max: 10, step: 0.1, unit_of_measurement: s}
+debug_read_memory:
+  fields:
+    address:
+      required: true
+      selector:
+        number: {min: 0, max: 4294967295, mode: box}
+    length:
+      selector:
+        number: {min: 1, max: 4096, mode: box}
+debug_raw_command:
+  fields:
+    operation:
+      required: true
+      selector:
+        number: {min: 0, max: 255, mode: box}
+    data:
+      selector:
+        text:
