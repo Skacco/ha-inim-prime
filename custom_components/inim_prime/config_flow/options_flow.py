@@ -14,19 +14,22 @@ from .schemas import build_options_schema
 def _parse_shutter_section(section: dict | None) -> dict:
     """Turn the form section {"01_open": "998", "01_close": "997", ...} into
     {"1": {"open": 998, "close": 997}} (only the filled commands)."""
-    result: dict[str, dict[str, int]] = {}
+    result: dict[str, dict] = {}
     for key, value in (section or {}).items():
         if value in (None, "") or "_" not in key:
             continue
         module_str, _, kind = key.partition("_")
-        if kind not in ("open", "close", "stop"):
-            continue
         try:
             module = str(int(module_str))
-            command = int(value)
         except (TypeError, ValueError):
             continue
-        result.setdefault(module, {})[kind] = command
+        if kind == "name":
+            result.setdefault(module, {})["name"] = str(value).strip()
+        elif kind in ("open", "close", "stop"):
+            try:
+                result.setdefault(module, {})[kind] = int(value)
+            except (TypeError, ValueError):
+                continue
     return result
 
 

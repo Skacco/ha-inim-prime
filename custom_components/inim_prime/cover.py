@@ -69,13 +69,13 @@ def discover_shutters(outputs: dict) -> dict[int, dict[int, int]]:
 def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
     """Read the per-shutter open/close command mapping from the options."""
     raw = entry.options.get(OPT_SHUTTER_COMMANDS) or {}
-    mapping: dict[int, dict[str, int]] = {}
+    mapping: dict[int, dict] = {}
     for module, cmds in raw.items():
         try:
             m = int(module)
         except (TypeError, ValueError):
             continue
-        entry_map: dict[str, int] = {}
+        entry_map: dict = {}
         for kind in ("open", "close", "stop"):
             value = (cmds or {}).get(kind)
             if value not in (None, ""):
@@ -83,6 +83,9 @@ def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
                     entry_map[kind] = int(value)
                 except (TypeError, ValueError):
                     pass
+        name = (cmds or {}).get("name")
+        if name:
+            entry_map["name"] = str(name).strip()
         if entry_map:
             mapping[m] = entry_map
     return mapping
@@ -101,6 +104,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             open_cmd = mapping.get(module, {}).get("open"),
             close_cmd = mapping.get(module, {}).get("close"),
             stop_cmd = mapping.get(module, {}).get("stop"),
+            name = mapping.get(module, {}).get("name"),
         )
         for module in sorted(shutters)
     ]
@@ -123,6 +127,7 @@ class InimPrimeShutterCover(
         open_cmd: int | None,
         close_cmd: int | None,
         stop_cmd: int | None = None,
+        name: str | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._module = module
@@ -137,10 +142,11 @@ class InimPrimeShutterCover(
         self._attr_supported_features = features
 
         serial_number = coordinator.serial_number
+        device_name = name.strip() if name and name.strip() else f"Tapparella {module:02d}"
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_shutter_{module}")},
-            name = f"Tapparella {module:02d}",
+            name = device_name,
             model = "Prime Roller Shutter",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )

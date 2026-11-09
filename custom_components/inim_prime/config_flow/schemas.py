@@ -371,6 +371,12 @@ def build_options_schema(
         shutter_fields: dict = {}
         for module in shutters:
             cur = current_map.get(str(module)) or current_map.get(module) or {}
+            # Optional friendly name (also names the cover, e.g. "Sala").
+            name_value = cur.get("name")
+            shutter_fields[vol.Optional(
+                f"{module:02d}_name",
+                description = {"suggested_value": name_value} if name_value else {},
+            )] = TextSelector(TextSelectorConfig(type = TextSelectorType.TEXT))
             for kind in ("open", "close", "stop"):
                 key = f"{module:02d}_{kind}"
                 value = cur.get(kind)

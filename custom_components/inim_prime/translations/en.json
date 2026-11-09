@@ -106,7 +106,7 @@
           },
           "shutters": {
             "name": "Roller shutters",
-            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
+            "description": "For each shutter (numbered by its Mod.dom module) give it an optional name (also used as the cover name, e.g. \"Sala\") and choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
           }
         }
       },
@@ -207,7 +207,7 @@
           },
           "shutters": {
             "name": "Roller shutters",
-            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
+            "description": "For each shutter (numbered by its Mod.dom module) give it an optional name (also used as the cover name, e.g. \"Sala\") and choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
           }
         }
       }
@@ -272,7 +272,7 @@
           },
           "shutters": {
             "name": "Roller shutters",
-            "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
+            "description": "For each shutter (numbered by its Mod.dom module) give it an optional name (also used as the cover name, e.g. \"Sala\") and choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger. Stop is optional (you can point it at a partial-open command). Leave empty to leave a shutter unmapped."
           }
         }
       }
