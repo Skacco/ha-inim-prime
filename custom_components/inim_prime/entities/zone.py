@@ -64,6 +64,9 @@ class ZoneStateSensor(
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedZoneState]
     _attr_icon = "mdi:magnify"
+    # Diagnostic so it groups with Alarm memory under the device's "Diagnostica"
+    # section, leaving the operational entities (open/closed + Esclusione) on top.
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
             self,
@@ -74,7 +77,7 @@ class ZoneStateSensor(
 
         self.zone_id = zone.zone_id
         self._attr_name = f"{zone.label} Stato"
-        self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_state"
+        self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_stato"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
@@ -137,7 +140,7 @@ class ZoneBypassSwitch(
 
         self.zone_id = zone.zone_id
         self._attr_name = f"{zone.label} Esclusione"
-        self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_bypass"
+        self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_esclusione"
 
         self._attr_device_info = create_zone_device_info(
             serial_number = self.coordinator.serial_number,
