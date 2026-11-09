@@ -14,6 +14,7 @@ from dataclasses import replace
 from types import MappingProxyType
 
 from .adapters.native_adapter import NativeAdapter
+from .models.timers import UnifiedTimer
 from .adapters.primelan_adapter import PrimelanAdapter
 
 from .models.gsm import UnifiedGSM
@@ -28,6 +29,14 @@ from .exceptions import InimPrimeFeatureNotSupportedError
 
 
 _DEFAULT_PARTITION_LABEL = re.compile(r"^AREA\s*\d+$", re.IGNORECASE)
+
+
+_DEFAULT_TIMER_LABEL = re.compile(r"^TIMER\s*\d+$")
+
+
+def _is_default_timer_label(label: str | None) -> bool:
+    cleaned = (label or "").replace("\x00", "").strip()
+    return not cleaned or bool(_DEFAULT_TIMER_LABEL.match(cleaned))
 
 
 def _is_default_partition_label(label: str | None) -> bool:
@@ -92,6 +101,25 @@ class InimPrimeGateway:
     @property
     def supports_scenarios(self) -> bool:
         return self._primelan is not None
+
+    @property
+    def supports_timers(self) -> bool:
+        return self._native is not None
+
+    @property
+    def timers(self) -> MappingProxyType[int, UnifiedTimer] | None:
+        """Timers with a custom name (the default "TIMER 0xx" ones are unused)."""
+        if self._native is None:
+            return None
+        return MappingProxyType({
+            tid: t for tid, t in self._native.timers.items() if not _is_default_timer_label(t.label)
+        })
+
+    async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
+        if self._native is None:
+            raise InimPrimeFeatureNotSupportedError("Timers require the native protocol")
+        await self._native.update_timers()
+        return self.timers
 
     @property
     def backends_active(self) -> list[str]:

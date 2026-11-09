@@ -3,6 +3,7 @@ from .models.system_faults import UNIFIED_EXPOSED_SYSTEM_FAULTS
 
 from .entities.panel import SystemFaultBinarySensor
 from .entities.partition import PartitionAlarmMemoryBinarySensor
+from .entities.timer import TimerActiveBinarySensor
 from .entities.zone import ZoneStateBinarySensor, ZoneAlarmMemoryBinarySensor
 
 
@@ -28,5 +29,10 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             entities.append(
                 SystemFaultBinarySensor(system_faults_coordinator, exposedSystemFault)
             )
+
+    timers_coordinator = entry.runtime_data.coordinators.timers
+    if timers_coordinator is not None and timers_coordinator.gateway.timers:
+        for timer in timers_coordinator.gateway.timers.values():
+            entities.append(TimerActiveBinarySensor(timers_coordinator, timer))
 
     async_add_entities(entities)  # coordinators already refreshed before setup

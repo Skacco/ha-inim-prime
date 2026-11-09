@@ -29,6 +29,7 @@ from inim.prime.native.models.zones import (
 from inim.prime.native.models.terminals import (
     Terminal as NativeTerminal,
 )
+from ..models.timers import UnifiedTimer
 from ..models.outputs import (
     UnifiedOutput,
 )
@@ -141,6 +142,20 @@ def _output_to_unified(output: NativeOutput) -> UnifiedOutput:
     return unified_output
 
 
+# Timers (read like Prime/STUDIO's monitoring page does): 40 timers, one bit
+# each in two 6-byte masks, labels in a 16-byte label table.
+TIMERS_COUNT = 40
+TIMER_LABELS_ADDRESS = 0x1403DA00
+TIMER_LABEL_SIZE = 16
+TIMERS_ACTIVE_ADDRESS = 0x10089C40
+TIMERS_ENABLED_ADDRESS = 0x000057DC
+TIMERS_MASK_SIZE = 6
+
+
+def _bit(mask: bytes, index: int) -> bool:
+    return bool(mask[index // 8] & (1 << (index % 8)))
+
+
 class NativeAdapter:
     """Wraps a connected inim.prime.native.Client instance."""
     __slots__ = (
@@ -149,7 +164,9 @@ class NativeAdapter:
         "_partitions",
         "_outputs",
         "_reconnect_lock",
-        "_last_reconnect_attempt"
+        "_last_reconnect_attempt",
+        "_timer_labels",
+        "_timers",
     )
 
     def __init__(self, client: NativeClient) -> None:
@@ -161,6 +178,8 @@ class NativeAdapter:
 
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
+        self._timer_labels: dict[int, str] | None = None
+        self._timers: dict[int, UnifiedTimer] = {}
 
     async def _call_with_reconnect(self, coro_factory):
         try:
@@ -210,6 +229,32 @@ class NativeAdapter:
     @property
     def outputs(self) -> MappingProxyType[int, UnifiedOutput]:
         return MappingProxyType[int, UnifiedOutput](self._outputs)
+
+    @property
+    def timers(self) -> MappingProxyType[int, UnifiedTimer]:
+        return MappingProxyType(self._timers)
+
+    async def _read_memory(self, address: int, length: int) -> bytes:
+        async with self._client._lock:
+            return await self._client._protocol.read_memory(address, length)
+
+    async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
+        async def _do() -> MappingProxyType[int, UnifiedTimer]:
+            if self._timer_labels is None:
+                raw = await self._read_memory(TIMER_LABELS_ADDRESS, TIMERS_COUNT * TIMER_LABEL_SIZE)
+                self._timer_labels = {
+                    i: raw[i * TIMER_LABEL_SIZE:(i + 1) * TIMER_LABEL_SIZE]
+                    .decode("latin-1").replace("\x00", "").strip()
+                    for i in range(TIMERS_COUNT)
+                }
+            active = await self._read_memory(TIMERS_ACTIVE_ADDRESS, TIMERS_MASK_SIZE)
+            enabled = await self._read_memory(TIMERS_ENABLED_ADDRESS, TIMERS_MASK_SIZE)
+            self._timers = {
+                i: UnifiedTimer(i, label, _bit(active, i), _bit(enabled, i))
+                for i, label in self._timer_labels.items()
+            }
+            return self.timers
+        return await self._call_with_reconnect(_do)
 
     @property
     def count_bypassed_zones(self) -> int:

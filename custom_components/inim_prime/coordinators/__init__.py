@@ -5,3 +5,4 @@ from .gsm_coordinator import InimPrimeGSMUpdateCoordinator
 from .panel_log_events_coordinator import InimPrimePanelLogEventsCoordinator
 from .outputs_coordinator import InimPrimeOutputsUpdateCoordinator
 from .scenarios_coordinator import InimPrimeScenariosUpdateCoordinator
+from .timers_coordinator import InimPrimeTimersUpdateCoordinator

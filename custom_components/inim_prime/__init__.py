@@ -22,6 +22,7 @@ from .const import (
     OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT,
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    TIMERS_SCAN_INTERVAL_DEFAULT,
 )
 from .coordinators import (
     InimPrimeGSMUpdateCoordinator,
@@ -31,6 +32,7 @@ from .coordinators import (
     InimPrimeSystemFaultsUpdateCoordinator,
     InimPrimeOutputsUpdateCoordinator,
     InimPrimeScenariosUpdateCoordinator,
+    InimPrimeTimersUpdateCoordinator,
 )
 from .entry_data import (
     get_entry_options,
@@ -129,6 +131,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     panel_log_events_coordinator: InimPrimePanelLogEventsCoordinator | None = None
     outputs_coordinator: InimPrimeOutputsUpdateCoordinator | None = None
     scenarios_coordinator: InimPrimeScenariosUpdateCoordinator | None = None
+    timers_coordinator: InimPrimeTimersUpdateCoordinator | None = None
 
     if inim_gateway.supports_zones:
         zones_coordinator = InimPrimeZonesUpdateCoordinator(
@@ -190,6 +193,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             gateway = inim_gateway,
         )
 
+    if inim_gateway.supports_timers:
+        timers_coordinator = InimPrimeTimersUpdateCoordinator(
+            hass = hass,
+            update_interval = timedelta(milliseconds = TIMERS_SCAN_INTERVAL_DEFAULT),
+            entry = entry,
+            gateway = inim_gateway,
+        )
+
     if zones_coordinator is not None:
         await zones_coordinator.async_config_entry_first_refresh()
 
@@ -208,6 +219,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     if scenarios_coordinator is not None:
         await scenarios_coordinator.async_config_entry_first_refresh()
 
+    if timers_coordinator is not None:
+        await timers_coordinator.async_config_entry_first_refresh()
+
     if panel_log_events_coordinator is not None:
         await panel_log_events_coordinator.async_startup()
         await panel_log_events_coordinator.async_config_entry_first_refresh()
@@ -224,6 +238,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             panel_log_events = panel_log_events_coordinator,
             outputs = outputs_coordinator,
             scenarios = scenarios_coordinator,
+            timers = timers_coordinator,
         ),
     )
 
