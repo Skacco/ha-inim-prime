@@ -315,12 +315,16 @@ def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -
 
 
 def _reset_grouped_entity_naming(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Clear the stale has_entity_name flag on zone/partition/shutter entities.
+    """Stop the grouping device name being prepended to zone/partition/shutter
+    names after the upgrade.
 
-    These used has_entity_name=True (per-item devices) before they were grouped.
-    Home Assistant keeps the flag in the entity registry, so after the upgrade the
-    grouping device name ("Zones"/"Partitions"/"Shutters") is still prepended to
-    the friendly name. Force it off here so the name is just the item label."""
+    These entities used has_entity_name=True (per-item devices) before grouping.
+    Home Assistant stores that flag in the entity registry and does not always
+    clear it when the code drops it, so the grouping device name
+    ("Zones"/"Partitions"/"Shutters") stays glued in front of the friendly name.
+    We clear the flag AND, when the shown name still differs from the plain
+    label, pin the registry name to that label so the display is correct on every
+    HA version. User-renamed entities (name already set) are left alone."""
     serial_number = entry.data["serial_number"]
     prefixes = (
         f"{serial_number}_zone_",
@@ -329,8 +333,18 @@ def _reset_grouped_entity_naming(hass: HomeAssistant, entry: InimPrimeConfigEntr
     )
     entity_registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        if entity.has_entity_name and entity.unique_id.startswith(prefixes):
+        if not entity.unique_id.startswith(prefixes):
+            continue
+        if entity.has_entity_name:
             entity_registry.async_update_entity(entity.entity_id, has_entity_name = False)
+        # Belt-and-suspenders: if the live name still shows a prefix (stale flag
+        # the line above couldn't clear on this HA version), pin the plain label.
+        label = entity.original_name
+        if not label or entity.name is not None:
+            continue
+        state = hass.states.get(entity.entity_id)
+        if state is not None and state.attributes.get("friendly_name") != label:
+            entity_registry.async_update_entity(entity.entity_id, name = label)
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
