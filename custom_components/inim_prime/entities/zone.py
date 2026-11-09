@@ -11,15 +11,15 @@ from ..models.zones import UnifiedZone, UnifiedZoneState
 
 
 def create_zone_device_info(
-        zone_id: int,
-        zone_name: str,
         serial_number: str,
         domain: str = DOMAIN,
 ) -> DeviceInfo:
+    # All zones share one "Zones" device (like Timers / Thermostats); each
+    # entity is named after its zone, so the zone name still shows everywhere.
     return DeviceInfo(
-        identifiers = {(domain, f"{serial_number}_zone_{zone_id}")},
-        name = f"Zone {zone_name}",
-        model = "Prime Zone",
+        identifiers = {(domain, f"{serial_number}_zones")},
+        name = "Zones",
+        model = "Prime Zones",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 
@@ -28,7 +28,7 @@ class ZoneStateBinarySensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     BinarySensorEntity,
 ):
-    _attr_name = None
+    _attr_has_entity_name = True
 
     def __init__(
             self,
@@ -38,11 +38,10 @@ class ZoneStateBinarySensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
+        self._attr_name = zone.label
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_triggered"
 
         self._attr_device_info = create_zone_device_info(
-            zone_id = self.zone_id,
-            zone_name = zone.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -62,7 +61,7 @@ class ZoneStateSensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "State"
+    _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedZoneState]
     _attr_icon = "mdi:magnify"
@@ -75,11 +74,10 @@ class ZoneStateSensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
+        self._attr_name = f"{zone.label} State"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_state"
 
         self._attr_device_info = create_zone_device_info(
-            zone_id = self.zone_id,
-            zone_name = zone.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -95,9 +93,9 @@ class ZoneAlarmMemoryBinarySensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     BinarySensorEntity,
 ):
+    _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "Alarm Memory"
     _attr_icon = "mdi:alarm-light"
 
     def __init__(
@@ -108,11 +106,10 @@ class ZoneAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
+        self._attr_name = f"{zone.label} Alarm Memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_alarm_memory"
 
         self._attr_device_info = create_zone_device_info(
-            zone_id = self.zone_id,
-            zone_name = zone.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -128,7 +125,7 @@ class ZoneBypassSwitch(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SwitchEntity,
 ):
-    _attr_name = "Bypass"
+    _attr_has_entity_name = True
     _attr_icon = "mdi:cancel"
     _attr_device_class = SwitchDeviceClass.SWITCH
 
@@ -140,11 +137,10 @@ class ZoneBypassSwitch(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
+        self._attr_name = f"{zone.label} Bypass"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_bypass"
 
         self._attr_device_info = create_zone_device_info(
-            zone_id = self.zone_id,
-            zone_name = zone.label,
             serial_number = self.coordinator.serial_number,
         )
 

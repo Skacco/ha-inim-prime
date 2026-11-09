@@ -282,44 +282,54 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     debug_services.async_register(hass)
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
-    _remove_hidden_partition_devices(hass, entry, inim_gateway)
-    _remove_hidden_zone_devices(hass, entry, inim_gateway)
+    _remove_hidden_partition_entities(hass, entry, inim_gateway)
+    _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
-    _remove_old_thermostat_devices(hass, entry)
+    _remove_old_grouped_devices(hass, entry)
 
     return True
 
 
-def _remove_old_thermostat_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Remove the old per-thermostat devices ({serial}_thermostat_<index>), now
-    that all temperature sensors are grouped under one "Thermostats" device
-    ({serial}_thermostats). The sensors move by unique_id, leaving the old
-    room-named devices empty, so drop them from this entry."""
+def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove the old per-item devices now that zones, partitions, shutters and
+    thermostats each hold their entities on a single grouping device.
+
+    The entities move by unique_id to the group device ({serial}_zones,
+    {serial}_partitions, {serial}_shutters, {serial}_thermostats), leaving the
+    old per-item devices ({serial}_zone_<id>, _partition_<id>, _shutter_<module>,
+    _thermostat_<index>) empty, so drop them from this entry. The group ids end
+    in a plural with no trailing "_<number>", so they are never matched here."""
     serial_number = entry.data["serial_number"]
-    prefix = f"{serial_number}_thermostat_"
+    prefixes = tuple(
+        f"{serial_number}_{kind}_"
+        for kind in ("zone", "partition", "shutter", "thermostat")
+    )
     device_registry = dr.async_get(hass)
     for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
         for domain, identifier in device.identifiers:
-            if domain != DOMAIN or not identifier.startswith(prefix):
+            if domain != DOMAIN:
                 continue
-            if identifier[len(prefix):].isdigit():
-                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
+            for prefix in prefixes:
+                if identifier.startswith(prefix) and identifier[len(prefix):].isdigit():
+                    device_registry.async_update_device(
+                        device.id, remove_config_entry_id = entry.entry_id
+                    )
+                    break
 
 
-def _remove_hidden_zone_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
-    """Remove zone devices that are no longer exposed (e.g. the domotic
-    modules' internal T01/T02 terminals, which aren't real zones)."""
+def _remove_hidden_zone_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Remove entities of zones no longer exposed (e.g. the domotic modules'
+    internal T01/T02 terminals, which aren't real zones). Zones share one
+    device now, so the stale items are entities, not devices."""
     shown = set(gateway.zones)
-    serial_number = entry.data["serial_number"]
-    prefix = f"{serial_number}_zone_"
-    device_registry = dr.async_get(hass)
-    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
-        for domain, identifier in device.identifiers:
-            if domain != DOMAIN or not identifier.startswith(prefix):
-                continue
-            suffix = identifier[len(prefix):]
-            if suffix.isdigit() and int(suffix) not in shown:
-                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
+    prefix = f"{entry.data['serial_number']}_zone_"
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if not entity.unique_id.startswith(prefix):
+            continue
+        zid = entity.unique_id[len(prefix):].split("_", 1)[0]
+        if zid.isdigit() and int(zid) not in shown:
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _remove_stale_number_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
@@ -331,21 +341,21 @@ def _remove_stale_number_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
             entity_registry.async_remove(entity.entity_id)
 
 
-def _remove_hidden_partition_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
-    """Remove devices (and their entities) of areas hidden as unused."""
+def _remove_hidden_partition_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Remove entities of partitions hidden as unused. Partitions share one
+    device now, so the stale items are entities, not devices."""
     shown = set(gateway.partitions)
     hidden = set(gateway.all_partitions) - shown
     if not hidden:
         return
-    serial_number = entry.data["serial_number"]
-    device_registry = dr.async_get(hass)
-    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
-        for domain, identifier in device.identifiers:
-            if domain != DOMAIN or not identifier.startswith(f"{serial_number}_partition_"):
-                continue
-            suffix = identifier[len(f"{serial_number}_partition_"):]
-            if suffix.isdigit() and int(suffix) in hidden:
-                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
+    prefix = f"{entry.data['serial_number']}_partition_"
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if not entity.unique_id.startswith(prefix):
+            continue
+        pid = entity.unique_id[len(prefix):].split("_", 1)[0]
+        if pid.isdigit() and int(pid) in hidden:
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _remove_stale_timer_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
@@ -390,12 +400,13 @@ def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
 
 
 def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Group devices under the panel: Panel > Zones / Partitions > each one.
+    """Hang the grouping devices off the panel: Panel > Zones / Partitions /
+    Shutters / Timers / Thermostats / GSM.
 
-    Every zone and area stays its own device (so it can be assigned to a
-    room); two grouping devices keep them apart in the device page. Home
-    Assistant no longer accepts ``via_device`` in DeviceInfo, so the links are
-    set on the device registry once the devices exist.
+    Zones, partitions and shutters each live on a single grouping device that
+    holds all their entities (named per item). Home Assistant no longer accepts
+    ``via_device`` in DeviceInfo, so the links are set on the device registry
+    once the devices exist.
     """
     device_registry = dr.async_get(hass)
     serial_number = entry.data["serial_number"]
@@ -420,18 +431,25 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
     partitions_group = group("partitions", "Partitions")
     group_ids = {zones_group.id, partitions_group.id}
 
+    # The Shutters group exists only when the panel has shutters (its cover
+    # entities create it), so link it without creating an empty one.
+    shutters_group = device_registry.async_get_device(
+        identifiers = {(DOMAIN, f"{serial_number}_shutters")}
+    )
+    if shutters_group is not None:
+        if shutters_group.via_device_id != panel.id:
+            device_registry.async_update_device(shutters_group.id, via_device_id = panel.id)
+        group_ids.add(shutters_group.id)
+
+    # Zones, partitions and shutters now hold their entities directly on the
+    # grouping device above, so there are no per-item child devices left to
+    # re-parent; any other device (GSM, Timers, Thermostats, ...) hangs off the
+    # panel.
     for device in devices:
         if device.id == panel.id or device.id in group_ids:
             continue
-        identifiers = {identifier for domain, identifier in device.identifiers if domain == DOMAIN}
-        if any(i.startswith(f"{serial_number}_zone_") for i in identifiers):
-            parent = zones_group.id
-        elif any(i.startswith(f"{serial_number}_partition_") for i in identifiers):
-            parent = partitions_group.id
-        else:
-            parent = panel.id
-        if device.via_device_id != parent:
-            device_registry.async_update_device(device.id, via_device_id = parent)
+        if device.via_device_id != panel.id:
+            device_registry.async_update_device(device.id, via_device_id = panel.id)
 
 
 async def async_remove_config_entry_device(

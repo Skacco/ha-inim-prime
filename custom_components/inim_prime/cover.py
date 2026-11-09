@@ -166,12 +166,14 @@ class InimPrimeShutterCover(
         self._attr_supported_features = features
 
         serial_number = coordinator.serial_number
-        device_name = name.strip() if name and name.strip() else f"Tapparella {module:02d}"
+        # Each shutter is one cover entity named after the shutter, all grouped
+        # under a single "Shutters" device (like Zones / Partitions / Timers).
+        self._attr_name = name.strip() if name and name.strip() else f"Tapparella {module:02d}"
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
         self._attr_device_info = DeviceInfo(
-            identifiers = {(DOMAIN, f"{serial_number}_shutter_{module}")},
-            name = device_name,
-            model = "Prime Roller Shutter",
+            identifiers = {(DOMAIN, f"{serial_number}_shutters")},
+            name = "Shutters",
+            model = "Prime Shutters",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )
 

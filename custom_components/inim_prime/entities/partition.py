@@ -17,15 +17,15 @@ from ..const import INIM_PRIME_DEVICE_MANUFACTURER, DOMAIN
 
 
 def create_partition_device_info(
-        partition_id: int,
-        partition_name: str,
         serial_number: str,
         domain: str = DOMAIN,
 ) -> DeviceInfo:
+    # All partitions share one "Partitions" device (like Timers / Thermostats);
+    # each entity is named after its partition, so the name still shows.
     return DeviceInfo(
-        identifiers = {(domain, f"{serial_number}_partition_{partition_id}")},
-        name = f"Partition {partition_name}",
-        model = "Prime Partition",
+        identifiers = {(domain, f"{serial_number}_partitions")},
+        name = "Partitions",
+        model = "Prime Partitions",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 
@@ -34,7 +34,7 @@ class PartitionStateSensor(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "State"
+    _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedPartitionState]
     _attr_icon = "mdi:magnify"
@@ -47,11 +47,10 @@ class PartitionStateSensor(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
+        self._attr_name = f"{partition.label} State"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_state"
 
         self._attr_device_info = create_partition_device_info(
-            partition_id = self.partition_id,
-            partition_name = partition.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -67,7 +66,7 @@ class PartitionArmingStatusSelect(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     SelectEntity,
 ):
-    _attr_name = "Arming Status"
+    _attr_has_entity_name = True
     _attr_icon = "mdi:shield-lock"
     _attr_options = [mode.name for mode in UnifiedArmingStatus]
 
@@ -79,11 +78,10 @@ class PartitionArmingStatusSelect(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
+        self._attr_name = f"{partition.label} Arming Status"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_arming_status"
 
         self._attr_device_info = create_partition_device_info(
-            partition_id = self.partition_id,
-            partition_name = partition.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -108,7 +106,7 @@ class ResetPartitionMemoryButton(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     ButtonEntity,
 ):
-    _attr_name = "Reset Memory"
+    _attr_has_entity_name = True
     _attr_icon = "mdi:alarm-light-off"
 
     def __init__(
@@ -119,11 +117,10 @@ class ResetPartitionMemoryButton(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
+        self._attr_name = f"{partition.label} Reset Memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_reset_memory"
 
         self._attr_device_info = create_partition_device_info(
-            partition_id = self.partition_id,
-            partition_name = partition.label,
             serial_number = self.coordinator.serial_number,
         )
 
@@ -139,10 +136,10 @@ class PartitionAlarmMemoryBinarySensor(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     BinarySensorEntity,
 ):
+    _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:alarm-light"
-    _attr_name = "Alarm Memory"
 
     def __init__(
             self,
@@ -152,11 +149,10 @@ class PartitionAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
+        self._attr_name = f"{partition.label} Alarm Memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_alarm_memory"
 
         self._attr_device_info = create_partition_device_info(
-            partition_id = self.partition_id,
-            partition_name = partition.label,
             serial_number = self.coordinator.serial_number,
         )
 
