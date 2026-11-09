@@ -29,6 +29,7 @@ from ..const import (
     NATIVE_USE_CUSTOM_PIN_DEFAULT,
     NATIVE_PORT_DEFAULT,
     NATIVE_USE_OUTER_FRAME_DEFAULT,
+    SHUTTER_COMMAND_FIELDS,
     SCAN_INTERVAL_MIN,
     SCAN_INTERVAL_MAX,
     PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT,
@@ -254,7 +255,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         )),
         vol.Required(
             OptionsKey.ScanIntervals.PARTITIONS,
@@ -263,7 +264,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         )),
         vol.Required(
             OptionsKey.ScanIntervals.OUTPUTS,
@@ -272,7 +273,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         )),
     }
 
@@ -284,7 +285,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         ))
 
         scan_interval_fields[vol.Required(
@@ -294,7 +295,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         ))
 
         scan_interval_fields[vol.Required(
@@ -304,7 +305,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         ))
 
         scan_interval_fields[vol.Required(
@@ -314,7 +315,7 @@ def build_options_schema(
             min = SCAN_INTERVAL_MIN,
             max = SCAN_INTERVAL_MAX,
             mode = NumberSelectorMode.BOX,
-            unit_of_measurement = "milliseconds",
+            unit_of_measurement = "ms",
         ))
 
     schema: dict = {
@@ -376,7 +377,7 @@ def build_options_schema(
             cur = current_map.get(str(module)) or current_map.get(module) or {}
             section_key = shutter_section_key(module, names.get(module))
             fields: dict = {}
-            for kind in ("open", "close", "p25", "p50", "p75"):
+            for kind in SHUTTER_COMMAND_FIELDS:
                 value = cur.get(kind)
                 fields[vol.Optional(
                     kind,

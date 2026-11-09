@@ -5,7 +5,7 @@ import inim.prime.native.const
 DOMAIN: Final[str] = "inim_prime"
 
 
-PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT: Final[int] = 40
+PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT: Final[int] = 30
 PANEL_LOG_EVENTS_FETCH_LIMIT_TRIGGER: Final[int] = 3
 PANEL_LOG_EVENTS_FETCH_LIMIT_MIN: Final[int] = 10
 PANEL_LOG_EVENTS_FETCH_LIMIT_MAX: Final[int] = 100
@@ -71,3 +71,11 @@ KEYPAD_LABELS_COUNT: Final[int] = 30
 SENSOR_LABELS_ADDRESS: Final[int] = 335802368
 SENSOR_LABELS_COUNT: Final[int] = 15
 THERMOSTATS_SCAN_INTERVAL_DEFAULT: Final[int] = 30000
+
+# Per-shutter option field labels (shown as the field names in the options form,
+# and stored as the keys of the shutter command mapping).
+SHUTTER_FIELD_OPEN = "Aperto"
+SHUTTER_FIELD_CLOSE = "Chiuso"
+# Partial-open preset field label -> position percent.
+SHUTTER_PRESET_FIELDS = {"1/4": 25, "1/2": 50, "3/4": 75}
+SHUTTER_COMMAND_FIELDS = (SHUTTER_FIELD_OPEN, SHUTTER_FIELD_CLOSE, *SHUTTER_PRESET_FIELDS)

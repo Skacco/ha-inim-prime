@@ -228,6 +228,39 @@ content: >
 ```
 Sostituisci `event.inim_prime_panel_log_events` con l'id dell'entità evento della tua centrale. L'attributo `events` contiene gli ultimi eventi, ciascuno con `timestamp`, `type`, `location` e `agent`; adatta colonne e formato data a piacere. Per la larghezza intera usa una vista di tipo **Pannello**.
 
+### Registro in un box con scroll (card-mod)
+Il registro può diventare lungo e "spaginare" la vista. Per racchiuderlo in un **box ad altezza fissa con scroll interno** (titolo fermo, tabella che scorre) usa [card-mod](https://github.com/thomasloven/lovelace-card-mod) (installabile da HACS). Stessa card Markdown di sopra, con `grid_options` e `card_mod` aggiunti:
+```yaml
+type: markdown
+title: Registro centrale
+entity_id:
+  - event.inim_prime_panel_log_events
+content: >
+  | Ora | Evento | Chi | Come |
+
+  |---|---|---|---|
+
+  {% for e in state_attr('event.inim_prime_panel_log_events', 'events') or [] -%}
+
+  | {{ as_timestamp(e.timestamp) | timestamp_custom('%d/%m %H:%M:%S') }} | {{ e.type }} | {{ e.location or '' }} | {{ e.agent or '' }} |
+
+  {% endfor %}
+grid_options:
+  columns: full
+  rows: 8
+card_mod:
+  style: |
+    ha-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    ha-card .card-content {
+      overflow-y: auto;
+    }
+```
+`rows` fissa l'altezza del box (in una vista a sezioni, 1 riga ≈ 56px: 8 righe ≈ una card media); l'`overflow-y: auto` sul contenuto fa scorrere la tabella senza spostare il resto. Aumenta o diminuisci `rows` per cambiare l'altezza.
+
 # Informazioni sulla libreria API
 L'integrazione comunica con la centrale tramite una libreria Python creata da Pitscheider, disponibile qui:
 https://github.com/Pitscheider/inim_prime_api

@@ -28,7 +28,15 @@ from homeassistant.components.cover import (
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, INIM_PRIME_DEVICE_MANUFACTURER, SHUTTER_PULSE_MS
+from .const import (
+    DOMAIN,
+    INIM_PRIME_DEVICE_MANUFACTURER,
+    SHUTTER_PULSE_MS,
+    SHUTTER_FIELD_OPEN,
+    SHUTTER_FIELD_CLOSE,
+    SHUTTER_PRESET_FIELDS,
+    SHUTTER_COMMAND_FIELDS,
+)
 from .coordinators import InimPrimeOutputsUpdateCoordinator
 from .runtime_data import InimPrimeConfigEntry
 
@@ -77,7 +85,7 @@ def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
         except (TypeError, ValueError):
             continue
         entry_map: dict = {}
-        for kind in ("open", "close", "p25", "p50", "p75"):
+        for kind in SHUTTER_COMMAND_FIELDS:
             value = (cmds or {}).get(kind)
             if value not in (None, ""):
                 try:
@@ -107,8 +115,8 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     # unavailable cover is just noise -- it stays out until it's configured.
     mapped = [
         module for module in sorted(shutters)
-        if mapping.get(module, {}).get("open") is not None
-        and mapping.get(module, {}).get("close") is not None
+        if mapping.get(module, {}).get(SHUTTER_FIELD_OPEN) is not None
+        and mapping.get(module, {}).get(SHUTTER_FIELD_CLOSE) is not None
     ]
     module_names: dict[int, str] = {}
     if mapped:
@@ -117,12 +125,11 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         InimPrimeShutterCover(
             coordinator,
             module,
-            open_cmd = mapping.get(module, {}).get("open"),
-            close_cmd = mapping.get(module, {}).get("close"),
+            open_cmd = mapping.get(module, {}).get(SHUTTER_FIELD_OPEN),
+            close_cmd = mapping.get(module, {}).get(SHUTTER_FIELD_CLOSE),
             presets = {
-                25: mapping.get(module, {}).get("p25"),
-                50: mapping.get(module, {}).get("p50"),
-                75: mapping.get(module, {}).get("p75"),
+                percent: mapping.get(module, {}).get(field)
+                for field, percent in SHUTTER_PRESET_FIELDS.items()
             },
             name = mapping.get(module, {}).get("name") or module_names.get(module),
         )

@@ -26,6 +26,8 @@ from .const import (
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     TIMERS_SCAN_INTERVAL_DEFAULT,
     THERMOSTATS_SCAN_INTERVAL_DEFAULT,
+    SHUTTER_FIELD_OPEN,
+    SHUTTER_FIELD_CLOSE,
 )
 from .coordinators import (
     InimPrimeGSMUpdateCoordinator,
@@ -303,8 +305,8 @@ def _remove_unmapped_shutter_covers(hass: HomeAssistant, entry: InimPrimeConfigE
     mapping = _shutter_commands(entry)
     mapped = {
         module for module in discover_shutters(dict(gateway.all_outputs or {}))
-        if mapping.get(module, {}).get("open") is not None
-        and mapping.get(module, {}).get("close") is not None
+        if mapping.get(module, {}).get(SHUTTER_FIELD_OPEN) is not None
+        and mapping.get(module, {}).get(SHUTTER_FIELD_CLOSE) is not None
     }
     prefix = f"{entry.data['serial_number']}_shutter_"
     entity_registry = er.async_get(hass)

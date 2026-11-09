@@ -6,6 +6,7 @@ import voluptuous as vol
 from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
+from ..const import SHUTTER_COMMAND_FIELDS
 from .models import ConfigOptions, clean_alarm_panel
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters
@@ -102,7 +103,7 @@ def _extract_shutter_commands(data: dict) -> dict:
         section = data.pop(key)
         module = str(int(match.group(1)))
         commands: dict[str, int] = {}
-        for kind in ("open", "close", "p25", "p50", "p75"):
+        for kind in SHUTTER_COMMAND_FIELDS:
             value = section.get(kind)
             if value in (None, ""):
                 continue
