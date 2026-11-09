@@ -286,8 +286,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
+    _reset_grouped_entity_naming(hass, entry)
 
     return True
+
+
+def _reset_grouped_entity_naming(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Clear the stale has_entity_name flag on zone/partition/shutter entities.
+
+    These used has_entity_name=True (per-item devices) before they were grouped.
+    Home Assistant keeps the flag in the entity registry, so after the upgrade the
+    grouping device name ("Zones"/"Partitions"/"Shutters") is still prepended to
+    the friendly name. Force it off here so the name is just the item label."""
+    serial_number = entry.data["serial_number"]
+    prefixes = (
+        f"{serial_number}_zone_",
+        f"{serial_number}_partition_",
+        f"{serial_number}_shutter_",
+    )
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.has_entity_name and entity.unique_id.startswith(prefixes):
+            entity_registry.async_update_entity(entity.entity_id, has_entity_name = False)
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
