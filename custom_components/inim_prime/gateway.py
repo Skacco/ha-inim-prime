@@ -60,9 +60,9 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
-        # With both backends: False (default) = only expose outputs PrimeLAN
-        # also publishes (matched on terminal id), like the panel apps. True =
-        # also show the native-only outputs of the panel.
+        # False (default) = show only labelled outputs (the real, programmed
+        # ones, including mainboard/aux and the virtual command outputs). True =
+        # also show the unlabelled internal terminals.
         self.show_hidden_outputs: bool = False
         # Hide areas still named like the panel default ("AREA 013").
         self.hide_unused_partitions: bool = False
@@ -178,18 +178,21 @@ class InimPrimeGateway:
         # used only when native isn't configured. Native has no dimming, so
         # dimmers are on/off when native is active.
         if self._native is not None:
-            outputs = self._native.outputs
-            labels = self._primelan_output_labels
-            if labels is not None and not self.show_hidden_outputs:
-                outputs = MappingProxyType({
-                    oid: o for oid, o in outputs.items() if oid in labels
-                })
-            if labels and any(not o.label for o in outputs.values()):
-                outputs = MappingProxyType({
-                    oid: (replace(o, label = labels.get(oid, "")) if not o.label else o)
+            outputs = dict(self._native.outputs)
+            labels = self._primelan_output_labels or {}
+            # Name native outputs from PrimeLAN where the native label is empty
+            # (matched on terminal id).
+            if labels:
+                outputs = {
+                    oid: (replace(o, label = labels[oid]) if (not o.label and oid in labels) else o)
                     for oid, o in outputs.items()
-                })
-            return outputs
+                }
+            # Hide only the unlabelled internal terminals; keep every real,
+            # programmed output (mainboard, expansions, virtual command outputs)
+            # -- the panel labels them, so a label is what makes an output real.
+            if not self.show_hidden_outputs:
+                outputs = {oid: o for oid, o in outputs.items() if o.label}
+            return MappingProxyType(outputs)
         return self._primelan.outputs if self._primelan is not None else None
 
     @property

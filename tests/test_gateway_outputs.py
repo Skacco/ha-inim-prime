@@ -169,13 +169,24 @@ async def test_hidden_outputs_filter():
     native._outputs = {31: UnifiedOutput(31, "CHIUSURA", False), 42: UnifiedOutput(42, "STATO IMPIANTO", True)}
     primelan._outputs = {31: UnifiedOutput(31, "CHIUSURA", False)}
     gw = InimPrimeGateway(native=native, primelan=primelan)
-    # PrimeLAN publishes CHIUSURA; its PrimeLAN output id (9) differs from the
-    # physical terminal (31) that native uses -- the join must be on terminal.
-    primelan._terminal_labels = {31: "CHIUSURA"}
+    # 31 has a native label, 42 is an unlabelled internal terminal.
+    native._outputs = {31: UnifiedOutput(31, "CHIUSURA", False), 42: UnifiedOutput(42, "", True)}
+    primelan._terminal_labels = {}
     await gw.update_outputs()
-    assert set(gw.outputs) == {31}           # default: only outputs PrimeLAN publishes (matched on terminal)
+    assert set(gw.outputs) == {31}           # default: only labelled outputs
     gw.show_hidden_outputs = True
-    assert set(gw.outputs) == {31, 42}       # opt-in: also native-only outputs
+    assert set(gw.outputs) == {31, 42}       # opt-in: also unnamed internal terminals
+
+
+async def test_primelan_names_unlabelled_native_output():
+    native, primelan = FakeBackend("native"), FakeBackend("primelan")
+    # native output 1007 (mainboard) has only a generic/empty label; PrimeLAN
+    # supplies the real name on the same terminal.
+    native._outputs = {1007: UnifiedOutput(1007, "", False)}
+    primelan._terminal_labels = {1007: "USCITA GARAGE"}
+    gw = InimPrimeGateway(native=native, primelan=primelan)
+    await gw.update_outputs()
+    assert gw.outputs[1007].label == "USCITA GARAGE"   # named and shown
 
 
 def test_hidden_outputs_option_only_with_both():

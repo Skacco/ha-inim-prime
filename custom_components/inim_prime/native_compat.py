@@ -14,7 +14,25 @@ back to PrimeLAN, or to "Output <id>".
 from __future__ import annotations
 
 from inim.prime.native.helpers import terminals as _terminals
+from inim.prime.native.models import terminals as _terminal_models
 from inim.prime.native.wire import header as _header
+
+# The library maps only terminal type 0x01 to an output. Virtual/command
+# terminals (the panel's "uscite virtuali": APERTURA CASA, Apri/Chiudi tenda,
+# scenario triggers, ...) use type 0x02 and were dropped as UNKNOWN, so they
+# never appeared as outputs even though the panel exposes and labels them.
+# Treat 0x02 as an output too: it decodes with the same layout (state in the
+# second byte) and the label falls back to the terminal label like 0x01 does.
+_VIRTUAL_OUTPUT_TYPE_BYTE = 0x02
+_TerminalType = _terminal_models.TerminalType
+_TerminalStatus = _terminal_models.TerminalStatus
+_original_decode_type = _TerminalStatus.decode_type
+
+
+def _decode_type_with_virtual(raw_bytes: bytes) -> "_TerminalType":
+    if raw_bytes and raw_bytes[0] == _VIRTUAL_OUTPUT_TYPE_BYTE:
+        return _TerminalType.OUTPUT
+    return _original_decode_type(raw_bytes)
 
 # Firmware 5.x panels (e.g. Prime PR060 5.00) tag the inner frame of their
 # RESPONSES with magic 0x5054 instead of 0x5050. Everything else -- CRC
@@ -61,6 +79,8 @@ def apply() -> None:
         _terminals.get_zone_labels = _get_zone_labels_recording
     if getattr(_header.InnerHeader.is_magic_valid, "fget", None) is not _inner_magic_is_valid:
         _header.InnerHeader.is_magic_valid = property(_inner_magic_is_valid)
+    if _TerminalStatus.decode_type is not _decode_type_with_virtual:
+        _TerminalStatus.decode_type = staticmethod(_decode_type_with_virtual)
 
 
 apply()
