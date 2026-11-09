@@ -287,8 +287,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
     _reset_grouped_entity_naming(hass, entry)
+    _rename_shutter_entities(hass, entry)
 
     return True
+
+
+def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Rename shutter cover entity_ids to match the shutter name.
+
+    They used to be derived from the per-shutter device name (e.g.
+    cover.tapparella_03_tapparella_03); give them a clean id from the shutter's
+    own name instead (cover.tenda_sala). entity_id changes, but existing ones
+    were not meaningful anyway."""
+    from homeassistant.util import slugify
+
+    prefix = f"{entry.data['serial_number']}_shutter_"
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.domain != "cover" or not entity.unique_id.startswith(prefix):
+            continue
+        name = entity.original_name or entity.name
+        if not name:
+            continue
+        desired = f"cover.{slugify(name)}"
+        if entity.entity_id != desired and entity_registry.async_get(desired) is None:
+            entity_registry.async_update_entity(entity.entity_id, new_entity_id = desired)
 
 
 def _reset_grouped_entity_naming(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
