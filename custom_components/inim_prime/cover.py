@@ -20,6 +20,7 @@ import re
 from typing import Any
 
 from homeassistant.components.cover import (
+    ATTR_POSITION,
     CoverDeviceClass,
     CoverEntity,
     CoverEntityFeature,
@@ -76,7 +77,7 @@ def _shutter_commands(entry: InimPrimeConfigEntry) -> dict[int, dict[str, int]]:
         except (TypeError, ValueError):
             continue
         entry_map: dict = {}
-        for kind in ("open", "close", "stop"):
+        for kind in ("open", "close", "stop", "p25", "p50", "p75"):
             value = (cmds or {}).get(kind)
             if value not in (None, ""):
                 try:
@@ -109,6 +110,11 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             open_cmd = mapping.get(module, {}).get("open"),
             close_cmd = mapping.get(module, {}).get("close"),
             stop_cmd = mapping.get(module, {}).get("stop"),
+            presets = {
+                25: mapping.get(module, {}).get("p25"),
+                50: mapping.get(module, {}).get("p50"),
+                75: mapping.get(module, {}).get("p75"),
+            },
             name = mapping.get(module, {}).get("name") or module_names.get(module),
         )
         for module in sorted(shutters)
@@ -132,6 +138,7 @@ class InimPrimeShutterCover(
         open_cmd: int | None,
         close_cmd: int | None,
         stop_cmd: int | None = None,
+        presets: dict[int, int | None] | None = None,
         name: str | None = None,
     ) -> None:
         super().__init__(coordinator)
@@ -140,10 +147,25 @@ class InimPrimeShutterCover(
         self._close_cmd = close_cmd
         self._stop_cmd = stop_cmd
         self._pulse = SHUTTER_PULSE_MS / 1000
+        # Map target position (%) -> command output. 0 = close, 100 = open,
+        # plus any configured partial-open presets (e.g. 25/50/75 %).
+        self._positions: dict[int, int] = {}
+        if close_cmd is not None:
+            self._positions[0] = close_cmd
+        if open_cmd is not None:
+            self._positions[100] = open_cmd
+        for percent, cmd in (presets or {}).items():
+            if cmd is not None:
+                self._positions[percent] = cmd
+        # Optimistic position (no feedback from the Smart module).
+        self._position: int | None = None
 
         features = CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE
         if stop_cmd is not None:
             features |= CoverEntityFeature.STOP
+        # Offer the position slider only when at least one partial preset exists.
+        if any(p not in (0, 100) for p in self._positions):
+            features |= CoverEntityFeature.SET_POSITION
         self._attr_supported_features = features
 
         serial_number = coordinator.serial_number
@@ -167,9 +189,16 @@ class InimPrimeShutterCover(
         )
 
     @property
+    def current_cover_position(self) -> int | None:
+        # Optimistic: the last commanded position (no feedback from the module).
+        return self._position
+
+    @property
     def is_closed(self) -> bool | None:
-        # No position feedback from a Smart module.
-        return None
+        # Known only after a command set it; the module gives no feedback.
+        if self._position is None:
+            return None
+        return self._position == 0
 
     async def _trigger(self, output_id: int | None) -> None:
         if output_id is None:
@@ -178,11 +207,22 @@ class InimPrimeShutterCover(
         await asyncio.sleep(self._pulse)
         await self.coordinator.gateway.set_output(output_id, False)
 
+    async def _go_to(self, position: int) -> None:
+        self._position = position
+        await self._trigger(self._positions.get(position))
+        self.async_write_ha_state()
+
     async def async_open_cover(self, **kwargs: Any) -> None:
-        await self._trigger(self._open_cmd)
+        await self._go_to(100)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
-        await self._trigger(self._close_cmd)
+        await self._go_to(0)
+
+    async def async_set_cover_position(self, **kwargs: Any) -> None:
+        # Snap the requested position to the nearest configured command.
+        target = int(kwargs[ATTR_POSITION])
+        nearest = min(self._positions, key = lambda p: abs(p - target))
+        await self._go_to(nearest)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         await self._trigger(self._stop_cmd)

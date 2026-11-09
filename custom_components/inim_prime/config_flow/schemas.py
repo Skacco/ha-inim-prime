@@ -375,7 +375,7 @@ def build_options_schema(
             cur = current_map.get(str(module)) or current_map.get(module) or {}
             section_key = shutter_section_key(module, names.get(module))
             fields: dict = {}
-            for kind in ("open", "close", "stop"):
+            for kind in ("open", "close", "stop", "p25", "p50", "p75"):
                 value = cur.get(kind)
                 fields[vol.Optional(
                     kind,

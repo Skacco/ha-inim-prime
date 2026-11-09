@@ -51,11 +51,14 @@ class _FakeGateway:
         self.calls.append((output_id, state))
 
 
-def _make_cover(open_cmd, close_cmd, stop_cmd=None):
+def _make_cover(open_cmd, close_cmd, stop_cmd=None, presets=None):
     gateway = _FakeGateway()
     coordinator = SimpleNamespace(gateway=gateway, serial_number="SER", last_update_success=True)
-    cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd, stop_cmd=stop_cmd)
+    cover = InimPrimeShutterCover(coordinator, 1, open_cmd=open_cmd, close_cmd=close_cmd,
+                                  stop_cmd=stop_cmd, presets=presets)
     cover._pulse = 0  # no real delay in tests
+    import types
+    cover.async_write_ha_state = lambda: None
     return cover, gateway
 
 
@@ -69,7 +72,7 @@ async def test_open_close_stop_pulse_mapped_commands():
     gateway.calls.clear()
     await cover.async_stop_cover()
     assert gateway.calls == [(575, True), (575, False)]   # pulse on the stop command
-    assert cover.is_closed is None                        # no position feedback
+    assert cover.is_closed is True                        # last command was close (0%)
 
 
 def test_stop_feature_only_when_mapped():
@@ -85,3 +88,23 @@ def test_cover_unavailable_without_full_mapping():
     assert cover.available is False
     cover2, _ = _make_cover(open_cmd=998, close_cmd=997)
     assert cover2.available is True
+
+
+async def test_set_position_snaps_to_nearest_preset():
+    from homeassistant.components.cover import CoverEntityFeature
+    cover, gateway = _make_cover(open_cmd=998, close_cmd=997,
+                                 presets={25: 575, 50: 576, 75: 999})
+    assert cover.supported_features & CoverEntityFeature.SET_POSITION
+    await cover.async_set_cover_position(position=60)   # nearest is 50 -> cmd 576
+    assert gateway.calls == [(576, True), (576, False)]
+    assert cover.current_cover_position == 50
+    gateway.calls.clear()
+    await cover.async_set_cover_position(position=90)   # nearest is 100 (open) -> 998
+    assert gateway.calls == [(998, True), (998, False)]
+    assert cover.current_cover_position == 100
+
+
+def test_no_set_position_without_presets():
+    from homeassistant.components.cover import CoverEntityFeature
+    cover, _ = _make_cover(open_cmd=998, close_cmd=997)
+    assert not (cover.supported_features & CoverEntityFeature.SET_POSITION)

@@ -96,7 +96,7 @@ def _extract_shutter_commands(data: dict) -> dict:
         section = data.pop(key)
         module = str(int(match.group(1)))
         commands: dict[str, int] = {}
-        for kind in ("open", "close", "stop"):
+        for kind in ("open", "close", "stop", "p25", "p50", "p75"):
             value = section.get(kind)
             if value in (None, ""):
                 continue
