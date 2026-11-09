@@ -56,6 +56,7 @@ PLATFORMS = [
     "event",
     "light",
     "alarm_control_panel",
+    "cover",
 ]
 
 

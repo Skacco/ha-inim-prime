@@ -45,3 +45,11 @@ OUTPUTS_SCAN_INTERVAL_PRIMELAN_DEFAULT: Final[int] = 30000
 OUTPUTS_SCAN_INTERVAL_NATIVE_DEFAULT: Final[int] = 500
 SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT: Final[int] = 10000
 TIMERS_SCAN_INTERVAL_DEFAULT: Final[int] = 10000
+
+# Roller shutters ("tapparelle"): Smart modules driven via their motor relays
+# (terminal T04 = open, T03 = close). Full-travel times are the panel's own
+# programmed values; HA estimates position from them. The extra margin is held
+# at the end of a full open/close to recalibrate to 0 % / 100 %.
+SHUTTER_OPEN_TIME_MS: Final[int] = 17000
+SHUTTER_CLOSE_TIME_MS: Final[int] = 16500
+SHUTTER_EXTRA_TIME_MS: Final[int] = 1500
