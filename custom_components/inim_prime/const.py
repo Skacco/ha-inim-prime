@@ -53,3 +53,10 @@ TIMERS_SCAN_INTERVAL_DEFAULT: Final[int] = 10000
 # Length of the trigger pulse sent to a shutter command output; the Smart
 # module runs the full travel on its own from that pulse.
 SHUTTER_PULSE_MS: Final[int] = 500
+
+# Domotic-module description table (native memory): one 16-byte label per
+# module, module 1 first. Used to auto-name the shutters ("TENDA SALA", ...).
+# Found by decrypting a Prime/STUDIO "Moduli domotici" read.
+MODULE_LABELS_ADDRESS: Final[int] = 335799424
+MODULE_LABEL_SIZE: Final[int] = 16
+MODULE_LABELS_COUNT: Final[int] = 30

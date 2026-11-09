@@ -221,6 +221,11 @@ class NativeAdapter:
     async def close(self) -> None:
         self._client.disconnect()
 
+    async def read_memory(self, address: int, length: int) -> bytes:
+        """Read raw panel memory (used e.g. for the module-name table)."""
+        async with self._client._lock:
+            return await self._client._protocol.read_memory(address, length)
+
     @property
     def serial_number(self) -> Optional[str]:
         info = self._client.panel_info

@@ -97,6 +97,11 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         return
     shutters = discover_shutters(dict(coordinator.gateway.outputs or {}))
     mapping = _shutter_commands(entry)
+    # Auto-name from the panel's module table (e.g. "TENDA SALA"); the manual
+    # name in the options, if set, wins.
+    module_names: dict[int, str] = {}
+    if shutters:
+        module_names = await coordinator.gateway.module_labels(max(shutters))
     entities = [
         InimPrimeShutterCover(
             coordinator,
@@ -104,7 +109,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
             open_cmd = mapping.get(module, {}).get("open"),
             close_cmd = mapping.get(module, {}).get("close"),
             stop_cmd = mapping.get(module, {}).get("stop"),
-            name = mapping.get(module, {}).get("name"),
+            name = mapping.get(module, {}).get("name") or module_names.get(module),
         )
         for module in sorted(shutters)
     ]

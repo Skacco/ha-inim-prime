@@ -172,6 +172,29 @@ class InimPrimeGateway:
         """Every partition, including the hidden unused ones."""
         return self._preferred.partitions
 
+    async def module_labels(self, count: int) -> dict[int, str]:
+        """Domotic-module names from native memory ({module_number: name}).
+
+        Used to auto-name shutters (module 1 -> 'TENDA SALA', ...). Returns {}
+        when native isn't configured or the read fails (names are cosmetic).
+        """
+        if self._native is None:
+            return {}
+        from .const import MODULE_LABELS_ADDRESS, MODULE_LABEL_SIZE
+        try:
+            data = await self._native.read_memory(
+                MODULE_LABELS_ADDRESS, count * MODULE_LABEL_SIZE
+            )
+        except Exception:  # noqa: BLE001 - cosmetic; fall back to default names
+            return {}
+        labels: dict[int, str] = {}
+        for index in range(count):
+            raw = data[index * MODULE_LABEL_SIZE:(index + 1) * MODULE_LABEL_SIZE]
+            name = raw.split(b"\x00", 1)[0].decode("latin-1").strip()
+            if name:
+                labels[index + 1] = name
+        return labels
+
     @property
     def outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
         # Native is preferred for outputs (much faster polling); PrimeLAN is
