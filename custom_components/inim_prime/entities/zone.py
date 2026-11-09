@@ -28,8 +28,8 @@ class ZoneStateBinarySensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     BinarySensorEntity,
 ):
-    _attr_has_entity_name = True
-
+    # Full names (no has_entity_name) so the grouped "Zones" device is not
+    # prepended: the friendly name stays "Zone <label>" as before grouping.
     def __init__(
             self,
             coordinator: InimPrimeZonesUpdateCoordinator,
@@ -38,7 +38,7 @@ class ZoneStateBinarySensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
-        self._attr_name = zone.label
+        self._attr_name = f"Zone {zone.label}"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_triggered"
 
         self._attr_device_info = create_zone_device_info(
@@ -61,7 +61,6 @@ class ZoneStateSensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedZoneState]
     _attr_icon = "mdi:magnify"
@@ -74,7 +73,7 @@ class ZoneStateSensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
-        self._attr_name = f"{zone.label} State"
+        self._attr_name = f"Zone {zone.label} State"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_state"
 
         self._attr_device_info = create_zone_device_info(
@@ -93,7 +92,6 @@ class ZoneAlarmMemoryBinarySensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     BinarySensorEntity,
 ):
-    _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:alarm-light"
@@ -106,7 +104,7 @@ class ZoneAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
-        self._attr_name = f"{zone.label} Alarm Memory"
+        self._attr_name = f"Zone {zone.label} Alarm Memory"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_alarm_memory"
 
         self._attr_device_info = create_zone_device_info(
@@ -125,7 +123,6 @@ class ZoneBypassSwitch(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SwitchEntity,
 ):
-    _attr_has_entity_name = True
     _attr_icon = "mdi:cancel"
     _attr_device_class = SwitchDeviceClass.SWITCH
 
@@ -137,7 +134,7 @@ class ZoneBypassSwitch(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
-        self._attr_name = f"{zone.label} Bypass"
+        self._attr_name = f"Zone {zone.label} Bypass"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_bypass"
 
         self._attr_device_info = create_zone_device_info(

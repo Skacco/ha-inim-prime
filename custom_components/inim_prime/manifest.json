@@ -1,7 +1,7 @@
 {
   "domain": "inim_prime",
   "name": "Inim Prime",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "documentation": "https://github.com/skaccox/ha-inim-prime",
   "issue_tracker": "https://github.com/skaccox/ha-inim-prime/issues",
   "requirements": [

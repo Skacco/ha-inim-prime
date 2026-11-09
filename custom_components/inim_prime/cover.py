@@ -125,8 +125,8 @@ class InimPrimeShutterCover(
     CoordinatorEntity[InimPrimeOutputsUpdateCoordinator],
     CoverEntity,
 ):
-    _attr_has_entity_name = True
-    _attr_name = None  # the cover IS the device
+    # Full name (no has_entity_name) so the grouped "Shutters" device is not
+    # prepended: the friendly name stays the shutter's own name (e.g. "TENDA SALA").
     _attr_device_class = CoverDeviceClass.SHUTTER
 
     def __init__(
