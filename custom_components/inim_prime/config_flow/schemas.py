@@ -47,6 +47,7 @@ def build_native_schema(
         current_use_custom_pin: bool | None = None,
         require_password: bool = True,
         ask_outer_frame: bool = True,
+        current_password: str | None = None,
 ) -> dict:
     """Build the native-protocol connection schema.
 
@@ -76,7 +77,7 @@ def build_native_schema(
     if require_password:
         schema[vol.Required(
             DataKey.Native.PASSWORD,
-            default = NATIVE_PASSWORD_DEFAULT,
+            default = current_password or NATIVE_PASSWORD_DEFAULT,
         )] = TextSelector(TextSelectorConfig(type = TextSelectorType.PASSWORD))
     else:
         schema[vol.Optional(
@@ -101,6 +102,7 @@ def build_primelan_schema(
         *,
         current_use_https: bool | None = None,
         require_api_key: bool = True,
+        current_api_key: str | None = None,
 ) -> dict:
     """Build the PrimeLAN connection schema."""
     schema: dict = {}
@@ -113,7 +115,11 @@ def build_primelan_schema(
     )] = bool
 
     # Api key
-    if require_api_key:
+    if require_api_key and current_api_key:
+        schema[vol.Required(DataKey.Primelan.API_KEY, default = current_api_key)] = TextSelector(
+            TextSelectorConfig(type = TextSelectorType.PASSWORD)
+        )
+    elif require_api_key:
         schema[vol.Required(DataKey.Primelan.API_KEY)] = TextSelector(
             TextSelectorConfig(type = TextSelectorType.PASSWORD)
         )
@@ -128,6 +134,7 @@ def build_primelan_schema(
 def build_connection_schema(
         *,
         flow_data: ConfigData,
+        prefill_secrets: bool = False,
 ) -> dict:
     """Build the combined connection-step schema for the chosen backend(s).
 
@@ -157,7 +164,10 @@ def build_connection_schema(
                         current_port = flow_data.native.port,
                         current_use_outer_frame = flow_data.native.use_outer_frame,
                         current_use_custom_pin = flow_data.native.pin is not None,
-                        require_password = False,
+                        # First setup, form shown again after an error: keep
+                        # what was typed. Reconfigure: blank keeps the stored one.
+                        require_password = prefill_secrets,
+                        current_password = flow_data.native.password if prefill_secrets else None,
                         ask_outer_frame = not flow_data.use_primelan,
                     )
                 )
@@ -177,7 +187,8 @@ def build_connection_schema(
                 vol.Schema(
                     build_primelan_schema(
                         current_use_https = flow_data.primelan.use_https,
-                        require_api_key = False,
+                        require_api_key = prefill_secrets,
+                        current_api_key = flow_data.primelan.api_key if prefill_secrets else None,
                     )
                 )
             )

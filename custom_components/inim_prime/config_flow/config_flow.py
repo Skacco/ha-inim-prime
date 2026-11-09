@@ -180,6 +180,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         schema = vol.Schema(
             build_connection_schema(
                 flow_data = self._data,
+                prefill_secrets = True,
             )
         )
 
