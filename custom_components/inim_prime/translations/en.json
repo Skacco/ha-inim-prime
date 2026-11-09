@@ -61,12 +61,12 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show unnamed outputs (internal terminals without a label)",
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
           "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Off shows only labelled outputs (the real, programmed ones). On also shows the unnamed internal terminals.",
+          "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
           "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {
@@ -158,12 +158,12 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show unnamed outputs (internal terminals without a label)",
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
           "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Off shows only labelled outputs (the real, programmed ones). On also shows the unnamed internal terminals.",
+          "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
           "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {
@@ -219,12 +219,12 @@
         "title": "INIM Prime Options",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
-          "show_hidden_outputs": "Also show unnamed outputs (internal terminals without a label)",
+          "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
           "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
-          "show_hidden_outputs": "Off shows only labelled outputs (the real, programmed ones). On also shows the unnamed internal terminals.",
+          "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
           "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
         },
         "sections": {

@@ -60,9 +60,9 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
-        # False (default) = show only labelled outputs (the real, programmed
-        # ones, including mainboard/aux and the virtual command outputs). True =
-        # also show the unlabelled internal terminals.
+        # False (default) = show only the outputs PrimeLAN publishes to the
+        # linked user (matched on terminal id), like the panel apps. True = also
+        # show the panel's internal/mainboard outputs that aren't on PrimeLAN.
         self.show_hidden_outputs: bool = False
         # Hide areas still named like the panel default ("AREA 013").
         self.hide_unused_partitions: bool = False
@@ -187,11 +187,12 @@ class InimPrimeGateway:
                     oid: (replace(o, label = labels[oid]) if (not o.label and oid in labels) else o)
                     for oid, o in outputs.items()
                 }
-            # Hide only the unlabelled internal terminals; keep every real,
-            # programmed output (mainboard, expansions, virtual command outputs)
-            # -- the panel labels them, so a label is what makes an output real.
-            if not self.show_hidden_outputs:
-                outputs = {oid: o for oid, o in outputs.items() if o.label}
+            # Show only the outputs PrimeLAN publishes to the linked user
+            # (matched on terminal id, which the two backends share). This drops
+            # the panel's internal/mainboard outputs (SIRENA, STATO IMPIANTO,
+            # mainboard garage/aux, ...) that aren't on PrimeLAN.
+            if labels and not self.show_hidden_outputs:
+                outputs = {oid: o for oid, o in outputs.items() if oid in labels}
             return MappingProxyType(outputs)
         return self._primelan.outputs if self._primelan is not None else None
 
