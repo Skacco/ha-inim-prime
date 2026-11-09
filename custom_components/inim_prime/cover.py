@@ -96,7 +96,9 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     coordinator = entry.runtime_data.coordinators.outputs
     if coordinator is None:
         return
-    shutters = discover_shutters(dict(coordinator.gateway.outputs or {}))
+    # Discover from the full output set: the Mod.dom motor terminals that mark a
+    # shutter module aren't on PrimeLAN, so `outputs` (filtered) would hide them.
+    shutters = discover_shutters(dict(coordinator.gateway.all_outputs or {}))
     mapping = _shutter_commands(entry)
     # Auto-name from the panel's module table (e.g. "TENDA SALA"); the manual
     # name in the options, if set, wins.

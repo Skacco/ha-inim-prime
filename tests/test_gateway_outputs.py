@@ -176,6 +176,20 @@ async def test_hidden_outputs_filter():
     assert set(gw.outputs) == {31, 1005}     # opt-in: also internal/mainboard outputs
 
 
+async def test_all_outputs_ignores_the_primelan_filter():
+    # all_outputs always includes the non-PrimeLAN terminals (needed for shutter
+    # discovery), regardless of show_hidden_outputs.
+    native, primelan = FakeBackend("native"), FakeBackend("primelan")
+    native._outputs = {31: UnifiedOutput(31, "CHIUSURA", False), 1005: UnifiedOutput(1005, "Mod.dom 01 T03", False)}
+    primelan._terminal_labels = {31: "CHIUSURA"}
+    gw = InimPrimeGateway(native=native, primelan=primelan)
+    await gw.update_outputs()
+    assert set(gw.outputs) == {31}                 # filtered view hides the module terminal
+    assert set(gw.all_outputs) == {31, 1005}       # full view keeps it, filter off
+    gw.show_hidden_outputs = True
+    assert set(gw.all_outputs) == {31, 1005}       # and on
+
+
 async def test_primelan_names_unlabelled_native_output():
     native, primelan = FakeBackend("native"), FakeBackend("primelan")
     # native output 1007 (mainboard) has only a generic/empty label; PrimeLAN

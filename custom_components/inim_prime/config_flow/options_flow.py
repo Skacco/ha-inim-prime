@@ -74,10 +74,16 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         """Discovered shutter modules and the current outputs to choose from."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         gateway = getattr(runtime, "gateway", None) if runtime else None
-        outputs = dict(getattr(gateway, "outputs", None) or {}) if gateway else {}
-        if not outputs:
+        if gateway is None:
             return [], []
-        shutters = sorted(discover_shutters(outputs))
+        # Discover modules from the full output set (the Mod.dom motor terminals
+        # aren't on PrimeLAN), but offer only the normal outputs as the command
+        # choices (the Apri/Chiudi virtual outputs are on PrimeLAN).
+        all_outputs = dict(getattr(gateway, "all_outputs", None) or {})
+        outputs = dict(getattr(gateway, "outputs", None) or {})
+        if not all_outputs:
+            return [], []
+        shutters = sorted(discover_shutters(all_outputs))
         choices = sorted(
             ((oid, (o.label or f"Output {oid}")) for oid, o in outputs.items()),
             key = lambda item: item[1].lower(),

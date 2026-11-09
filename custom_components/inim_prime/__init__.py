@@ -440,10 +440,11 @@ def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
     outputs = gateway.outputs
     if outputs is None:
         return
-    # Motor relays of shutter covers are no longer offered as switches.
+    # Motor relays of shutter covers are no longer offered as switches. Discover
+    # from the full set so the Mod.dom terminals are caught even when shown.
     shutter_terminals = {
         oid
-        for terminals in discover_shutters(dict(outputs)).values()
+        for terminals in discover_shutters(dict(gateway.all_outputs or {})).values()
         for oid in terminals.values()
     }
     prefix = f"{entry.data['serial_number']}_output_"

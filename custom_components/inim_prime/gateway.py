@@ -222,10 +222,11 @@ class InimPrimeGateway:
         return labels
 
     @property
-    def outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
-        # Native is preferred for outputs (much faster polling); PrimeLAN is
-        # used only when native isn't configured. Native has no dimming, so
-        # dimmers are on/off when native is active.
+    def all_outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
+        """Every output the backend exposes, named but NOT filtered by PrimeLAN
+        membership. Shutter discovery needs this: the Mod.dom motor terminals
+        (T03/T04) that identify a shutter module aren't published on PrimeLAN,
+        so they'd be missing from `outputs` and no shutter would be found."""
         if self._native is not None:
             outputs = dict(self._native.outputs)
             labels = self._primelan_output_labels or {}
@@ -236,14 +237,25 @@ class InimPrimeGateway:
                     oid: (replace(o, label = labels[oid]) if (not o.label and oid in labels) else o)
                     for oid, o in outputs.items()
                 }
-            # Show only the outputs PrimeLAN publishes to the linked user
-            # (matched on terminal id, which the two backends share). This drops
-            # the panel's internal/mainboard outputs (SIRENA, STATO IMPIANTO,
-            # mainboard garage/aux, ...) that aren't on PrimeLAN.
-            if labels and not self.show_hidden_outputs:
-                outputs = {oid: o for oid, o in outputs.items() if oid in labels}
             return MappingProxyType(outputs)
         return self._primelan.outputs if self._primelan is not None else None
+
+    @property
+    def outputs(self) -> MappingProxyType[int, UnifiedOutput] | None:
+        # Native is preferred for outputs (much faster polling); PrimeLAN is
+        # used only when native isn't configured. Native has no dimming, so
+        # dimmers are on/off when native is active.
+        outputs = self.all_outputs
+        if outputs is None:
+            return None
+        labels = self._primelan_output_labels or {}
+        # Show only the outputs PrimeLAN publishes to the linked user (matched on
+        # terminal id, which the two backends share). This drops the panel's
+        # internal/mainboard outputs (SIRENA, STATO IMPIANTO, mainboard
+        # garage/aux, ...) that aren't on PrimeLAN.
+        if self._native is not None and labels and not self.show_hidden_outputs:
+            outputs = MappingProxyType({oid: o for oid, o in outputs.items() if oid in labels})
+        return outputs
 
     @property
     def scenarios(self) -> MappingProxyType[int, UnifiedScenario] | None:
