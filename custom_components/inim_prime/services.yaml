@@ -41,3 +41,19 @@ debug_raw_command:
     data:
       selector:
         text:
+debug_memory_diff:
+  fields:
+    address:
+      required: true
+      selector:
+        number: {min: 0, max: 4294967295, mode: box}
+    length:
+      required: true
+      selector:
+        number: {min: 1, max: 262144, mode: box}
+    snapshot:
+      selector:
+        boolean:
+    max_changes:
+      selector:
+        number: {min: 1, max: 2000, mode: box}

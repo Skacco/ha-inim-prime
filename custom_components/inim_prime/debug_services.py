@@ -28,6 +28,8 @@ SERVICE_READ_TERMINALS = "debug_read_terminals"
 SERVICE_WATCH_TERMINALS = "debug_watch_terminals"
 SERVICE_READ_MEMORY = "debug_read_memory"
 SERVICE_RAW_COMMAND = "debug_raw_command"
+SERVICE_MEMORY_DIFF = "debug_memory_diff"
+_SNAPSHOTS: dict[tuple[int, int], bytes] = {}
 
 _TERMINAL_RANGE = vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009))
 
@@ -52,6 +54,14 @@ READ_MEMORY_SCHEMA = vol.Schema({
 RAW_COMMAND_SCHEMA = vol.Schema({
     vol.Required("operation"): vol.All(vol.Coerce(int), vol.Range(min = 0, max = 255)),
     vol.Optional("data", default = ""): cv.string,
+})
+
+
+MEMORY_DIFF_SCHEMA = vol.Schema({
+    vol.Required("address"): vol.Coerce(int),
+    vol.Required("length"): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 262144)),
+    vol.Optional("snapshot", default = False): cv.boolean,
+    vol.Optional("max_changes", default = 200): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 2000)),
 })
 
 
@@ -118,6 +128,45 @@ async def _read_memory(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     return {"hex": data.hex(" "), "ascii": data.decode("latin-1").replace("\x00", ".")}
 
 
+async def _read_block(client, address: int, length: int) -> bytes:
+    data = bytearray()
+    for offset in range(0, length, 1024):
+        size = min(1024, length - offset)
+        async with client._lock:
+            data += await client._protocol.read_memory(address + offset, size)
+    return bytes(data)
+
+
+async def _memory_diff(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """First call with snapshot=true stores the block, later calls list what changed."""
+    client = _native_client(hass)
+    address, length = call.data["address"], call.data["length"]
+    current = await _read_block(client, address, length)
+    key = (address, length)
+    if call.data["snapshot"] or key not in _SNAPSHOTS:
+        _SNAPSHOTS[key] = current
+        return {"snapshot": True, "bytes": length}
+    previous = _SNAPSHOTS[key]
+    changes = []
+    i = 0
+    while i < length and len(changes) < call.data["max_changes"]:
+        if current[i] != previous[i]:
+            j = i
+            while j < length and (current[j] != previous[j] or (j + 1 < length and current[j + 1] != previous[j + 1])):
+                j += 1
+            changes.append({
+                "address": hex(address + i),
+                "offset": i,
+                "from": previous[i:j].hex(" "),
+                "to": current[i:j].hex(" "),
+            })
+            i = j
+        else:
+            i += 1
+    _SNAPSHOTS[key] = current
+    return {"changes": changes}
+
+
 async def _raw_command(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     client = _native_client(hass)
     try:
@@ -141,6 +190,7 @@ def async_register(hass: HomeAssistant) -> None:
         (SERVICE_WATCH_TERMINALS, _watch_terminals, WATCH_TERMINALS_SCHEMA),
         (SERVICE_READ_MEMORY, _read_memory, READ_MEMORY_SCHEMA),
         (SERVICE_RAW_COMMAND, _raw_command, RAW_COMMAND_SCHEMA),
+        (SERVICE_MEMORY_DIFF, _memory_diff, MEMORY_DIFF_SCHEMA),
     ):
         async def _handler(call: ServiceCall, _h = handler) -> ServiceResponse:
             return await _h(hass, call)

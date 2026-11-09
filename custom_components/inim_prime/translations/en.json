@@ -334,6 +334,28 @@
           "description": "Command data as hex bytes."
         }
       }
+    },
+    "debug_memory_diff": {
+      "name": "Debug: memory diff",
+      "description": "Native protocol: read a memory block and list the bytes changed since the previous call (snapshot=true only stores it).",
+      "fields": {
+        "address": {
+          "name": "Address",
+          "description": "Start address."
+        },
+        "length": {
+          "name": "Length",
+          "description": "Bytes to read."
+        },
+        "snapshot": {
+          "name": "Snapshot only",
+          "description": "Only store the block, without comparing."
+        },
+        "max_changes": {
+          "name": "Max changes",
+          "description": "Maximum changed ranges returned."
+        }
+      }
     }
   }
 }
