@@ -294,7 +294,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_entities(hass, entry, inim_gateway)
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
-    _remove_renamed_zone_entities(hass, entry)
+    _remove_renamed_state_entities(hass, entry)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
     _rename_shutter_entities(hass, entry)
@@ -419,20 +419,23 @@ def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry
                     break
 
 
-def _remove_renamed_zone_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Remove the old zone State sensor and Bypass switch after their unique_id
-    was renamed (_state -> _stato, _bypass -> _esclusione).
+def _remove_renamed_state_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove the old zone/partition State sensors and zone Bypass switch after
+    their unique_id was renamed (_state -> _stato, _bypass -> _esclusione).
 
     HA keeps an entity's first display name (original_name) and even restores it
     for 30 days if the same unique_id comes back, so the old English/"Bypass"
-    names were stuck. Giving those two entities a new unique_id makes HA create
-    them fresh as "Stato"/"Esclusione"; drop the now-orphaned old ones here."""
-    prefix = f"{entry.data['serial_number']}_zone_"
+    names were stuck. Giving those entities a new unique_id makes HA create them
+    fresh as "Stato"/"Esclusione"; drop the now-orphaned old ones here."""
+    serial_number = entry.data["serial_number"]
+    zone_prefix = f"{serial_number}_zone_"
+    partition_prefix = f"{serial_number}_partition_"
     entity_registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        if not entity.unique_id.startswith(prefix):
-            continue
-        if entity.unique_id.endswith("_state") or entity.unique_id.endswith("_bypass"):
+        uid = entity.unique_id
+        if uid.startswith(zone_prefix) and (uid.endswith("_state") or uid.endswith("_bypass")):
+            entity_registry.async_remove(entity.entity_id)
+        elif uid.startswith(partition_prefix) and uid.endswith("_state"):
             entity_registry.async_remove(entity.entity_id)
 
 

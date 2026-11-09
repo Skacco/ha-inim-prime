@@ -37,6 +37,9 @@ class PartitionStateSensor(
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedPartitionState]
     _attr_icon = "mdi:magnify"
+    # Diagnostic so it groups with Alarm memory under the device's "Diagnostica"
+    # section, leaving the operational entities on top.
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(
             self,
@@ -47,7 +50,7 @@ class PartitionStateSensor(
 
         self.partition_id = partition.partition_id
         self._attr_name = f"{partition.label} Stato"
-        self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_state"
+        self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_stato"
 
         self._attr_device_info = create_partition_device_info(
             serial_number = self.coordinator.serial_number,

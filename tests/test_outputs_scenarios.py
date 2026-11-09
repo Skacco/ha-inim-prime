@@ -279,7 +279,7 @@ async def test_zone_devices_linked_to_panel(hass: HomeAssistant):
     assert reg.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partition_1")}) is None
     # Each zone/partition entity lives on the grouping device.
     zone_entity = ent_reg.async_get_entity_id("binary_sensor", DOMAIN, f"{SERIAL}_zone_1_triggered")
-    part_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_1_state")
+    part_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_1_stato")
     assert ent_reg.async_get(zone_entity).device_id == zones.id
     assert ent_reg.async_get(part_entity).device_id == parts.id
 
@@ -407,15 +407,15 @@ async def test_hide_unused_partitions(hass: HomeAssistant):
     entry = await _setup(hass, panel)
     reg = er.async_get(hass)
     # Partitions share one device now, so hiding removes the entities.
-    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_3_state")
+    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_3_stato")
 
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
         hass.config_entries.async_update_entry(entry, options={**entry.options, "hide_unused_partitions": True})
         assert await hass.config_entries.async_reload(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_3_state") is None
-    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_1_state")
+    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_3_stato") is None
+    assert reg.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_partition_1_stato")
     assert set(entry.runtime_data.gateway.partitions) == {1, 2}
 
 
