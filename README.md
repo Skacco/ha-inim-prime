@@ -208,14 +208,14 @@ Rappresenta la centrale.
 - **Pulsanti:** Annulla esclusioni zone, Azzera memorie partizioni, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
 
-## Zona
+## Zone
 Device unico che contiene tutte le zone. Per ogni zona:
 - **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…).
 - **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memoria allarme** (diagnostica).
 
-## Partizione
+## Partizioni
 Device unico con tutte le partizioni. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
 - **Stato** — ALARM / READY / SABOTAGE.
@@ -232,7 +232,7 @@ Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale p
 Device unico con i sensori di temperatura dei termostati (solo backend Native, se presenti sulla centrale).
 
 ## Timer
-Device unico con i timer della centrale: un binary sensor "attivo" e uno switch "abilitato" per ciascuno.
+Device unico con i timer della centrale: un binary sensor "attivo" e uno switch "abilitato" per ciascuno. Creato **solo se la centrale ha dei timer** (come Termostati, Tapparelle e Uscite).
 
 ## GSM
 Operatore, Potenza segnale, Credito, Tensione alimentazione.

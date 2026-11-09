@@ -24,8 +24,8 @@ def create_partition_device_info(
     # each entity ("Partizione Casetta State"), so keep it singular.
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_partitions")},
-        name = "Partizione",
-        model = "Inim Prime Partizione",
+        name = "Partizioni",
+        model = "Inim Prime Partizioni",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )
 

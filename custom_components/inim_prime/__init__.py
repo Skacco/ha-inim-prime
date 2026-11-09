@@ -218,44 +218,52 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             gateway = inim_gateway,
         )
 
-    if zones_coordinator is not None:
-        await zones_coordinator.async_config_entry_first_refresh()
-
-    if partitions_coordinator is not None:
-        await partitions_coordinator.async_config_entry_first_refresh()
-
-    if system_faults_coordinator is not None:
-        await system_faults_coordinator.async_config_entry_first_refresh()
-
-    if gsm_coordinator is not None:
-        await gsm_coordinator.async_config_entry_first_refresh()
-
-    if outputs_coordinator is not None:
-        await outputs_coordinator.async_config_entry_first_refresh()
-
-    if scenarios_coordinator is not None:
-        await scenarios_coordinator.async_config_entry_first_refresh()
-
+    # Load the two backends concurrently. The Native TCP link and the PrimeLAN
+    # HTTP API are independent connections, so running each backend's initial
+    # refreshes as its own sequential chain -- and the two chains in parallel --
+    # cuts startup time roughly to the slower of the two instead of their sum.
+    # Each chain stays sequential internally: the Native protocol handles one
+    # command at a time, so its coordinators must not overlap each other.
+    prefer_native = bool(data.get("native"))
+    state_coordinators = [
+        c for c in (zones_coordinator, partitions_coordinator, outputs_coordinator)
+        if c is not None
+    ]
+    native_chain = list(state_coordinators) if prefer_native else []
+    primelan_chain = [] if prefer_native else list(state_coordinators)
     if timers_coordinator is not None:
-        await timers_coordinator.async_config_entry_first_refresh()
+        native_chain.append(timers_coordinator)
+    primelan_chain.extend(
+        c for c in (system_faults_coordinator, gsm_coordinator, scenarios_coordinator)
+        if c is not None
+    )
 
-    if panel_log_events_coordinator is not None:
-        await panel_log_events_coordinator.async_startup()
-        await panel_log_events_coordinator.async_config_entry_first_refresh()
+    thermostats_probe: dict = {}
 
-    # Thermostats are optional and not on every panel. Probe once without
-    # blocking setup: keep the coordinator only if the panel actually returns
-    # thermostats (the status command fails cleanly on panels without any).
-    if inim_gateway.supports_thermostats:
-        _thermostats = InimPrimeThermostatsUpdateCoordinator(
-            hass = hass,
-            update_interval = timedelta(milliseconds = THERMOSTATS_SCAN_INTERVAL_DEFAULT),
-            entry = entry,
-            gateway = inim_gateway,
-        )
-        await _thermostats.async_refresh()
-        if _thermostats.last_update_success and inim_gateway.thermostats:
-            thermostats_coordinator = _thermostats
+    async def _run_native() -> None:
+        for coordinator in native_chain:
+            await coordinator.async_config_entry_first_refresh()
+        # Thermostats are Native-only and optional. Probe here (inside the native
+        # chain, so it overlaps the PrimeLAN loads) and keep the coordinator only
+        # if the panel actually returns thermostats (the status command fails
+        # cleanly on panels without any).
+        if inim_gateway.supports_thermostats:
+            probe = InimPrimeThermostatsUpdateCoordinator(
+                hass = hass,
+                update_interval = timedelta(milliseconds = THERMOSTATS_SCAN_INTERVAL_DEFAULT),
+                entry = entry,
+                gateway = inim_gateway,
+            )
+            await probe.async_refresh()
+            if probe.last_update_success and inim_gateway.thermostats:
+                thermostats_probe["coordinator"] = probe
+
+    async def _run_primelan() -> None:
+        for coordinator in primelan_chain:
+            await coordinator.async_config_entry_first_refresh()
+
+    await asyncio.gather(_run_native(), _run_primelan())
+    thermostats_coordinator = thermostats_probe.get("coordinator")
 
     # Typed, no hass.data[DOMAIN][entry.entry_id] bookkeeping, no manual
     # cleanup of a dict key on unload -- HA clears runtime_data for us.
@@ -284,12 +292,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     debug_services.async_register(hass)
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
+    _remove_empty_timers_device(hass, entry, inim_gateway)
     _remove_hidden_partition_entities(hass, entry, inim_gateway)
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
     _rename_shutter_entities(hass, entry)
     _remove_unmapped_shutter_covers(hass, entry, inim_gateway)
+
+    # The event log is the slowest single fetch (it pulls the last N panel events
+    # over PrimeLAN). Don't block setup on it: the event entity is already created
+    # here, so load its history in the background and let it fill in once ready --
+    # "initialising" clears without waiting for it.
+    if panel_log_events_coordinator is not None:
+        async def _load_panel_log_events() -> None:
+            await panel_log_events_coordinator.async_startup()
+            await panel_log_events_coordinator.async_refresh()
+
+        entry.async_create_background_task(
+            hass, _load_panel_log_events(), "inim_prime_panel_log_events"
+        )
 
     return True
 
@@ -338,6 +360,24 @@ def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -
         desired = f"cover.{slugify(name)}"
         if entity.entity_id != desired and entity_registry.async_get(desired) is None:
             entity_registry.async_update_entity(entity.entity_id, new_entity_id = desired)
+
+
+def _remove_empty_timers_device(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Drop the Timer grouping device when the panel has no timers.
+
+    Timer entities are created only when the panel exposes timers, so on a panel
+    without any the device would otherwise linger empty. Mirror how thermostats,
+    shutters and outputs appear only when present."""
+    if gateway.supports_timers and gateway.timers:
+        return
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device(
+        identifiers = {(DOMAIN, f"{entry.data['serial_number']}_timers")}
+    )
+    if device is not None:
+        device_registry.async_update_device(
+            device.id, remove_config_entry_id = entry.entry_id
+        )
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
@@ -478,8 +518,8 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
             device = device_registry.async_update_device(device.id, via_device_id = panel.id)
         return device
 
-    zones_group = group("zones", "Zona")
-    partitions_group = group("partitions", "Partizione")
+    zones_group = group("zones", "Zone")
+    partitions_group = group("partitions", "Partizioni")
     group_ids = {zones_group.id, partitions_group.id}
 
     # The Shutters group exists only when the panel has shutters (its cover
