@@ -338,9 +338,9 @@ _events` entity of your panel. Then click on `Save`.
 You should now be able to see a list of logs with their related attributes.   
 You can obviously change the card options as you desire, the one I provided is a basic configuration that should work.   
 # About the API   
-This integration communicates with the Inim Prime panel using a Python library I created and that is available:   
+This integration communicates with the Inim Prime panel using a Python library created by Pitscheider, available here:   
 https://github.com/Pitscheider/inim_prime_api   
-You can use it to test you Inim Prime panel API at a lower level or to create something new!   
+You can use it to test your Inim Prime panel API at a lower level or to create something new!   
 # About the development of this integration   
 This is the first Home Assistant integration I've ever developed. I tried to be as careful as I could during the development, but bear in mind that there is some more work that needs to be done to make it better. Some functionality (mainly due to problems with the API) are missing and there might be bad practices in the logic I used under the hood.   
 Again, I tried my best, but still, this is my first integration.   
