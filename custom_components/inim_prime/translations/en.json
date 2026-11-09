@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Configure INIM Prime",
-        "description": "Choose which backend(s) to use for this panel.",
+        "description": "Choose which backend(s) to use for this panel.\n\n• Native — zones, partitions, arm/disarm, outputs, timers and roller shutters. Fast local polling.\n• PrimeLAN — adds scenarios, GSM status, system faults and the event log.\n• Both — all of the above (Native is used where it can, PrimeLAN for the rest).\n\nNative only still covers the essentials; PrimeLAN requires the PrimeLAN card and its API key.",
         "menu_options": {
           "native_only": "Native only",
           "primelan_only": "PrimeLAN only",
@@ -108,7 +108,7 @@
       },
       "reconfigure": {
         "title": "Reconfigure INIM Prime",
-        "description": "Choose which backend(s) to use for this panel.",
+        "description": "Choose which backend(s) to use for this panel.\n\n• Native — zones, partitions, arm/disarm, outputs, timers and roller shutters. Fast local polling.\n• PrimeLAN — adds scenarios, GSM status, system faults and the event log.\n• Both — all of the above (Native is used where it can, PrimeLAN for the rest).\n\nNative only still covers the essentials; PrimeLAN requires the PrimeLAN card and its API key.",
         "menu_options": {
           "reconfigure_native_only": "Native only",
           "reconfigure_primelan_only": "PrimeLAN only",

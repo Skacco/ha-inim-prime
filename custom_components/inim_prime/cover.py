@@ -2,15 +2,21 @@
 
 Each shutter module exposes two outputs: T04 (open) and T03 (close). The panel
 has no readable position over the local protocols -- it lives only in the cloud
--- so HA controls the motor relays directly (set_output) and estimates the
-position from the programmed travel times. Reading the relay states (via the
-outputs coordinator, polled through the native protocol) lets HA follow moves
-started from anywhere: HA, the wall button, or a timer.
+-- so HA drives the motor relays directly (set_output) and estimates the
+position from the programmed travel times.
+
+Commanded moves are time-driven and self-contained: HA turns the relay on and
+schedules a precise stop, so they never depend on reading the relay back (which
+lags the command by up to a poll). A full open/close always runs the whole
+travel time plus a margin, so it reaches -- and recalibrates -- the end even
+when the position is still unknown. Reading the relays (via the outputs
+coordinator) is used only to follow moves started elsewhere (wall button,
+timer) while HA itself is idle.
 
 Only `set_output` and relay reads are used -- the same safe, proven operations
-as the output switches. Safeguards: the two relays are never on together, a
-hard-stop timer always cuts the motor after the travel time plus a margin, and
-the relays are released when the entity is removed.
+as the output switches. Safeguards: the two relays are never on together, every
+commanded move has a hard-stop backup timer, and the relays are released when
+the entity is removed.
 """
 from __future__ import annotations
 
@@ -92,6 +98,7 @@ class InimPrimeShutterCover(
     CoverEntity,
 ):
     _attr_has_entity_name = True
+    _attr_name = None  # the cover IS the device; avoids "Tapparella 01 Tapparella 01"
     _attr_device_class = CoverDeviceClass.SHUTTER
     _attr_supported_features = (
         CoverEntityFeature.OPEN
@@ -114,11 +121,10 @@ class InimPrimeShutterCover(
         self._close_id = close_id
         self._open_time = SHUTTER_OPEN_TIME_MS / 1000
         self._close_time = SHUTTER_CLOSE_TIME_MS / 1000
-        self._hard_stop_delay = max(self._open_time, self._close_time) + SHUTTER_EXTRA_TIME_MS / 1000 + 1.0
+        self._extra = SHUTTER_EXTRA_TIME_MS / 1000
 
         serial_number = coordinator.serial_number
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
-        self._attr_name = f"Tapparella {module:02d}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{serial_number}_shutter_{module}")},
             name=f"Tapparella {module:02d}",
@@ -126,19 +132,28 @@ class InimPrimeShutterCover(
             manufacturer=INIM_PRIME_DEVICE_MANUFACTURER,
         )
 
-        # Position 0 = closed, 100 = open. Unknown until a full travel calibrates
-        # it, so is_closed stays None (unknown) while _calibrated is False.
+        # 0 = closed, 100 = open. Unknown until a full travel calibrates it.
         self._position: float = 50.0
         self._calibrated = False
-        self._direction = 0  # +1 opening, -1 closing, 0 stopped
+        self._moving = 0  # +1 opening, -1 closing, 0 stopped
+        self._commanded = False  # True while a timer-driven HA move is running
         self._ref_time = time.monotonic()
         self._ref_pos = 50.0
-        self._target: float | None = None
-        self._hard_stop: asyncio.TimerHandle | None = None
+        self._stop_handle: asyncio.TimerHandle | None = None
+        self._hard_stop_handle: asyncio.TimerHandle | None = None
 
     # ------------------------------------------------------------------
-    # Relay reading / position integration
+    # Position estimate
     # ------------------------------------------------------------------
+    def _travel(self, direction: int) -> float:
+        return self._open_time if direction > 0 else self._close_time
+
+    def _position_now(self) -> float:
+        if self._moving == 0:
+            return self._position
+        elapsed = time.monotonic() - self._ref_time
+        return _clamp(self._ref_pos + self._moving * elapsed / self._travel(self._moving) * 100)
+
     def _relay_direction(self) -> int:
         outputs = self.coordinator.gateway.outputs or {}
         open_output = outputs.get(self._open_id)
@@ -151,78 +166,36 @@ class InimPrimeShutterCover(
             return -1
         return 0
 
-    def _advance(self) -> None:
-        """Update the estimated position from elapsed motor time and relays."""
-        now = time.monotonic()
-
-        if self._direction != 0:
-            travel = self._open_time if self._direction > 0 else self._close_time
-            self._position = _clamp(
-                self._ref_pos + self._direction * (now - self._ref_time) / travel * 100
-            )
-
-        relay_direction = self._relay_direction()
-        if relay_direction != self._direction:
-            # A move started or stopped -- from HA, the wall button or a timer.
-            self._direction = relay_direction
-            self._ref_time = now
-            self._ref_pos = self._position
-            if relay_direction == 0:
-                self._target = None
-
-        if self._direction > 0 and self._position >= 100:
-            self._position = 100.0
-            self._calibrated = True
-            self._request_stop()
-        elif self._direction < 0 and self._position <= 0:
-            self._position = 0.0
-            self._calibrated = True
-            self._request_stop()
-        elif self._target is not None and self._direction != 0:
-            reached = (
-                (self._direction > 0 and self._position >= self._target)
-                or (self._direction < 0 and self._position <= self._target)
-            )
-            if reached:
-                self._position = self._target
-                self._request_stop()
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self._advance()
-        super()._handle_coordinator_update()
+    # ------------------------------------------------------------------
+    # Timers
+    # ------------------------------------------------------------------
+    def _cancel_timers(self) -> None:
+        for handle in (self._stop_handle, self._hard_stop_handle):
+            if handle is not None:
+                handle.cancel()
+        self._stop_handle = self._hard_stop_handle = None
 
     # ------------------------------------------------------------------
     # Relay control with safeguards
     # ------------------------------------------------------------------
-    def _cancel_hard_stop(self) -> None:
-        if self._hard_stop is not None:
-            self._hard_stop.cancel()
-            self._hard_stop = None
-
-    def _schedule_hard_stop(self) -> None:
-        self._cancel_hard_stop()
-        self._hard_stop = self.hass.loop.call_later(
-            self._hard_stop_delay,
-            lambda: self.hass.async_create_task(self._stop()),
-        )
-
-    def _request_stop(self) -> None:
-        """Stop from a sync context (coordinator callback)."""
-        self._direction = 0
-        self._target = None
-        self._cancel_hard_stop()
-        self.hass.async_create_task(self._release_relays())
-
     async def _release_relays(self) -> None:
         # Both off: never leave a motor energised.
         await self.coordinator.gateway.set_output(self._open_id, False)
         await self.coordinator.gateway.set_output(self._close_id, False)
 
     async def _move_to(self, target: float) -> None:
-        self._advance()
         target = _clamp(target)
+        full = target in (0.0, 100.0)
+
+        # Settle any move in progress before starting a new one.
+        self._position = self._position_now()
+        self._cancel_timers()
+
         direction = 1 if target > self._position else -1 if target < self._position else 0
+        if full:
+            # Always run a full open/close even from an unknown position, so it
+            # reaches and recalibrates the end.
+            direction = 1 if target == 100.0 else -1
         if direction == 0:
             return
 
@@ -232,41 +205,84 @@ class InimPrimeShutterCover(
         await self.coordinator.gateway.set_output(other_id, False)
         await self.coordinator.gateway.set_output(start_id, True)
 
-        self._direction = direction
+        self._moving = direction
+        self._commanded = True
         self._ref_time = time.monotonic()
         self._ref_pos = self._position
-        self._target = target
-        self._schedule_hard_stop()
+
+        travel = self._travel(direction)
+        if full:
+            duration = travel + self._extra
+        else:
+            duration = abs(target - self._position) / 100 * travel
+        self._stop_handle = self.hass.loop.call_later(
+            duration, lambda: self.hass.async_create_task(self._finish(target, full))
+        )
+        self._hard_stop_handle = self.hass.loop.call_later(
+            travel + self._extra + 1.0,
+            lambda: self.hass.async_create_task(self._finish(target, full)),
+        )
+        self.async_write_ha_state()
+
+    async def _finish(self, target: float, full: bool) -> None:
+        self._cancel_timers()
+        await self._release_relays()
+        self._moving = 0
+        self._commanded = False
+        if full:
+            self._position = target
+            self._calibrated = True
+        else:
+            self._position = _clamp(target)
         self.async_write_ha_state()
 
     async def _stop(self) -> None:
-        self._advance()
-        self._direction = 0
-        self._target = None
-        self._cancel_hard_stop()
+        self._position = self._position_now()
+        self._cancel_timers()
         await self._release_relays()
+        self._moving = 0
+        self._commanded = False
         self.async_write_ha_state()
+
+    # ------------------------------------------------------------------
+    # Following moves started elsewhere (wall button / timer), when idle
+    # ------------------------------------------------------------------
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        if not self._commanded:
+            relay_direction = self._relay_direction()
+            if relay_direction != self._moving:
+                self._position = self._position_now()
+                self._moving = relay_direction
+                self._ref_time = time.monotonic()
+                self._ref_pos = self._position
+            elif self._moving != 0:
+                pos = self._position_now()
+                if pos in (0.0, 100.0):
+                    self._calibrated = True
+                self._position = pos
+        super()._handle_coordinator_update()
 
     # ------------------------------------------------------------------
     # Cover interface
     # ------------------------------------------------------------------
     @property
     def current_cover_position(self) -> int:
-        return int(round(self._position))
+        return int(round(self._position_now()))
 
     @property
     def is_closed(self) -> bool | None:
         if not self._calibrated:
             return None
-        return self._position <= 1
+        return self._position_now() <= 1
 
     @property
     def is_opening(self) -> bool:
-        return self._direction > 0
+        return self._moving > 0
 
     @property
     def is_closing(self) -> bool:
-        return self._direction < 0
+        return self._moving < 0
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         await self._move_to(100.0)
@@ -281,6 +297,6 @@ class InimPrimeShutterCover(
         await self._stop()
 
     async def async_will_remove_from_hass(self) -> None:
-        self._cancel_hard_stop()
-        if self._direction != 0:
+        self._cancel_timers()
+        if self._moving != 0 and self._commanded:
             await self._release_relays()

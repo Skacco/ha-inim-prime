@@ -10,6 +10,7 @@ are available at all (gated on whether PrimelanAdapter is configured).
 from __future__ import annotations
 
 import asyncio
+import re
 from types import MappingProxyType
 from typing import Optional
 
@@ -146,7 +147,9 @@ def _output_to_unified(output: NativeOutput) -> UnifiedOutput:
 # Timers (read like Prime/STUDIO's monitoring page does): 40 timers, one bit
 # each in two 6-byte masks, labels in a 16-byte label table.
 TIMERS_COUNT = 40
-TIMER_LABELS_ADDRESS = 0x1403DA00
+# 0x1403DEC0 = 335797248. The previous value pointed 512 bytes earlier, into
+# the arming-scenario label table, so timers were read as "SCENARIO 019..050".
+TIMER_LABELS_ADDRESS = 335797248
 TIMER_LABEL_SIZE = 16
 TIMERS_ACTIVE_ADDRESS = 0x10089C40
 TIMERS_ENABLED_ADDRESS = 0x000057DC
@@ -154,6 +157,11 @@ TIMERS_MASK_SIZE = 6
 
 
 _sleep = asyncio.sleep
+
+# Default (unconfigured) timer slot, e.g. "TIMER      004". Used to confirm we
+# are reading the timer-label table and not, on another firmware layout, the
+# codes or scenario labels.
+_DEFAULT_TIMER_SLOT = re.compile(r"(?i)^TIMER\s+\d+$")
 
 
 def _bit(mask: bytes, index: int) -> bool:
@@ -290,11 +298,24 @@ class NativeAdapter:
         async def _do() -> MappingProxyType[int, UnifiedTimer]:
             if self._timer_labels is None:
                 raw = await self._read_stable(TIMER_LABELS_ADDRESS, TIMERS_COUNT * TIMER_LABEL_SIZE)
-                self._timer_labels = {
+                labels = {
                     i: raw[i * TIMER_LABEL_SIZE:(i + 1) * TIMER_LABEL_SIZE]
                     .decode("latin-1").replace("\x00", "").strip()
                     for i in range(TIMERS_COUNT)
                 }
+                # The timer-label address differs by firmware/model. If we read
+                # the wrong table (e.g. the codes or scenario labels on a layout
+                # we don't know yet), the slots are "CODICE 2xx" / "SCENARIO 0xx"
+                # instead of the "TIMER 0xx" defaults. Only trust the read when it
+                # looks like a timer table, otherwise expose no timers rather than
+                # bogus entities.
+                looks_like_timers = sum(
+                    bool(_DEFAULT_TIMER_SLOT.match(label)) for label in labels.values()
+                )
+                if looks_like_timers < 3:
+                    self._timers = {}
+                    return self.timers
+                self._timer_labels = labels
             active = await self._read_memory(TIMERS_ACTIVE_ADDRESS, TIMERS_MASK_SIZE)
             enabled = await self._read_memory(TIMERS_ENABLED_ADDRESS, TIMERS_MASK_SIZE)
             self._timers = {

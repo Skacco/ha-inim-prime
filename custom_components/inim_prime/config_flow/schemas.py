@@ -320,7 +320,7 @@ def build_options_schema(
     # Areas never configured keep the panel's default name ("AREA 013"...).
     schema[vol.Required(
         OptionsKey.HIDE_UNUSED_PARTITIONS,
-        default = bool(current_options.hide_unused_partitions) if current_options else False,
+        default = bool(current_options.hide_unused_partitions) if current_options else True,
     )] = bool
 
     if has_native and has_primelan:

@@ -101,3 +101,22 @@ async def test_set_timer_enabled_writes_one_bit(monkeypatch):
     assert writes[-1] == (na.TIMERS_ENABLED_ADDRESS + 1, b"\xfd")
     await gateway.set_timer_enabled(3, True)
     assert writes[-1] == (na.TIMERS_ENABLED_ADDRESS, b"\xff")
+
+
+async def test_wrong_label_table_yields_no_timers(monkeypatch):
+    """On an unknown firmware layout the read hits the codes/scenario table."""
+    monkeypatch.setattr(na, "_sleep", _no_sleep)
+    labels = b"".join(_label(f"CODICE     {i:03d}") for i in range(239, 279))
+    memory = {
+        na.TIMER_LABELS_ADDRESS: labels,
+        na.TIMERS_ACTIVE_ADDRESS: bytes(6),
+        na.TIMERS_ENABLED_ADDRESS: bytes([0xFF] * 6),
+    }
+
+    async def read_memory(address, length):
+        return memory[address][:length]
+
+    client = SimpleNamespace(_lock=asyncio.Lock(), _protocol=SimpleNamespace(read_memory=read_memory))
+    gateway = InimPrimeGateway(native=na.NativeAdapter(client))
+    timers = await gateway.update_timers()
+    assert dict(timers) == {}
