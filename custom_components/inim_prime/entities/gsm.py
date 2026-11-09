@@ -25,7 +25,7 @@ class GSMSupplyVoltageSensor(
     CoordinatorEntity[InimPrimeGSMUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Supply Voltage"
+    _attr_name = "Tensione alimentazione"
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_native_unit_of_measurement = "V"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -53,7 +53,7 @@ class GSMOperatorSensor(
     CoordinatorEntity[InimPrimeGSMUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Operator"
+    _attr_name = "Operatore"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:cellphone-wireless"
 
@@ -80,7 +80,7 @@ class GSMSignalStrengthSensor(
     CoordinatorEntity[InimPrimeGSMUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Signal Strength"
+    _attr_name = "Potenza segnale"
     _attr_icon = "mdi:signal"
     _attr_native_unit_of_measurement = "%"
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -108,7 +108,7 @@ class GSMCreditSensor(
     CoordinatorEntity[InimPrimeGSMUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Credit"
+    _attr_name = "Credito"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:cash-multiple"
 

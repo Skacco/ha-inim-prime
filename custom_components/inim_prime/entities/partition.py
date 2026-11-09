@@ -46,7 +46,7 @@ class PartitionStateSensor(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} State"
+        self._attr_name = f"{partition.label} Stato"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_state"
 
         self._attr_device_info = create_partition_device_info(
@@ -77,7 +77,7 @@ class PartitionArmingStatusSelect(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} Arming Status"
+        self._attr_name = f"{partition.label} Stato inserimento"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_arming_status"
 
         self._attr_device_info = create_partition_device_info(
@@ -116,7 +116,7 @@ class ResetPartitionMemoryButton(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} Reset Memory"
+        self._attr_name = f"{partition.label} Azzera memoria"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_reset_memory"
 
         self._attr_device_info = create_partition_device_info(
@@ -148,7 +148,7 @@ class PartitionAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} Alarm Memory"
+        self._attr_name = f"{partition.label} Memoria allarme"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_alarm_memory"
 
         self._attr_device_info = create_partition_device_info(

@@ -4,11 +4,22 @@ from typing import Any
 
 from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode, LightEntity
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .panel import create_panel_device_info
+from ..const import DOMAIN, INIM_PRIME_DEVICE_MANUFACTURER
 from ..coordinators import InimPrimeOutputsUpdateCoordinator
 from ..models.outputs import UnifiedOutput
+
+
+def create_outputs_device_info(serial_number: str) -> DeviceInfo:
+    # All outputs share one "Uscite" device (like Zona / Partizione / Timer).
+    return DeviceInfo(
+        identifiers = {(DOMAIN, f"{serial_number}_outputs")},
+        name = "Uscite",
+        model = "Inim Prime Uscite",
+        manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
+    )
 
 
 def _level_to_brightness(level: int) -> int:
@@ -32,9 +43,9 @@ class _OutputEntity(CoordinatorEntity[InimPrimeOutputsUpdateCoordinator]):
         super().__init__(coordinator)
 
         self.output_id = output.output_id
-        self._attr_name = output.label or f"Output {output.output_id}"
+        self._attr_name = output.label or f"Uscita {output.output_id}"
         self._attr_unique_id = f"{self.coordinator.serial_number}_output_{self.output_id}"
-        self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
+        self._attr_device_info = create_outputs_device_info(self.coordinator.serial_number)
 
     @property
     def _output(self) -> UnifiedOutput | None:

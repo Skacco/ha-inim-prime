@@ -60,7 +60,7 @@ class ScenarioAlarmPanel(
     """
 
     _attr_has_entity_name = True
-    _attr_name = "Alarm"
+    _attr_name = "Allarme"
     _attr_code_arm_required = False
     _attr_code_format = None
 

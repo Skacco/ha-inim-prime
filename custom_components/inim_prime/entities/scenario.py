@@ -53,7 +53,7 @@ class ActiveScenarioSensor(
     """Label of the scenario currently active on the panel."""
 
     _attr_has_entity_name = True
-    _attr_name = "Active Scenario"
+    _attr_name = "Scenario attivo"
     _attr_icon = "mdi:play-box-multiple-outline"
 
     def __init__(self, coordinator: InimPrimeScenariosUpdateCoordinator):

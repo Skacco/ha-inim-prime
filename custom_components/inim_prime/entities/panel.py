@@ -21,28 +21,28 @@ def create_panel_device_info(
 ) -> DeviceInfo:
     return DeviceInfo(
         identifiers = {(domain, serial_number)},
-        name = "Inim Prime Panel",
-        model = "Inim Prime Panel",
+        name = "Centrale Inim Prime",
+        model = "Centrale Inim Prime",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         serial_number = serial_number,
     )
 
 
 SYSTEM_FAULT_NAMES: dict[UnifiedSystemFault, str] = {
-    UnifiedSystemFault.LOW_BATTERY: "Low Battery",
-    UnifiedSystemFault.NETWORK_FAULT: "Network Fault",
-    UnifiedSystemFault.NO_TELEPHONE_LINE: "No Telephone Line",
-    UnifiedSystemFault.RADIO_JAMMING: "Radio Jamming",
-    UnifiedSystemFault.LOW_BATTERY_WIRELESS: "Wireless Device Low Battery",
-    UnifiedSystemFault.WIRELESS_DEVICE_DISAPPEARANCE: "Wireless Device Missing",
-    UnifiedSystemFault.GSM_FAULT: "GSM Fault",
-    UnifiedSystemFault.SENSOR_DIRTY: "Sensor Dirty",
-    UnifiedSystemFault.ZONE_FAULT: "Zone Fault",
-    UnifiedSystemFault.SIRENS_FAULT: "Sirens Fault",
-    UnifiedSystemFault.POWER_SUPPLY_FAULT: "Power Supply Fault",
-    UnifiedSystemFault.RADIO_KEYBOARDS_FAULT: "Radio Keyboards Fault",
-    UnifiedSystemFault.SABOTAGE_FAULT: "Sabotage",
-    UnifiedSystemFault.INTERNET_FAULT: "Internet Fault",
+    UnifiedSystemFault.LOW_BATTERY: "Batteria scarica",
+    UnifiedSystemFault.NETWORK_FAULT: "Guasto rete",
+    UnifiedSystemFault.NO_TELEPHONE_LINE: "Linea telefonica assente",
+    UnifiedSystemFault.RADIO_JAMMING: "Disturbo radio",
+    UnifiedSystemFault.LOW_BATTERY_WIRELESS: "Batteria dispositivo wireless scarica",
+    UnifiedSystemFault.WIRELESS_DEVICE_DISAPPEARANCE: "Dispositivo wireless assente",
+    UnifiedSystemFault.GSM_FAULT: "Guasto GSM",
+    UnifiedSystemFault.SENSOR_DIRTY: "Sensore sporco",
+    UnifiedSystemFault.ZONE_FAULT: "Guasto zona",
+    UnifiedSystemFault.SIRENS_FAULT: "Guasto sirene",
+    UnifiedSystemFault.POWER_SUPPLY_FAULT: "Guasto alimentazione",
+    UnifiedSystemFault.RADIO_KEYBOARDS_FAULT: "Guasto tastiere radio",
+    UnifiedSystemFault.SABOTAGE_FAULT: "Sabotaggio",
+    UnifiedSystemFault.INTERNET_FAULT: "Guasto Internet",
 }
 
 SYSTEM_FAULT_ICONS: dict[UnifiedSystemFault, str] = {
@@ -103,7 +103,7 @@ class PanelSupplyVoltageSensor(
     CoordinatorEntity[InimPrimeSystemFaultsUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Supply Voltage"
+    _attr_name = "Tensione alimentazione"
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_native_unit_of_measurement = "V"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -128,7 +128,7 @@ class PanelLogEventsEvent(
     CoordinatorEntity[InimPrimePanelLogEventsCoordinator],
     EventEntity,
 ):
-    _attr_name = "Log Events"
+    _attr_name = "Registro eventi"
     _attr_event_types = ["generic"]
     # The full list is shown in the UI but not written to the recorder on
     # every event (it would duplicate the whole log in the database).
@@ -180,7 +180,7 @@ class BypassedZonesCountSensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Bypassed Zones"
+    _attr_name = "Zone escluse"
     _attr_icon = "mdi:cancel"
 
     def __init__(
@@ -200,7 +200,7 @@ class DisableAllZoneBypassesButton(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     ButtonEntity,
 ):
-    _attr_name = "Disable All Zone Bypasses"
+    _attr_name = "Annulla esclusioni zone"
     _attr_icon = "mdi:check-all"
     _attr_entity_category = EntityCategory.CONFIG
 
@@ -225,7 +225,7 @@ class ResetAllPartitionMemoriesButton(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     ButtonEntity,
 ):
-    _attr_name = "Reset All Partition Memories"
+    _attr_name = "Azzera memorie partizioni"
     _attr_icon = "mdi:alarm-light-off"
     _attr_entity_category = EntityCategory.CONFIG
 
@@ -250,7 +250,7 @@ class ZonesAlarmMemoryCountSensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Zones Alarm Memory"
+    _attr_name = "Memoria allarme zone"
     _attr_icon = "mdi:alarm-light"
 
     def __init__(
@@ -271,7 +271,7 @@ class PartitionsAlarmMemoryCountSensor(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Partitions Alarm Memory"
+    _attr_name = "Memoria allarme partizioni"
     _attr_icon = "mdi:alarm-light"
 
     def __init__(

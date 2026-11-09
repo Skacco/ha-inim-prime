@@ -1,0 +1,413 @@
+{
+  "title": "INIM Prime",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura INIM Prime",
+        "description": "Scegli quale/i backend usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
+        "menu_options": {
+          "native_only": "Solo Native",
+          "primelan_only": "Solo PrimeLAN",
+          "both": "Native + PrimeLAN"
+        }
+      },
+      "serial_number": {
+        "title": "Numero di serie centrale",
+        "description": "PrimeLAN non può recuperare automaticamente il numero di serie della centrale. Inseriscilo manualmente.",
+        "data": {
+          "serial_number": "Numero di serie centrale"
+        }
+      },
+      "connection": {
+        "title": "Connessione alla centrale",
+        "description": "Inserisci i dati di connessione della tua centrale INIM Prime.",
+        "data": {
+          "host": "Host / Indirizzo IP"
+        },
+        "sections": {
+          "native": {
+            "name": "Native",
+            "description": "Impostazioni per la connessione con protocollo Native.",
+            "data": {
+              "port": "Porta",
+              "use_outer_frame": "Usa Outer Frame",
+              "password": "Password",
+              "use_custom_pin": "Usa PIN personalizzato (sconsigliato)",
+              "pin": "PIN"
+            },
+            "data_description": {
+              "port": "Porta TCP su cui la centrale ascolta il protocollo Native.",
+              "use_outer_frame": "Abilita se la centrale usa una scheda di rete PrimeLAN (non la LAN integrata). Impostato automaticamente quando è configurato anche PrimeLAN.",
+              "password": "Password del protocollo Native. Lascia il valore predefinito se non l'hai cambiata sulla centrale.",
+              "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
+              "pin": "Codice PIN usato per autenticarsi con la centrale."
+            }
+          },
+          "primelan": {
+            "name": "PrimeLAN",
+            "description": "Impostazioni per la connessione API PrimeLAN.",
+            "data": {
+              "use_https": "Usa HTTPS",
+              "api_key": "Chiave API"
+            },
+            "data_description": {
+              "use_https": "Usa HTTPS invece di HTTP per raggiungere il gateway PrimeLAN.",
+              "api_key": "Chiave API usata per autenticarsi con il gateway PrimeLAN."
+            }
+          }
+        }
+      },
+      "options": {
+        "title": "Opzioni INIM Prime",
+        "data": {
+          "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
+          "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
+        },
+        "data_description": {
+          "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
+          "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
+          "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità."
+        },
+        "sections": {
+          "scan_intervals": {
+            "name": "Intervalli di scansione",
+            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
+            "data": {
+              "zones": "Intervallo scansione zone (millisecondi)",
+              "partitions": "Intervallo scansione partizioni (millisecondi)",
+              "gsm": "Intervallo scansione GSM (millisecondi)",
+              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
+              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
+              "outputs": "Intervallo scansione uscite (millisecondi)",
+              "scenarios": "Intervallo scansione scenari (millisecondi)"
+            },
+            "data_description": {
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+            }
+          },
+          "alarm_panel": {
+            "name": "Pannello allarme",
+            "description": "Numero di scenario (0-49) che la centrale attiva per ogni comando. Lascia vuoto per nascondere un comando; senza uno scenario di disinserimento il pannello non viene creato.",
+            "data": {
+              "disarm": "Scenario disinserimento",
+              "arm_away": "Scenario inserimento totale (away)",
+              "arm_home": "Scenario inserimento parziale (home)",
+              "arm_night": "Scenario inserimento notte",
+              "arm_vacation": "Scenario inserimento vacanza",
+              "arm_custom_bypass": "Scenario inserimento personalizzato"
+            }
+          },
+          "shutters": {
+            "name": "Tapparelle",
+            "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Riconfigura INIM Prime",
+        "description": "Scegli quale/i backend usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
+        "menu_options": {
+          "reconfigure_native_only": "Solo Native",
+          "reconfigure_primelan_only": "Solo PrimeLAN",
+          "reconfigure_both": "Native + PrimeLAN"
+        }
+      },
+      "reconfigure_connection": {
+        "title": "Riconfigura connessione",
+        "description": "Aggiorna i dati di connessione della tua centrale INIM Prime.",
+        "data": {
+          "host": "Host / Indirizzo IP"
+        },
+        "sections": {
+          "native": {
+            "name": "Native",
+            "description": "Impostazioni per la connessione con protocollo Native.",
+            "data": {
+              "port": "Porta",
+              "use_outer_frame": "Usa Outer Frame",
+              "password": "Password",
+              "use_custom_pin": "Usa PIN personalizzato (sconsigliato)",
+              "pin": "PIN"
+            },
+            "data_description": {
+              "port": "Porta TCP su cui la centrale ascolta il protocollo Native.",
+              "use_outer_frame": "Abilita se la centrale usa una scheda di rete PrimeLAN (non la LAN integrata). Impostato automaticamente quando è configurato anche PrimeLAN.",
+              "password": "Lascia vuoto per mantenere la password attuale.",
+              "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
+              "pin": "Lascia vuoto per mantenere il PIN attuale."
+            }
+          },
+          "primelan": {
+            "name": "PrimeLAN",
+            "description": "Impostazioni per la connessione API PrimeLAN.",
+            "data": {
+              "use_https": "Usa HTTPS",
+              "api_key": "Chiave API"
+            },
+            "data_description": {
+              "use_https": "Usa HTTPS invece di HTTP per raggiungere il gateway PrimeLAN.",
+              "api_key": "Lascia vuoto per mantenere la chiave API attuale."
+            }
+          }
+        }
+      },
+      "reconfigure_options": {
+        "title": "Opzioni INIM Prime",
+        "data": {
+          "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
+          "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
+        },
+        "data_description": {
+          "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
+          "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
+          "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità."
+        },
+        "sections": {
+          "scan_intervals": {
+            "name": "Intervalli di scansione",
+            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.\nNota: il backend Native supporta intervalli molto più bassi di PrimeLAN per Zone e Partizioni. Se hai appena aggiunto o rimosso Native, i valori predefiniti qui sotto sono stati adeguati di conseguenza.",
+            "data": {
+              "zones": "Intervallo scansione zone (millisecondi)",
+              "partitions": "Intervallo scansione partizioni (millisecondi)",
+              "gsm": "Intervallo scansione GSM (millisecondi)",
+              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
+              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
+              "outputs": "Intervallo scansione uscite (millisecondi)",
+              "scenarios": "Intervallo scansione scenari (millisecondi)"
+            },
+            "data_description": {
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+            }
+          },
+          "alarm_panel": {
+            "name": "Pannello allarme",
+            "description": "Numero di scenario (0-49) che la centrale attiva per ogni comando. Lascia vuoto per nascondere un comando; senza uno scenario di disinserimento il pannello non viene creato.",
+            "data": {
+              "disarm": "Scenario disinserimento",
+              "arm_away": "Scenario inserimento totale (away)",
+              "arm_home": "Scenario inserimento parziale (home)",
+              "arm_night": "Scenario inserimento notte",
+              "arm_vacation": "Scenario inserimento vacanza",
+              "arm_custom_bypass": "Scenario inserimento personalizzato"
+            }
+          },
+          "shutters": {
+            "name": "Tapparelle",
+            "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
+          }
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi alla centrale INIM Prime.",
+      "connection_failed": "Test di connessione fallito. {status}"
+    },
+    "abort": {
+      "already_configured": "Questa centrale INIM Prime è già configurata.",
+      "reconfigure_successful": "La centrale INIM Prime è stata riconfigurata con successo."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni INIM Prime",
+        "data": {
+          "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
+          "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
+        },
+        "data_description": {
+          "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
+          "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
+          "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità."
+        },
+        "sections": {
+          "scan_intervals": {
+            "name": "Intervalli di scansione",
+            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.",
+            "data": {
+              "zones": "Intervallo scansione zone (millisecondi)",
+              "partitions": "Intervallo scansione partizioni (millisecondi)",
+              "gsm": "Intervallo scansione GSM (millisecondi)",
+              "system_faults": "Intervallo scansione guasti di sistema (millisecondi)",
+              "panel_log_events": "Intervallo scansione eventi registro (millisecondi)",
+              "outputs": "Intervallo scansione uscite (millisecondi)",
+              "scenarios": "Intervallo scansione scenari (millisecondi)"
+            },
+            "data_description": {
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni.",
+              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM.",
+              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema.",
+              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite.",
+              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo."
+            }
+          },
+          "alarm_panel": {
+            "name": "Pannello allarme",
+            "description": "Numero di scenario (0-49) che la centrale attiva per ogni comando. Lascia vuoto per nascondere un comando; senza uno scenario di disinserimento il pannello non viene creato.",
+            "data": {
+              "disarm": "Scenario disinserimento",
+              "arm_away": "Scenario inserimento totale (away)",
+              "arm_home": "Scenario inserimento parziale (home)",
+              "arm_night": "Scenario inserimento notte",
+              "arm_vacation": "Scenario inserimento vacanza",
+              "arm_custom_bypass": "Scenario inserimento personalizzato"
+            }
+          },
+          "shutters": {
+            "name": "Tapparelle",
+            "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "debug_read_terminals": {
+      "name": "Debug: leggi terminali",
+      "description": "Protocollo Native: stato grezzo (10 byte) di ogni terminale, con la sua etichetta.",
+      "fields": {
+        "start": {
+          "name": "Primo terminale",
+          "description": "ID del primo terminale (0-1009)."
+        },
+        "end": {
+          "name": "Ultimo terminale",
+          "description": "ID dell'ultimo terminale (0-1009)."
+        },
+        "only_labelled": {
+          "name": "Solo con etichetta",
+          "description": "Salta i terminali senza descrizione."
+        }
+      }
+    },
+    "debug_watch_terminals": {
+      "name": "Debug: osserva terminali",
+      "description": "Protocollo Native: interroga i terminali per un periodo e restituisce ogni cambio di stato grezzo.",
+      "fields": {
+        "start": {
+          "name": "Primo terminale",
+          "description": "ID del primo terminale (0-1009)."
+        },
+        "end": {
+          "name": "Ultimo terminale",
+          "description": "ID dell'ultimo terminale (0-1009)."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Per quanto tempo osservare."
+        },
+        "interval": {
+          "name": "Intervallo",
+          "description": "Intervallo di interrogazione."
+        }
+      }
+    },
+    "debug_read_memory": {
+      "name": "Debug: leggi memoria",
+      "description": "Protocollo Native: legge la memoria grezza della centrale.",
+      "fields": {
+        "address": {
+          "name": "Indirizzo",
+          "description": "Indirizzo iniziale."
+        },
+        "length": {
+          "name": "Lunghezza",
+          "description": "Byte da leggere."
+        }
+      }
+    },
+    "debug_raw_command": {
+      "name": "Debug: comando grezzo",
+      "description": "Protocollo Native: invia un comando grezzo. Può cambiare lo stato della centrale: usare con cautela.",
+      "fields": {
+        "operation": {
+          "name": "Operazione",
+          "description": "Codice operazione del comando."
+        },
+        "data": {
+          "name": "Dati",
+          "description": "Dati del comando come byte esadecimali."
+        }
+      }
+    },
+    "debug_memory_diff": {
+      "name": "Debug: confronto memoria",
+      "description": "Protocollo Native: legge un blocco di memoria ed elenca i byte cambiati dalla chiamata precedente (snapshot=true lo memorizza soltanto).",
+      "fields": {
+        "address": {
+          "name": "Indirizzo",
+          "description": "Indirizzo iniziale."
+        },
+        "length": {
+          "name": "Lunghezza",
+          "description": "Byte da leggere."
+        },
+        "snapshot": {
+          "name": "Solo snapshot",
+          "description": "Memorizza solo il blocco, senza confrontare."
+        },
+        "max_changes": {
+          "name": "Max cambiamenti",
+          "description": "Numero massimo di intervalli cambiati restituiti."
+        }
+      }
+    },
+    "debug_write_memory": {
+      "name": "Debug: scrivi memoria",
+      "description": "Protocollo Native: scrive byte grezzi nella memoria della centrale, come fa Prime/STUDIO. Modifica la centrale: usare con cautela.",
+      "fields": {
+        "address": {
+          "name": "Indirizzo",
+          "description": "Indirizzo iniziale."
+        },
+        "data": {
+          "name": "Dati",
+          "description": "Byte da scrivere, in esadecimale."
+        },
+        "session": {
+          "name": "Sessione di programmazione",
+          "description": "Racchiude la scrittura nei comandi begin/end che invia Prime/STUDIO."
+        }
+      }
+    },
+    "debug_probe_commands": {
+      "name": "Debug: sonda comandi",
+      "description": "Protocollo Native: invia comandi semplici (operazione + dati, senza PIN) e restituisce le risposte. Comandi sconosciuti possono cambiare la centrale: usare con cautela.",
+      "fields": {
+        "operations": {
+          "name": "Operazioni",
+          "description": "Elenco dei codici operazione."
+        },
+        "data": {
+          "name": "Dati",
+          "description": "Byte dati in esadecimale, inviati con ogni operazione."
+        },
+        "response_length": {
+          "name": "Lunghezza risposta",
+          "description": "Lunghezza attesa del payload di risposta (opzionale)."
+        },
+        "delay": {
+          "name": "Pausa",
+          "description": "Pausa tra i comandi."
+        }
+      }
+    }
+  }
+}
