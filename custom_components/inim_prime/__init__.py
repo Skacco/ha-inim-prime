@@ -57,6 +57,7 @@ PLATFORMS = [
     "light",
     "alarm_control_panel",
     "cover",
+    "number",
 ]
 
 

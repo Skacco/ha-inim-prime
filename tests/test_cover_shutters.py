@@ -113,3 +113,18 @@ async def test_follows_external_move_when_idle(monkeypatch):
     assert cover.is_opening
     clock["t"] = 8.5
     assert 45 <= cover.current_cover_position <= 55
+
+
+async def test_per_shutter_time_number_edits_shared_dict(monkeypatch):
+    from custom_components.inim_prime.number import InimPrimeShutterTimeNumber
+    times = {"open": 17.0, "close": 16.5}
+    num = InimPrimeShutterTimeNumber("SER", 1, "open", times)
+    monkeypatch.setattr(num, "async_write_ha_state", lambda: None)
+    assert num.native_value == 17.0
+    await num.async_set_native_value(12.0)
+    assert times["open"] == 12.0          # shared dict updated
+    # a cover sharing the same dict now uses the new time
+    coordinator = SimpleNamespace(gateway=_FakeGateway({}), serial_number="SER")
+    cover = InimPrimeShutterCover(coordinator, 1, open_id=588, close_id=587, times=times)
+    assert cover._travel(1) == 12.0
+    assert cover._travel(-1) == 16.5

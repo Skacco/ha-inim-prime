@@ -73,20 +73,29 @@ def discover_shutters(outputs: dict) -> dict[int, dict[int, int]]:
     }
 
 
+def default_times() -> dict[str, float]:
+    return {"open": SHUTTER_OPEN_TIME_MS / 1000, "close": SHUTTER_CLOSE_TIME_MS / 1000}
+
+
 async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entities) -> None:
     coordinator = entry.runtime_data.coordinators.outputs
     if coordinator is None:
         return
     shutters = discover_shutters(dict(coordinator.gateway.outputs or {}))
-    async_add_entities(
-        InimPrimeShutterCover(
-            coordinator,
-            module,
-            open_id=terminals[_OPEN_TERMINAL],
-            close_id=terminals[_CLOSE_TERMINAL],
+    shutter_times = entry.runtime_data.shutter_times
+    entities = []
+    for module, terminals in sorted(shutters.items()):
+        times = shutter_times.setdefault(module, default_times())
+        entities.append(
+            InimPrimeShutterCover(
+                coordinator,
+                module,
+                open_id=terminals[_OPEN_TERMINAL],
+                close_id=terminals[_CLOSE_TERMINAL],
+                times=times,
+            )
         )
-        for module, terminals in sorted(shutters.items())
-    )
+    async_add_entities(entities)
 
 
 def _clamp(value: float) -> float:
@@ -114,13 +123,17 @@ class InimPrimeShutterCover(
         *,
         open_id: int,
         close_id: int,
+        times: dict[str, float] | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._module = module
         self._open_id = open_id
         self._close_id = close_id
-        self._open_time = SHUTTER_OPEN_TIME_MS / 1000
-        self._close_time = SHUTTER_CLOSE_TIME_MS / 1000
+        # Shared mutable dict (also edited by the per-shutter number entities).
+        self._times = times if times is not None else {
+            "open": SHUTTER_OPEN_TIME_MS / 1000,
+            "close": SHUTTER_CLOSE_TIME_MS / 1000,
+        }
         self._extra = SHUTTER_EXTRA_TIME_MS / 1000
 
         serial_number = coordinator.serial_number
@@ -146,7 +159,7 @@ class InimPrimeShutterCover(
     # Position estimate
     # ------------------------------------------------------------------
     def _travel(self, direction: int) -> float:
-        return self._open_time if direction > 0 else self._close_time
+        return self._times["open"] if direction > 0 else self._times["close"]
 
     def _position_now(self) -> float:
         if self._moving == 0:
