@@ -210,6 +210,7 @@ def build_options_schema(
         migrating_from_primelan: bool | None = None,
         shutters: list[int] | None = None,
         output_choices: list[tuple[int, str]] | None = None,
+        module_names: dict[int, str] | None = None,
 ) -> dict:
     """Build the options schema, only including fields the active backend(s) support.
 
@@ -360,35 +361,42 @@ def build_options_schema(
             mode = NumberSelectorMode.BOX,
         ))
 
-    # Roller shutters: map each one to the panel's open / close command outputs.
-    # The Smart modules run the full travel from a single trigger, so HA just
-    # pulses the chosen command output.
+    # Roller shutters: one section per shutter, titled with the shutter's name
+    # (read from the panel), each holding Apri / Chiudi / Stop dropdowns that
+    # list the panel's command outputs. The Smart module runs the full travel
+    # from a single trigger, so HA just pulses the chosen command output.
     if shutters and output_choices:
         option_items = [
             SelectOptionDict(value = str(oid), label = name) for oid, name in output_choices
         ]
         current_map = (current_options.shutter_commands if current_options else None) or {}
-        shutter_fields: dict = {}
+        names = module_names or {}
         for module in shutters:
             cur = current_map.get(str(module)) or current_map.get(module) or {}
-            # Optional friendly name (also names the cover, e.g. "Sala").
-            name_value = cur.get("name")
-            shutter_fields[vol.Optional(
-                f"{module:02d}_name",
-                description = {"suggested_value": name_value} if name_value else {},
-            )] = TextSelector(TextSelectorConfig(type = TextSelectorType.TEXT))
+            section_key = shutter_section_key(module, names.get(module))
+            fields: dict = {}
             for kind in ("open", "close", "stop"):
-                key = f"{module:02d}_{kind}"
                 value = cur.get(kind)
-                shutter_fields[vol.Optional(
-                    key,
+                fields[vol.Optional(
+                    kind,
                     description = {"suggested_value": str(value)} if value not in (None, "") else {},
                 )] = SelectSelector(SelectSelectorConfig(
                     options = option_items,
                     mode = SelectSelectorMode.DROPDOWN,
                 ))
-        if shutter_fields:
-            schema[vol.Optional(OptionsKey.SHUTTERS)] = section(
-                vol.Schema(shutter_fields), {"collapsed": not current_map},
+            schema[vol.Optional(section_key)] = section(
+                vol.Schema(fields), {"collapsed": not cur},
             )
     return schema
+
+
+def shutter_section_key(module: int, name: str | None) -> str:
+    """Options-form section key for a shutter: shown as the section title.
+
+    HA renders the raw key when there's no translation, so using the panel's
+    module name makes each shutter's block self-explanatory. The module number
+    is kept as a prefix so the mapping can be stored by module and two shutters
+    can never collide on the same name.
+    """
+    label = (name or "").strip() or f"Tapparella {module:02d}"
+    return f"{module:02d} · {label}"

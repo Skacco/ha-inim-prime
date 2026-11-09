@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from typing import Any
 
 import voluptuous as vol
@@ -8,29 +9,11 @@ from .const import OptionsKey
 from .models import ConfigOptions, clean_alarm_panel
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters
-from .schemas import build_options_schema
+from .schemas import build_options_schema, shutter_section_key
 
-
-def _parse_shutter_section(section: dict | None) -> dict:
-    """Turn the form section {"01_open": "998", "01_close": "997", ...} into
-    {"1": {"open": 998, "close": 997}} (only the filled commands)."""
-    result: dict[str, dict] = {}
-    for key, value in (section or {}).items():
-        if value in (None, "") or "_" not in key:
-            continue
-        module_str, _, kind = key.partition("_")
-        try:
-            module = str(int(module_str))
-        except (TypeError, ValueError):
-            continue
-        if kind == "name":
-            result.setdefault(module, {})["name"] = str(value).strip()
-        elif kind in ("open", "close", "stop"):
-            try:
-                result.setdefault(module, {})[kind] = int(value)
-            except (TypeError, ValueError):
-                continue
-    return result
+# A shutter section key looks like "01 · TENDA SALA": the leading number is the
+# module, used to store the mapping (so renaming the module can't lose it).
+_SECTION_KEY = re.compile(r"^(\d{1,3})\s*·")
 
 
 class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
@@ -41,7 +24,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
                 if alarm_panel:
                     data["alarm_panel"] = alarm_panel
-            shutter_commands = _parse_shutter_section(data.pop(OptionsKey.SHUTTERS, None))
+            shutter_commands = _extract_shutter_commands(data)  # pops the sections
             if shutter_commands:
                 data[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
             return self.async_create_entry(title = "", data = data)
@@ -67,6 +50,13 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         has_primelan = bool(data.get("primelan"))
 
         shutters, output_choices = self._shutter_context()
+        module_names: dict[int, str] = {}
+        if shutters:
+            gateway = self.config_entry.runtime_data.gateway
+            try:
+                module_names = await gateway.module_labels(max(shutters))
+            except Exception:  # noqa: BLE001 - names are cosmetic
+                module_names = {}
 
         schema = vol.Schema(
             build_options_schema(
@@ -75,6 +65,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 current_options = config_options,
                 shutters = shutters,
                 output_choices = output_choices,
+                module_names = module_names,
             )
         )
         return self.async_show_form(step_id = "init", data_schema = schema)
@@ -92,3 +83,27 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             key = lambda item: item[1].lower(),
         )
         return shutters, choices
+
+
+def _extract_shutter_commands(data: dict) -> dict:
+    """Pull the per-shutter sections out of the submitted options and return
+    {"<module>": {"open": id, "close": id, "stop": id}} (filled fields only)."""
+    result: dict[str, dict[str, int]] = {}
+    for key in list(data.keys()):
+        match = _SECTION_KEY.match(key)
+        if not match or not isinstance(data[key], dict):
+            continue
+        section = data.pop(key)
+        module = str(int(match.group(1)))
+        commands: dict[str, int] = {}
+        for kind in ("open", "close", "stop"):
+            value = section.get(kind)
+            if value in (None, ""):
+                continue
+            try:
+                commands[kind] = int(value)
+            except (TypeError, ValueError):
+                continue
+        if commands:
+            result[module] = commands
+    return result
