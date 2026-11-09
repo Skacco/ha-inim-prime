@@ -29,7 +29,12 @@ def _fake_client():
     return client, reads
 
 
-async def test_timers_read_and_filtered():
+async def _no_sleep(_):
+    return None
+
+
+async def test_timers_read_and_filtered(monkeypatch):
+    monkeypatch.setattr(na, "_sleep", _no_sleep)
     client, reads = _fake_client()
     adapter = na.NativeAdapter(client)
     gateway = InimPrimeGateway(native = adapter)
@@ -44,5 +49,23 @@ async def test_timers_read_and_filtered():
 
     # Labels are read once, the two masks every update.
     await gateway.update_timers()
-    assert reads.count(na.TIMER_LABELS_ADDRESS) == 1
+    assert reads.count(na.TIMER_LABELS_ADDRESS) == 2  # read twice, until stable
     assert reads.count(na.TIMERS_ACTIVE_ADDRESS) == 2
+
+
+async def test_timer_labels_reread_until_stable(monkeypatch):
+    monkeypatch.setattr(na, "_sleep", _no_sleep)
+    client, reads = _fake_client()
+    good = client._protocol.read_memory
+    stale = [b"".join(_label(f"SCENARIO   {i:03d}") for i in range(19, 59))]
+
+    async def read_memory(address, length):
+        if address == na.TIMER_LABELS_ADDRESS and stale:
+            reads.append(address)
+            return stale.pop()
+        return await good(address, length)
+
+    client._protocol.read_memory = read_memory
+    gateway = InimPrimeGateway(native = na.NativeAdapter(client))
+    timers = await gateway.update_timers()
+    assert {t.label for t in timers.values()} == {"CARRAIO", "Chiusura zip", "Astro per fari"}

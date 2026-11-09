@@ -152,6 +152,9 @@ TIMERS_ENABLED_ADDRESS = 0x000057DC
 TIMERS_MASK_SIZE = 6
 
 
+_sleep = asyncio.sleep
+
+
 def _bit(mask: bytes, index: int) -> bool:
     return bool(mask[index // 8] & (1 << (index % 8)))
 
@@ -238,10 +241,26 @@ class NativeAdapter:
         async with self._client._lock:
             return await self._client._protocol.read_memory(address, length)
 
+    async def _read_stable(self, address: int, length: int, attempts: int = 5) -> bytes:
+        """Read until two consecutive reads match.
+
+        Right after a restart the panel answered the first read of the timer
+        label table with part of the arming scenario labels ("SCENARIO 019"
+        ...); a second read returned the right names.
+        """
+        previous = await self._read_memory(address, length)
+        for _ in range(attempts):
+            await _sleep(0.3)
+            current = await self._read_memory(address, length)
+            if current == previous:
+                return current
+            previous = current
+        return previous
+
     async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
         async def _do() -> MappingProxyType[int, UnifiedTimer]:
             if self._timer_labels is None:
-                raw = await self._read_memory(TIMER_LABELS_ADDRESS, TIMERS_COUNT * TIMER_LABEL_SIZE)
+                raw = await self._read_stable(TIMER_LABELS_ADDRESS, TIMERS_COUNT * TIMER_LABEL_SIZE)
                 self._timer_labels = {
                     i: raw[i * TIMER_LABEL_SIZE:(i + 1) * TIMER_LABEL_SIZE]
                     .decode("latin-1").replace("\x00", "").strip()

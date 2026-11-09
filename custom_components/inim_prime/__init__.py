@@ -251,6 +251,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _link_child_devices(hass, entry)
     debug_services.async_register(hass)
     _remove_stale_output_entities(hass, entry, inim_gateway)
+    _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_devices(hass, entry, inim_gateway)
 
     return True
@@ -271,6 +272,21 @@ def _remove_hidden_partition_devices(hass: HomeAssistant, entry: InimPrimeConfig
             suffix = identifier[len(f"{serial_number}_partition_"):]
             if suffix.isdigit() and int(suffix) in hidden:
                 device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
+
+
+def _remove_stale_timer_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
+    """Delete timer entities of timers no longer exposed (unused or renamed)."""
+    timers = gateway.timers if gateway.supports_timers else None
+    if timers is None:
+        return
+    prefix = f"{entry.data['serial_number']}_timer_"
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.domain != "binary_sensor" or not entity.unique_id.startswith(prefix):
+            continue
+        suffix = entity.unique_id[len(prefix):]
+        if suffix.isdigit() and int(suffix) not in timers:
+            entity_registry.async_remove(entity.entity_id)
 
 
 def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
