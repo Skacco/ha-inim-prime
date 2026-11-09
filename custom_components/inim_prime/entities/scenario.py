@@ -54,7 +54,7 @@ class ActiveScenarioSensor(
 
     _attr_has_entity_name = True
     _attr_name = "Scenario attivo"
-    _attr_icon = "mdi:play-box-multiple-outline"
+    _attr_icon = "mdi:shield-home"
 
     def __init__(self, coordinator: InimPrimeScenariosUpdateCoordinator):
         super().__init__(coordinator)

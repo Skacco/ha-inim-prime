@@ -3,11 +3,36 @@
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
-Può usare due backend, singolarmente o insieme:
 
-- **Native** — protocollo locale della centrale (TCP). Gestisce zone, partizioni, inserimento/disinserimento, uscite, timer, termostati e tapparelle. Polling locale veloce.
-- **PrimeLAN** — usa la Web API ufficiale Inim tramite la scheda di rete PrimeLAN. Aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.
-- **Entrambi** — tutto quanto sopra (Native dove può, PrimeLAN per il resto).
+## Modalità di integrazione
+Puoi usare due backend, **singolarmente o insieme**. La scelta si fa durante la configurazione dell'integrazione.
+
+### Native — protocollo locale (TCP)
+Comunica **direttamente con la centrale** sulla porta del protocollo locale (TCP, default **6004**), con cifratura AES. È il canale **veloce e completamente locale**: non passa dal cloud né dalla Web API.
+Espone:
+- **zone** (stato aperto/chiuso, memoria allarme, esclusione)
+- **partizioni** (stato, inserimento/disinserimento, memoria allarme)
+- **uscite** (switch/luci)
+- **timer**
+- **termostati** (sensori di temperatura)
+- **tapparelle** (comandate tramite le uscite-comando della centrale)
+
+Richiede solo la raggiungibilità della porta del protocollo locale e la relativa password (default `pass`). **Non** richiede la scheda PrimeLAN.
+
+### PrimeLAN — Web API ufficiale Inim
+Usa la **Web API ufficiale Inim** esposta dalla scheda di rete **PrimeLAN**. Aggiunge le funzioni che il protocollo locale non espone:
+- **scenari** (un pulsante per scenario + sensore "Scenario attivo")
+- **stato GSM** (operatore, potenza segnale, credito)
+- **guasti di sistema**
+- **registro eventi** della centrale
+
+Richiede la **scheda di rete PrimeLAN** installata nella centrale.
+
+### Entrambi (consigliato)
+Attivi i due backend insieme: **Native** fa il lavoro locale e veloce (zone, partizioni, uscite, tapparelle, termostati, timer), **PrimeLAN** aggiunge scenari, GSM, guasti e registro. Il **pannello di allarme** di Home Assistant unisce i due mondi: legge lo stato dalle partizioni e invia i comandi di inserimento/disinserimento tramite gli **scenari** PrimeLAN.
+
+## Compatibilità firmware
+Testata sia con centrali a **firmware 4.x** sia a **firmware 5.x**.
 
 Il progetto è **sviluppato dalla community**, **non affiliato a INIM Electronics**, ed è pensato per **affiancare — non sostituire** il software ufficiale Inim.
 
