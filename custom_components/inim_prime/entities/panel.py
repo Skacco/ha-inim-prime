@@ -69,6 +69,38 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return {"ultimo_ok": self._last_ok.isoformat() if self._last_ok else None}
 
 
+class BackendLastUpdateSensor(CoordinatorEntity, SensorEntity):
+    """Timestamp of the last successful poll of one backend (Native or PrimeLAN).
+
+    Stays frozen at the last good moment while the link is down. Diagnostic, on
+    the panel device. Companion of the connectivity binary sensor, as a visible
+    entity (handy in cards/graphs)."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, serial_number: str, name: str, suffix: str) -> None:
+        super().__init__(coordinator)
+        self._attr_name = name
+        self._attr_unique_id = f"{serial_number}_{suffix}"
+        self._attr_device_info = create_panel_device_info(serial_number)
+        self._last_ok = dt_util.utcnow() if coordinator.last_update_success else None
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self):
+        return self._last_ok
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        if self.coordinator.last_update_success:
+            self._last_ok = dt_util.utcnow()
+        super()._handle_coordinator_update()
+
+
 SYSTEM_FAULT_NAMES: dict[UnifiedSystemFault, str] = {
     UnifiedSystemFault.LOW_BATTERY: "Batteria scarica",
     UnifiedSystemFault.NETWORK_FAULT: "Guasto rete",
