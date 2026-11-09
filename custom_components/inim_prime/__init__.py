@@ -292,13 +292,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     debug_services.async_register(hass)
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
-    _remove_empty_timers_device(hass, entry, inim_gateway)
     _remove_hidden_partition_entities(hass, entry, inim_gateway)
     _remove_hidden_zone_entities(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
     _remove_old_grouped_devices(hass, entry)
     _rename_shutter_entities(hass, entry)
     _remove_unmapped_shutter_covers(hass, entry, inim_gateway)
+    # After the stale-entity cleanups above, drop any optional grouping device
+    # (Timer, Uscite, Tapparelle, Termostati) now left without entities.
+    _remove_empty_group_devices(hass, entry)
 
     # The event log is the slowest single fetch (it pulls the last N panel events
     # over PrimeLAN). Don't block setup on it: the event entity is already created
@@ -362,22 +364,31 @@ def _rename_shutter_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -
             entity_registry.async_update_entity(entity.entity_id, new_entity_id = desired)
 
 
-def _remove_empty_timers_device(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:
-    """Drop the Timer grouping device when the panel has no timers.
+def _remove_empty_group_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Drop optional grouping devices left without any entity.
 
-    Timer entities are created only when the panel exposes timers, so on a panel
-    without any the device would otherwise linger empty. Mirror how thermostats,
-    shutters and outputs appear only when present."""
-    if gateway.supports_timers and gateway.timers:
-        return
+    Timer, Uscite, Tapparelle and Termostati create their entities only when the
+    panel actually has those items; on a panel without them (or after they go
+    away) the grouping device would otherwise linger empty. Run after the
+    platforms are set up, so the entity registry reflects what was created."""
+    serial_number = entry.data["serial_number"]
+    optional_ids = {
+        f"{serial_number}_{kind}"
+        for kind in ("timers", "outputs", "shutters", "thermostats")
+    }
     device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(
-        identifiers = {(DOMAIN, f"{entry.data['serial_number']}_timers")}
-    )
-    if device is not None:
-        device_registry.async_update_device(
-            device.id, remove_config_entry_id = entry.entry_id
+    entity_registry = er.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        identifiers = {ident for domain, ident in device.identifiers if domain == DOMAIN}
+        if not identifiers & optional_ids:
+            continue
+        entities = er.async_entries_for_device(
+            entity_registry, device.id, include_disabled_entities = True
         )
+        if not entities:
+            device_registry.async_update_device(
+                device.id, remove_config_entry_id = entry.entry_id
+            )
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
