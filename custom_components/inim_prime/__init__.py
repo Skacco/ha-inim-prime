@@ -285,8 +285,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     _remove_hidden_partition_devices(hass, entry, inim_gateway)
     _remove_hidden_zone_devices(hass, entry, inim_gateway)
     _remove_stale_number_entities(hass, entry)
+    _remove_old_thermostat_devices(hass, entry)
 
     return True
+
+
+def _remove_old_thermostat_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove the old per-thermostat devices ({serial}_thermostat_<index>), now
+    that all temperature sensors are grouped under one "Thermostats" device
+    ({serial}_thermostats). The sensors move by unique_id, leaving the old
+    room-named devices empty, so drop them from this entry."""
+    serial_number = entry.data["serial_number"]
+    prefix = f"{serial_number}_thermostat_"
+    device_registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        for domain, identifier in device.identifiers:
+            if domain != DOMAIN or not identifier.startswith(prefix):
+                continue
+            if identifier[len(prefix):].isdigit():
+                device_registry.async_update_device(device.id, remove_config_entry_id = entry.entry_id)
 
 
 def _remove_hidden_zone_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry, gateway) -> None:

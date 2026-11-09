@@ -25,12 +25,12 @@ class ThermostatTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._index = index
         serial_number = coordinator.serial_number
         # Each thermostat is one entity named by its room, all grouped under a
-        # single "Termostati" device (like the Zones / Partitions / Timers ones).
-        self._attr_name = name or f"Termostato {index}"
+        # single "Thermostats" device (like the Zones / Partitions / Timers ones).
+        self._attr_name = name or f"Thermostat {index}"
         self._attr_unique_id = f"{serial_number}_thermostat_{index}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_thermostats")},
-            name = "Termostati",
+            name = "Thermostats",
             model = "Prime Thermostats",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )
