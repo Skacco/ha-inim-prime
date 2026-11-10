@@ -185,7 +185,7 @@ Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scan
 
 Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*); la voce del metodo **attualmente impostato** è marcata con ●:
 - **Scenario** → un **menù con i nomi degli scenari** letti dalla centrale: tocchi quello da attivare (lo scenario attuale è marcato con ●), oppure *Nessuno*. C'è la voce *‹ Indietro* e nessun pulsante «Invia».
-- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**; essendo un form multi-campo si conferma con «Invia».
+- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Essendo un form multi-campo si conferma con **«Avanti»** (torni all'elenco; il salvataggio vero è *Salva ed esci*). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form.
 
 Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri e alla fine premi **Salva ed esci**.
 

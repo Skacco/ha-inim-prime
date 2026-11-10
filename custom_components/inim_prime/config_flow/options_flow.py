@@ -357,6 +357,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             step_id="cmd_detail",
             data_schema=vol.Schema(schema),
             description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
+            # Not the last step: submitting returns to the command list, where the
+            # real save ("Salva ed esci") lives. So HA labels the button "Avanti"
+            # (Next) instead of the misleading "Invia", and tends to show a back
+            # arrow. HA has no way to label a form button "Salva".
+            last_step=False,
         )
 
     # ------------------------------------------------------------------
