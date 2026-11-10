@@ -233,8 +233,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     primelan_chain = [] if prefer_native else list(state_coordinators)
     if timers_coordinator is not None:
         native_chain.append(timers_coordinator)
+    # Scenarios block setup so the alarm panel shows the right state immediately.
+    # GSM and system faults are diagnostic and slow over PrimeLAN, so they're
+    # loaded in the background (see below) and fill in a moment after startup.
     primelan_chain.extend(
-        c for c in (system_faults_coordinator, gsm_coordinator, scenarios_coordinator)
+        c for c in (scenarios_coordinator,)
         if c is not None
     )
 
@@ -304,17 +307,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # (Timer, Uscite, Tapparelle, Termostati) now left without entities.
     _remove_empty_group_devices(hass, entry)
 
-    # The event log is the slowest single fetch (it pulls the last N panel events
-    # over PrimeLAN). Don't block setup on it: the event entity is already created
-    # here, so load its history in the background and let it fill in once ready --
-    # "initialising" clears without waiting for it.
-    if panel_log_events_coordinator is not None:
-        async def _load_panel_log_events() -> None:
-            await panel_log_events_coordinator.async_startup()
-            await panel_log_events_coordinator.async_refresh()
+    # PrimeLAN diagnostics are slow and don't need to gate startup: load system
+    # faults and GSM, then the event log (the slowest single fetch), in one
+    # background task after setup. Their entities are already created and show
+    # "unavailable" until this fills them in, so setup finishes as soon as the
+    # fast Native chain (and the blocking scenarios refresh) are done.
+    deferred_primelan = [
+        c for c in (system_faults_coordinator, gsm_coordinator) if c is not None
+    ]
+    if deferred_primelan or panel_log_events_coordinator is not None:
+        async def _load_deferred_primelan() -> None:
+            for coordinator in deferred_primelan:
+                await coordinator.async_refresh()
+            if panel_log_events_coordinator is not None:
+                await panel_log_events_coordinator.async_startup()
+                await panel_log_events_coordinator.async_refresh()
 
         entry.async_create_background_task(
-            hass, _load_panel_log_events(), "inim_prime_panel_log_events"
+            hass, _load_deferred_primelan(), "inim_prime_deferred_primelan"
         )
 
     return True
@@ -573,9 +583,15 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
 
     # The Shutters group exists only when the panel has shutters (its cover
     # entities create it), so link it without creating an empty one.
-    shutters_group = device_registry.async_get_device(
-        identifiers = {(DOMAIN, f"{serial_number}_shutters")}
-    )
+    # async_get_device(identifiers=...) is deprecated from HA 2026.x: prefer the
+    # single-identifier lookup when the running HA provides it, fall back for
+    # older cores.
+    shutters_identifier = (DOMAIN, f"{serial_number}_shutters")
+    _get_by_identifier = getattr(device_registry, "async_get_device_by_identifier", None)
+    if _get_by_identifier is not None:
+        shutters_group = _get_by_identifier(shutters_identifier)
+    else:
+        shutters_group = device_registry.async_get_device(identifiers = {shutters_identifier})
     if shutters_group is not None:
         if shutters_group.via_device_id != panel.id:
             device_registry.async_update_device(shutters_group.id, via_device_id = panel.id)

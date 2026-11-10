@@ -9,6 +9,7 @@ native grows those features. Outputs come from native when it is configured
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import replace
 from types import MappingProxyType
@@ -144,10 +145,16 @@ class InimPrimeGateway:
     # Lifecycle
     # ------------------------------------------------------------------
     async def connect(self) -> None:
+        # The Native TCP link and the PrimeLAN HTTPS session are independent, so
+        # open them concurrently -- the slow PrimeLAN TLS handshake no longer
+        # waits for (or adds to) the Native connect.
+        tasks = []
         if self._native is not None:
-            await self._native.connect()
+            tasks.append(self._native.connect())
         if self._primelan is not None:
-            await self._primelan.connect()
+            tasks.append(self._primelan.connect())
+        if tasks:
+            await asyncio.gather(*tasks)
 
     async def close(self) -> None:
         if self._native is not None:

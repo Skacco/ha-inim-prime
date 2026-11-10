@@ -167,9 +167,9 @@ class SystemFaultBinarySensor(
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         system_faults = self.coordinator.gateway.system_faults
-        return system_faults.has_fault(self._fault)
+        return system_faults.has_fault(self._fault) if system_faults else None
 
 
 class PanelSupplyVoltageSensor(
@@ -194,7 +194,7 @@ class PanelSupplyVoltageSensor(
     def native_value(self) -> float | None:
         """Return the supply voltage."""
         system_faults = self.coordinator.gateway.system_faults
-        return system_faults.supply_voltage
+        return system_faults.supply_voltage if system_faults else None
 
 
 class PanelLogEventsEvent(

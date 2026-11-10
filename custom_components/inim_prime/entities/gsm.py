@@ -41,12 +41,13 @@ class GSMSupplyVoltageSensor(
 
         self._attr_device_info = create_gsm_device_info(
             serial_number = self.coordinator.serial_number,
-            sw_version = self.coordinator.data.firmware_version,
+            sw_version = self.coordinator.data.firmware_version if self.coordinator.data else None,
         )
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.gateway.gsm.supply_voltage
+        gsm = self.coordinator.gateway.gsm
+        return gsm.supply_voltage if gsm else None
 
 
 class GSMOperatorSensor(
@@ -67,12 +68,13 @@ class GSMOperatorSensor(
 
         self._attr_device_info = create_gsm_device_info(
             serial_number = self.coordinator.serial_number,
-            sw_version = self.coordinator.data.firmware_version
+            sw_version = self.coordinator.data.firmware_version if self.coordinator.data else None
         )
 
     @property
     def native_value(self) -> str | None:
-        return self.coordinator.gateway.gsm.operator
+        gsm = self.coordinator.gateway.gsm
+        return gsm.operator if gsm else None
 
 
 
@@ -96,12 +98,13 @@ class GSMSignalStrengthSensor(
 
         self._attr_device_info = create_gsm_device_info(
             serial_number = self.coordinator.serial_number,
-            sw_version = self.coordinator.data.firmware_version,
+            sw_version = self.coordinator.data.firmware_version if self.coordinator.data else None,
         )
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.gateway.gsm.signal_strength
+        gsm = self.coordinator.gateway.gsm
+        return gsm.signal_strength if gsm else None
 
 
 class GSMCreditSensor(
@@ -122,9 +125,10 @@ class GSMCreditSensor(
 
         self._attr_device_info = create_gsm_device_info(
             serial_number = self.coordinator.serial_number,
-            sw_version = self.coordinator.data.firmware_version,
+            sw_version = self.coordinator.data.firmware_version if self.coordinator.data else None,
         )
 
     @property
     def native_value(self) -> str | None:
-        return self.coordinator.gateway.gsm.credit
+        gsm = self.coordinator.gateway.gsm
+        return gsm.credit if gsm else None
