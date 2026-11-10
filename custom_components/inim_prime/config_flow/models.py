@@ -129,23 +129,34 @@ def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
         return {}
     return {key: int(value) for key, value in raw.items() if value is not None and value != ""}
 
-def extract_native_panel_sections(data: dict | None) -> dict[str, dict[str, list[int]]]:
-    """Reshape the per-command sections of the options form into the nested
-    {command: {mode|outputs: [ids]}} mapping.
+def extract_hybrid_sections(
+    data: dict | None,
+) -> tuple[dict[str, int], dict[str, dict[str, list[int]]]]:
+    """Split the per-command form sections into (scenario_map, native_map).
 
-    Each Native command is its own form section (keyed by the command, e.g.
-    'arm_away'), whose fields are the modes ('total'/'stay'/'instant') and
-    'outputs'. The matching keys are popped from ``data`` so they are not stored
-    as stray top-level options."""
+    Each command is its own form section (keyed by the command, e.g. 'arm_away').
+    With both backends a section also has a 'scenario' field: when it is set the
+    command is scenario-driven and its partition fields are ignored; otherwise it
+    is partition-driven. Returns ({command: scenario_id}, {command: {mode|outputs:
+    [ids]}}). The matching keys are popped from ``data`` so they are not stored as
+    stray top-level options."""
     if not data:
-        return {}
-    raw: dict[str, dict] = {}
+        return {}, {}
+    scenario_map: dict[str, int] = {}
+    raw_native: dict[str, dict] = {}
     for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
-        if command in data:
-            section = data.pop(command)
-            if isinstance(section, dict):
-                raw[command] = section
-    return clean_native_panel(raw)
+        if command not in data:
+            continue
+        section = data.pop(command)
+        if not isinstance(section, dict):
+            continue
+        scenario = section.pop(OptionsKey.AlarmPanel.SCENARIO_FIELD, None)
+        if scenario is not None and str(scenario).strip() != "":
+            # Scenario-driven: ignore any partition fields for this command.
+            scenario_map[command] = int(scenario)
+        else:
+            raw_native[command] = section
+    return scenario_map, clean_native_panel(raw_native)
 
 def clean_native_panel(raw: dict | None) -> dict[str, dict[str, list[int]]]:
     """Normalise the Native-panel mapping {command: {mode: [partition_ids]}}.

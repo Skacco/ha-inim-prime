@@ -7,7 +7,7 @@ from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
-from .models import ConfigOptions, clean_alarm_panel, extract_native_panel_sections
+from .models import ConfigOptions, clean_alarm_panel, extract_hybrid_sections
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import build_options_schema, shutter_section_key
@@ -21,13 +21,19 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             data = dict(user_input)
-            if "alarm_panel" in data:
+            # Per-command blocks (Native present): split into scenario + partition
+            # maps. With both backends a command with a scenario is scenario-driven.
+            scenario_map, native_panel = extract_hybrid_sections(data)  # pops sections
+            if native_panel:
+                data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
+            if scenario_map:
+                # Both backends: scenarios come from the command blocks.
+                data[OptionsKey.ALARM_PANEL] = scenario_map
+            elif "alarm_panel" in data:
+                # PrimeLAN-only: scenarios come from the dedicated section.
                 alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
                 if alarm_panel:
                     data["alarm_panel"] = alarm_panel
-            native_panel = extract_native_panel_sections(data)  # pops command sections
-            if native_panel:
-                data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
             shutter_commands = _extract_shutter_commands(data)  # pops the sections
             if shutter_commands:
                 data[OptionsKey.SHUTTER_COMMANDS] = shutter_commands

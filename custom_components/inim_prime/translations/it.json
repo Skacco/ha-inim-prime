@@ -62,8 +62,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
-          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)",
-          "alarm_panel_type": "Tipo pannello allarme (Scenari = PrimeLAN · Partizioni = Native)"
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
@@ -107,45 +106,64 @@
           },
           "arm_away": {
             "name": "Fuori casa (Away)",
-            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_home": {
             "name": "In casa (Home)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_night": {
             "name": "Notte (Night)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_vacation": {
             "name": "Vacanza (Vacation)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "disarm": {
             "name": "Disinserimento (Disarm)",
             "data": {
-              "outputs": "Uscite"
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni."
             }
           },
           "shutters": {
@@ -207,8 +225,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
-          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)",
-          "alarm_panel_type": "Tipo pannello allarme (Scenari = PrimeLAN · Partizioni = Native)"
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
@@ -252,45 +269,64 @@
           },
           "arm_away": {
             "name": "Fuori casa (Away)",
-            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_home": {
             "name": "In casa (Home)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_night": {
             "name": "Notte (Night)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_vacation": {
             "name": "Vacanza (Vacation)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "disarm": {
             "name": "Disinserimento (Disarm)",
             "data": {
-              "outputs": "Uscite"
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni."
             }
           },
           "shutters": {
@@ -316,8 +352,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
-          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)",
-          "alarm_panel_type": "Tipo pannello allarme (Scenari = PrimeLAN · Partizioni = Native)"
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
@@ -361,45 +396,64 @@
           },
           "arm_away": {
             "name": "Fuori casa (Away)",
-            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_home": {
             "name": "In casa (Home)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_night": {
             "name": "Notte (Night)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "arm_vacation": {
             "name": "Vacanza (Vacation)",
             "data": {
+              "scenario": "Scenario",
               "total": "Totale",
               "stay": "Parziale",
               "instant": "Istantaneo",
-              "outputs": "Uscite"
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
             }
           },
           "disarm": {
             "name": "Disinserimento (Disarm)",
             "data": {
-              "outputs": "Uscite"
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni."
             }
           },
           "shutters": {

@@ -11,7 +11,7 @@ from custom_components.inim_prime.alarm_control_panel import (
 from custom_components.inim_prime.config_flow.const import OptionsKey
 from custom_components.inim_prime.config_flow.models import (
     clean_native_panel,
-    extract_native_panel_sections,
+    extract_hybrid_sections,
 )
 from custom_components.inim_prime.entities.alarm_panel import PartitionAlarmPanel
 from custom_components.inim_prime.models.partitions import (
@@ -49,21 +49,37 @@ def _panel(parts, targets):
     return PartitionAlarmPanel(_FakeCoord(parts), targets)
 
 
-def test_extract_native_panel_sections():
+def test_extract_hybrid_sections_partition_only():
     data = {
         "arm_away": {"total": ["1", "2"], "instant": ["3"], "stay": [], "outputs": ["5", "6"]},
         "disarm": {"outputs": ["7"]},
         "arm_home": {"total": [], "outputs": []},   # empty -> dropped
         "scan_intervals": {"zones": 5000},          # unrelated -> left intact
     }
-    assert extract_native_panel_sections(data) == {
+    scenario_map, native_map = extract_hybrid_sections(data)
+    assert scenario_map == {}
+    assert native_map == {
         "arm_away": {"total": [1, 2], "instant": [3], "outputs": [5, 6]},
         "disarm": {"outputs": [7]},
     }
     # command sections are popped; unrelated keys stay
     assert "arm_away" not in data and "disarm" not in data and "arm_home" not in data
     assert data["scan_intervals"] == {"zones": 5000}
-    assert extract_native_panel_sections(None) == {}
+    assert extract_hybrid_sections(None) == ({}, {})
+
+
+def test_extract_hybrid_sections_mixed():
+    # scenario set -> scenario-driven (partition fields ignored); empty scenario
+    # -> partition-driven.
+    data = {
+        "arm_away": {"scenario": "2", "total": ["1"]},   # scenario wins
+        "arm_night": {"scenario": "3"},
+        "arm_vacation": {"scenario": "", "total": ["0", "1"], "instant": ["2"]},
+        "disarm": {"scenario": "1"},
+    }
+    scenario_map, native_map = extract_hybrid_sections(data)
+    assert scenario_map == {"arm_away": 2, "arm_night": 3, "disarm": 1}
+    assert native_map == {"arm_vacation": {"total": [0, 1], "instant": [2]}}
 
 
 def test_clean_native_panel():
@@ -104,7 +120,9 @@ def test_native_output_map_builds_per_command_outputs():
 def test_extract_sections_ignores_non_dict_values():
     # a stray non-dict under a command key must not crash extraction
     data = {"arm_away": "oops", "arm_night": {"total": ["2"]}}
-    assert extract_native_panel_sections(data) == {"arm_night": {"total": [2]}}
+    scenario_map, native_map = extract_hybrid_sections(data)
+    assert scenario_map == {}
+    assert native_map == {"arm_night": {"total": [2]}}
 
 
 def test_supported_features_from_targets():
@@ -140,3 +158,93 @@ def test_triggered_wins():
         targets,
     )
     assert panel.alarm_state == AlarmControlPanelState.TRIGGERED
+
+
+# ---------------------------------------------------------------------------
+# Hybrid panel (both backends): per-command scenario-or-partitions.
+# ---------------------------------------------------------------------------
+from custom_components.inim_prime.entities.alarm_panel import HybridAlarmPanel
+
+
+class _FakeScenario:
+    def __init__(self, sid, active):
+        self.scenario_id = sid
+        self.active = active
+        self.label = f"S{sid}"
+
+
+class _FakeScenGateway:
+    def __init__(self, scenarios):
+        self.scenarios = {s.scenario_id: s for s in scenarios}
+
+
+class _FakeScenCoord:
+    def __init__(self, scenario_ids, active):
+        self.gateway = _FakeScenGateway(
+            [_FakeScenario(sid, sid == active) for sid in scenario_ids]
+        )
+        self.serial_number = "SER"
+        self.last_update_success = True
+
+
+def _hybrid(parts, scenario_ids, active, scenario_map, targets, outputs=None):
+    return HybridAlarmPanel(
+        _FakeScenCoord(scenario_ids, active),
+        _FakeCoord(parts),
+        scenario_map,
+        targets,
+        outputs,
+    )
+
+
+def test_hybrid_scenario_command_not_in_partition_targets():
+    # A command with a scenario is scenario-driven: it must NOT be a partition
+    # target, even if a target was also passed in.
+    panel = _hybrid(
+        [_FakePart(1, OFF)],
+        scenario_ids=[2], active=None,
+        scenario_map={"arm_away": 2},
+        targets={"arm_away": {1: AWAY}, "arm_vacation": {1: INSTANT}},
+    )
+    assert "arm_away" not in panel._targets
+    assert "arm_vacation" in panel._targets
+    feats = panel.supported_features
+    assert feats & AlarmControlPanelEntityFeature.ARM_AWAY      # from scenario
+    assert feats & AlarmControlPanelEntityFeature.ARM_VACATION  # from partitions
+
+
+def test_hybrid_state_from_active_scenario():
+    panel = _hybrid(
+        [_FakePart(1, AWAY)],
+        scenario_ids=[2, 3], active=2,
+        scenario_map={"arm_away": 2, "arm_night": 3},
+        targets={},
+    )
+    assert panel.alarm_state == AlarmControlPanelState.ARMED_AWAY
+
+
+def test_hybrid_state_from_partition_mix():
+    # vacation is partition-driven with a mixed set; no scenario active.
+    panel = _hybrid(
+        [_FakePart(0, AWAY), _FakePart(2, INSTANT)],
+        scenario_ids=[2], active=None,
+        scenario_map={"arm_away": 2},
+        targets={"arm_vacation": {0: AWAY, 2: INSTANT}},
+    )
+    assert panel.alarm_state == AlarmControlPanelState.ARMED_VACATION
+
+
+def test_hybrid_disarmed_and_triggered():
+    panel = _hybrid(
+        [_FakePart(0, OFF), _FakePart(2, OFF)],
+        scenario_ids=[2], active=None,
+        scenario_map={"arm_away": 2}, targets={"arm_vacation": {0: AWAY}},
+    )
+    assert panel.alarm_state == AlarmControlPanelState.DISARMED
+
+    trig = _hybrid(
+        [_FakePart(0, AWAY, state=UnifiedPartitionState.ALARM)],
+        scenario_ids=[2], active=2,
+        scenario_map={"arm_away": 2}, targets={},
+    )
+    assert trig.alarm_state == AlarmControlPanelState.TRIGGERED

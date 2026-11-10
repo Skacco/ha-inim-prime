@@ -62,8 +62,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
-          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -107,45 +106,64 @@
           },
           "arm_away": {
             "name": "Away",
-            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_home": {
             "name": "Home (Stay)",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_night": {
             "name": "Night",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_vacation": {
             "name": "Vacation",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "disarm": {
             "name": "Disarm",
             "data": {
-              "outputs": "Outputs"
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off."
             }
           },
           "shutters": {
@@ -207,8 +225,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
-          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -252,45 +269,64 @@
           },
           "arm_away": {
             "name": "Away",
-            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_home": {
             "name": "Home (Stay)",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_night": {
             "name": "Night",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_vacation": {
             "name": "Vacation",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "disarm": {
             "name": "Disarm",
             "data": {
-              "outputs": "Outputs"
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off."
             }
           },
           "shutters": {
@@ -316,8 +352,7 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
-          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -361,45 +396,64 @@
           },
           "arm_away": {
             "name": "Away",
-            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_home": {
             "name": "Home (Stay)",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_night": {
             "name": "Night",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "arm_vacation": {
             "name": "Vacation",
             "data": {
+              "scenario": "Scenario",
               "total": "Total",
               "stay": "Partial",
               "instant": "Instant",
-              "outputs": "Outputs"
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
             }
           },
           "disarm": {
             "name": "Disarm",
             "data": {
-              "outputs": "Outputs"
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off."
             }
           },
           "shutters": {

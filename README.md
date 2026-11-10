@@ -175,26 +175,30 @@ Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traff
 ℹ️ Quando usi **entrambi** i backend, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
 
 ## Pannello allarme
-L'integrazione può creare un'entità `alarm_control_panel` per inserire/disinserire l'impianto. Ci sono **due tipi** di pannello:
+L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'impianto. Un comando può essere eseguito in **due modi**, che si differenziano per una cosa importante: cosa succede con **zone/finestre aperte**.
 
-### Scenari (PrimeLAN)
-Inserisce/disinserisce **attivando uno scenario** della centrale. Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** (0–49). Lo stato viene letto dalle partizioni e dallo scenario attivo. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello non viene creato**. Richiede **PrimeLAN** (lettura/attivazione scenari). È l'equivalente del comportamento di sdomotica.
+- **Scenario** (via PrimeLAN): attiva uno **scenario** della centrale. Lo scenario applica i **controlli della centrale**, quindi con una zona aperta non auto-escludibile **si rifiuta di armare e avvisa**. È l'equivalente del comportamento di sdomotica.
+- **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
-### Partizioni (Native)
-Inserisce/disinserisce agendo **direttamente sulle partizioni** (nessuno scenario, nessun PrimeLAN). È **più veloce** (tutto locale) e funziona **anche senza PrimeLAN**. Lo stato viene derivato dallo stato di inserimento delle partizioni (e una partizione in allarme → *triggered*).
+### Come si configura
+Per ogni comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) c'è un **blocco** con un campo **Scenario** e i campi delle **partizioni** (Totale / Parziale / Istantaneo) + **Attivazione uscite**.
 
-Per ogni comando (Fuori casa / In casa / Notte / Vacanza) scegli, **per ciascuna modalità** (Totale / Parziale / Istantaneo), **quali partizioni** inserire. Puoi **mescolare le modalità nello stesso comando** — esattamente come gli scenari della centrale (es. "Totale" con alcune partizioni in Totale e altre in Istantaneo). Le partizioni non elencate restano disinserite; il **disinserimento** le spegne tutte. Un comando senza partizioni non viene offerto.
+**Regola:** se compili il campo **Scenario**, quel comando usa lo scenario (le partizioni del blocco vengono ignorate). Se lasci **Scenario vuoto**, il comando arma le **partizioni** che hai scelto nel blocco. Così decidi **comando per comando** quale metodo usare.
 
-Lo stato HA mostrato corrisponde al comando il cui insieme **partizione→modalità** combacia esattamente con lo stato attuale; se non combacia nessuno → *custom bypass*.
+Esempio tipico (entrambi i backend):
+- **Fuori casa** → Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
+- **Notte** → Scenario = `3`
+- **Vacanza** → Scenario vuoto + Totale `{0,1,5,6,8}`, Istantaneo `{2,3,4,7,10,11}` (forza l'inserimento con il mix che gli scenari non replicano)
+- **Disinserimento** → Scenario = `1` (oppure vuoto = spegne tutte le partizioni)
 
-**Uscite.** Ogni comando (disinserimento incluso) può anche attivare **una o più uscite**, come fanno gli scenari INIM (es. "Chiusura PI" per chiudere le persiane). Le selezioni nel campo *Uscite*; la centrale rilascia da sola le uscite monostabili (si rispengono dopo qualche secondo). Lo stato del pannello resta basato sulle partizioni (le uscite sono un'azione, non concorrono allo stato).
+Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
-### Quale viene creato
-- **Solo Native** → pannello **a partizioni** (è l'unico possibile).
-- **Solo PrimeLAN** → pannello **a scenari**.
-- **Entrambi i backend** → compare l'opzione **"Tipo pannello allarme"** (default: *Scenari*) per scegliere quale usare. Una sola entità, quella del tipo scelto.
+**Attivazione uscite.** Un comando a partizioni può anche attivare **una o più uscite** (es. "Chiusura PI" per chiudere le persiane); la centrale rilascia da sola le uscite monostabili. Per i comandi a scenario ci pensa lo scenario stesso, quindi il campo uscite vale solo quando il comando è a partizioni.
 
-> Nota: il pannello **a scenari** scrive via PrimeLAN (più lento), quello **a partizioni** scrive via Native (quasi istantaneo). Se hai entrambi ma vuoi inserimento/disinserimento rapidi, scegli *Partizioni (Native)* e tieni PrimeLAN solo per scenari/GSM/guasti/registro.
+### Quale pannello viene creato
+- **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
+- **Solo PrimeLAN** → mappatura **a scenari** (un numero di scenario per comando; senza scenario di disinserimento il pannello non viene creato).
+- **Entrambi i backend** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
 
 ## Tapparelle
 Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale.

@@ -1,5 +1,9 @@
 from .config_flow.const import OptionsKey
-from .entities.alarm_panel import ScenarioAlarmPanel, PartitionAlarmPanel
+from .entities.alarm_panel import (
+    ScenarioAlarmPanel,
+    PartitionAlarmPanel,
+    HybridAlarmPanel,
+)
 from .models.partitions import UnifiedArmingStatus
 from .runtime_data import InimPrimeConfigEntry
 
@@ -51,17 +55,25 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     has_primelan = bool(entry.data.get("primelan"))
 
     # Which panel to build:
-    #   - both backends: the user chooses (default: scenarios);
+    #   - both backends: one hybrid panel routing per command (a command with a
+    #     scenario uses it; without one it arms its partitions directly);
     #   - Native only: partitions (scenarios aren't available);
     #   - PrimeLAN only: scenarios.
     if has_native and has_primelan:
-        panel_type = options.get(OptionsKey.ALARM_PANEL_TYPE, OptionsKey.PanelType.SCENARI)
-    elif has_native:
-        panel_type = OptionsKey.PanelType.PARTIZIONI
-    else:
-        panel_type = OptionsKey.PanelType.SCENARI
+        if coordinators.scenarios is None or coordinators.partitions is None:
+            return
+        async_add_entities([
+            HybridAlarmPanel(
+                coordinators.scenarios,
+                coordinators.partitions,
+                dict(options.get(OptionsKey.ALARM_PANEL) or {}),
+                _native_arm_map(options),
+                _native_output_map(options),
+            )
+        ])
+        return
 
-    if panel_type == OptionsKey.PanelType.PARTIZIONI:
+    if has_native:
         # Native panel: needs the partitions. Arm commands are offered only for
         # the states with a partition set; disarm and state always work.
         if coordinators.partitions is None:
@@ -75,7 +87,7 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         ])
         return
 
-    # Scenario panel (PrimeLAN): needs scenarios + at least a disarm scenario.
+    # Scenario panel (PrimeLAN only): needs scenarios + at least a disarm scenario.
     commands = dict(options.get(OptionsKey.ALARM_PANEL) or {})
     if coordinators.scenarios is None or coordinators.partitions is None or "disarm" not in commands:
         return

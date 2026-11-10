@@ -55,6 +55,9 @@ class OptionsKey:
         NATIVE_OUTPUT_COMMANDS: Final[tuple[str, ...]] = (
             DISARM, ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION,
         )
+        # Per-command field (hybrid, both backends): a scenario id. When set, the
+        # command runs that scenario; when empty, it arms its partitions.
+        SCENARIO_FIELD: Final[str] = "scenario"
 
     class PanelType:
         SCENARI: Final[str] = "scenari"

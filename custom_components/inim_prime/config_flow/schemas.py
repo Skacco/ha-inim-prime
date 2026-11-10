@@ -344,10 +344,11 @@ def build_options_schema(
             default = bool(current_options.show_hidden_outputs) if current_options else False,
         )] = bool
 
-    if has_primelan:
-        # Alarm panel: one scenario id per command, like the Sdomotica panel.
-        # Empty fields = command not offered; no disarm scenario = no panel.
-        current_alarm = (current_options.alarm_panel if current_options else None) or {}
+    current_alarm = (current_options.alarm_panel if current_options else None) or {}
+
+    if has_primelan and not has_native:
+        # PrimeLAN-only alarm panel: one scenario id per command, like the
+        # Sdomotica panel. Empty fields = command not offered.
         alarm_fields: dict = {}
         for key in OptionsKey.AlarmPanel.ALL:
             marker = vol.Optional(key, description = {"suggested_value": current_alarm.get(key)})
@@ -360,27 +361,10 @@ def build_options_schema(
             vol.Schema(alarm_fields), {"collapsed": not current_alarm},
         )
 
-    # Alarm panel type: only a real choice when both backends are present.
-    # Native-only -> partitions; PrimeLAN-only -> scenarios (forced at setup).
-    if has_native and has_primelan:
-        schema[vol.Required(
-            OptionsKey.ALARM_PANEL_TYPE,
-            default = (
-                current_options.alarm_panel_type
-                if current_options and current_options.alarm_panel_type
-                else OptionsKey.PanelType.SCENARI
-            ),
-        )] = SelectSelector(SelectSelectorConfig(
-            options = [
-                SelectOptionDict(value = OptionsKey.PanelType.SCENARI, label = "Scenari (PrimeLAN)"),
-                SelectOptionDict(value = OptionsKey.PanelType.PARTIZIONI, label = "Partizioni (Native)"),
-            ],
-            mode = SelectSelectorMode.DROPDOWN,
-        ))
-
-    # Native (partition-based) panel: for each HA arm command, which partitions
-    # to arm. Shown whenever Native is available (used when the panel type is
-    # "partizioni", or always on Native-only). Disarm = all partitions off.
+    # Per-command blocks. One block per command; shown whenever Native is
+    # available. With both backends each block also offers a Scenario field:
+    # if set, the command runs that scenario (keeps the panel's checks);
+    # if empty, it arms the partitions below (forced). Disarm = all off.
     if has_native:
         current_native = (current_options.alarm_panel_native if current_options else None) or {}
         partition_options = [
@@ -405,11 +389,23 @@ def build_options_schema(
                 mode = SelectSelectorMode.DROPDOWN,
             ))
 
-        # One collapsible block per command (header "Fuori casa (Away)"...), each
-        # with the three modes + an Uscite field. Arm commands first, disarm last.
+        def _scenario_field(fields: dict, command: str) -> None:
+            # Only with both backends: a scenario id for this command (hybrid).
+            if not has_primelan:
+                return
+            marker = vol.Optional(
+                OptionsKey.AlarmPanel.SCENARIO_FIELD,
+                description = {"suggested_value": current_alarm.get(command)},
+            )
+            fields[marker] = NumberSelector(NumberSelectorConfig(
+                min = 0, max = 49, mode = NumberSelectorMode.BOX,
+            ))
+
         for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
             command_modes = current_native.get(command, {}) or {}
-            fields: dict = {}
+            has_scenario = has_primelan and current_alarm.get(command) is not None
+            fields = {}
+            _scenario_field(fields, command)
             for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
                 marker = vol.Optional(
                     mode,
@@ -424,20 +420,24 @@ def build_options_schema(
             )
             fields[out_marker] = _output_select()
             schema[vol.Optional(command)] = section(
-                vol.Schema(fields), {"collapsed": not command_modes},
+                vol.Schema(fields), {"collapsed": not (command_modes or has_scenario)},
             )
 
-        # Disarm has no arming modes, only the outputs it may switch on.
+        # Disarm has no arming modes: a scenario (both backends) + outputs only.
         disarm_current = current_native.get(OptionsKey.AlarmPanel.DISARM, {}) or {}
+        disarm_has_scenario = has_primelan and current_alarm.get(OptionsKey.AlarmPanel.DISARM) is not None
+        disarm_fields = {}
+        _scenario_field(disarm_fields, OptionsKey.AlarmPanel.DISARM)
         disarm_marker = vol.Optional(
             OptionsKey.AlarmPanel.NATIVE_OUTPUT,
             description = {"suggested_value": [
                 str(o) for o in disarm_current.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
             ]},
         )
+        disarm_fields[disarm_marker] = _output_select()
         schema[vol.Optional(OptionsKey.AlarmPanel.DISARM)] = section(
-            vol.Schema({disarm_marker: _output_select()}),
-            {"collapsed": not disarm_current},
+            vol.Schema(disarm_fields),
+            {"collapsed": not (disarm_current or disarm_has_scenario)},
         )
 
     if has_primelan:
