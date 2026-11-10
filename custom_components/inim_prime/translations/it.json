@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Configura INIM Prime",
-        "description": "Scegli quale/i backend usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
+        "description": "Scegli quali modalità di integrazione usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
         "menu_options": {
           "native_only": "Solo Native",
           "primelan_only": "Solo PrimeLAN",
@@ -72,7 +72,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Intervalli di scansione",
-            "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il backend attivo (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
+            "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica la modalità di integrazione: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano la modalità di integrazione attiva (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambe le modalità di integrazione i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
             "data": {
               "zones": "Intervallo scansione zone (Native/PrimeLAN)",
               "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
@@ -83,12 +83,12 @@
               "scenarios": "Intervallo scansione scenari (PrimeLAN)"
             },
             "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native/PrimeLAN.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native/PrimeLAN.",
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Modalità di integrazione: Native/PrimeLAN.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Modalità di integrazione: Native/PrimeLAN.",
               "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
               "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
               "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Modalità di integrazione: Native/PrimeLAN.",
               "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
@@ -172,7 +172,7 @@
       },
       "reconfigure": {
         "title": "Riconfigura INIM Prime",
-        "description": "Scegli quale/i backend usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
+        "description": "Scegli quali modalità di integrazione usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
         "menu_options": {
           "reconfigure_native_only": "Solo Native",
           "reconfigure_primelan_only": "Solo PrimeLAN",
@@ -233,7 +233,7 @@
         "sections": {
           "scan_intervals": {
             "name": "Intervalli di scansione",
-            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.\nNota: il backend Native supporta intervalli molto più bassi di PrimeLAN per Zone e Partizioni. Se hai appena aggiunto o rimosso Native, i valori predefiniti qui sotto sono stati adeguati di conseguenza.",
+            "description": "Controlla ogni quanto Home Assistant invia richieste API alla centrale (valori più bassi aumentano il traffico). Per i dettagli su quali entità sono interessate da ogni intervallo, vedi il README dell'integrazione.\nNota: la modalità di integrazione Native supporta intervalli molto più bassi di PrimeLAN per Zone e Partizioni. Se hai appena aggiunto o rimosso Native, i valori predefiniti qui sotto sono stati adeguati di conseguenza.",
             "data": {
               "zones": "Intervallo scansione zone (Native/PrimeLAN)",
               "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
@@ -244,12 +244,12 @@
               "scenarios": "Intervallo scansione scenari (PrimeLAN)"
             },
             "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native/PrimeLAN.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native/PrimeLAN.",
+              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Modalità di integrazione: Native/PrimeLAN.",
+              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Modalità di integrazione: Native/PrimeLAN.",
               "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
               "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
               "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
+              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Modalità di integrazione: Native/PrimeLAN.",
               "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
@@ -379,7 +379,7 @@
       },
       "scan": {
         "title": "Intervalli di scansione",
-        "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il backend attivo (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
+        "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica la modalità di integrazione: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano la modalità di integrazione attiva (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambe le modalità di integrazione i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
         "data": {
           "zones": "Intervallo scansione zone (Native/PrimeLAN)",
           "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
@@ -390,12 +390,12 @@
           "scenarios": "Intervallo scansione scenari (PrimeLAN)"
         },
         "data_description": {
-          "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native/PrimeLAN.",
-          "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native/PrimeLAN.",
+          "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Modalità di integrazione: Native/PrimeLAN.",
+          "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Modalità di integrazione: Native/PrimeLAN.",
           "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
           "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
           "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
-          "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
+          "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Modalità di integrazione: Native/PrimeLAN.",
           "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
         }
       },
