@@ -11,7 +11,8 @@ from .models import ConfigOptions, extract_command_partitions
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import (
-    build_options_schema,
+    build_scan_intervals_schema,
+    build_general_params_schema,
     build_shutters_schema,
     build_alarm_method_schema,
     build_alarm_scenario_schema,
@@ -65,7 +66,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
     # ------------------------------------------------------------------
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        options = ["general"]
+        # General parameters first, scan intervals second.
+        options = ["params", "scan"]
         if self._has_native or self._has_primelan:
             options.append("alarm")
         # "Tapparelle" only when the panel actually has shutter modules.
@@ -80,13 +82,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             step_id="alarm", menu_options=list(_CMD_STEPS) + ["init"],
         )
 
-    # --- General settings (everything except alarm panel and shutters) --
-    async def async_step_general(self, user_input: dict[str, Any] | None = None):
+    # --- General parameters (no intervals, no alarm, no shutters) -------
+    async def async_step_params(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             opts = dict(get_entry_options(self.config_entry))
             gi = dict(user_input)
-            if "scan_intervals" in gi:
-                opts["scan_intervals"] = gi["scan_intervals"]
             if OptionsKey.HIDE_UNUSED_PARTITIONS in gi:
                 opts[OptionsKey.HIDE_UNUSED_PARTITIONS] = gi[OptionsKey.HIDE_UNUSED_PARTITIONS]
             if OptionsKey.SHOW_HIDDEN_OUTPUTS in gi:
@@ -96,16 +96,31 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             return self.async_create_entry(title="", data=opts)
 
         schema = vol.Schema(
-            build_options_schema(
+            build_general_params_schema(
                 has_native=self._has_native,
                 has_primelan=self._has_primelan,
                 current_options=self._config_options(),
-                partitions=self._partition_choices(),
-                include_alarm=False,
-                include_shutters=False,
             )
         )
-        return self.async_show_form(step_id="general", data_schema=schema)
+        return self.async_show_form(step_id="params", data_schema=schema)
+
+    # --- Scan intervals -------------------------------------------------
+    async def async_step_scan(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            opts = dict(get_entry_options(self.config_entry))
+            gi = dict(user_input)
+            if "scan_intervals" in gi:
+                opts["scan_intervals"] = gi["scan_intervals"]
+            return self.async_create_entry(title="", data=opts)
+
+        schema = vol.Schema(
+            build_scan_intervals_schema(
+                has_native=self._has_native,
+                has_primelan=self._has_primelan,
+                current_options=self._config_options(),
+            )
+        )
+        return self.async_show_form(step_id="scan", data_schema=schema)
 
     # --- Shutters (only shown when the panel has shutter modules) -------
     async def async_step_shutters(self, user_input: dict[str, Any] | None = None):

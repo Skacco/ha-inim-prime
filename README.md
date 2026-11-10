@@ -181,7 +181,7 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Le opzioni si aprono con un **menù**: *Impostazioni generali*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
+Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
 
 Scegli un comando e, **con entrambi i backend**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
 - **Scenario** → la schermata dopo chiede solo il **numero di scenario**.
@@ -219,7 +219,7 @@ Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non h
 
 Conviene dare a queste uscite nomi riconoscibili (es. "Apri tenda sala", "Chiudi tenda sala", "Tenda sala 1/2", …).
 
-**Configurazione nell'integrazione.** Opzioni → **Tapparelle** (la voce compare solo se la centrale ha moduli tapparella). Per ogni tapparella (rilevata dal suo modulo Mod.dom) imposti un nome opzionale e scegli l'uscita-comando per ciascuna posizione: **Aperto** e **Chiuso** sono obbligatorie, **1/4 · 1/2 · 3/4** sono facoltative e, se impostate, abilitano lo slider di posizione. La tendina elenca solo le uscite-comando: i terminali motore grezzi (`Mod.dom XX T03/T04`), usati solo per rilevare le tapparelle, non sono selezionabili. Una tapparella senza i comandi Aperto/Chiuso non viene creata.
+**Configurazione nell'integrazione.** Opzioni → **Tapparelle** (la voce compare solo se la centrale ha moduli tapparella). Il nome di ogni tapparella è preso in automatico dal suo modulo Mod.dom (è il titolo della sezione, non modificabile qui). Per ciascuna scegli l'uscita-comando per ogni posizione: **Aperto** e **Chiuso** sono obbligatorie, **1/4 · 1/2 · 3/4** sono facoltative e, se impostate, abilitano lo slider di posizione. La tendina elenca solo le uscite-comando: i terminali motore grezzi (`Mod.dom XX T03/T04`), usati solo per rilevare le tapparelle, non sono selezionabili. Una tapparella senza i comandi Aperto/Chiuso non viene creata.
 
 ## Mostra uscite non disponibili via PrimeLAN
 Se spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato; se acceso mostra anche le uscite interne/scheda madre (sirena, aux…).

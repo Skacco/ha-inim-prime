@@ -203,37 +203,19 @@ def build_connection_schema(
 # Integration options schema (scan intervals, log fetch limit)
 # ----------------------------------------------------------------------
 
-def build_options_schema(
+def build_scan_intervals_schema(
         *,
         has_native: bool,
         has_primelan: bool,
         current_options: ConfigOptions | None = None,
         migrating_from_native: bool | None = None,
         migrating_from_primelan: bool | None = None,
-        shutters: list[int] | None = None,
-        output_choices: list[tuple[int, str]] | None = None,
-        module_names: dict[int, str] | None = None,
-        partitions: list[tuple[int, str]] | None = None,
-        include_alarm: bool = True,
-        include_shutters: bool = True,
 ) -> dict:
-    """Build the options schema, only including fields the active backend(s) support.
+    """Just the scan-intervals section (one poller per field).
 
-    ``include_alarm=False`` leaves out the alarm-panel fields (scenario map and
-    the per-command blocks): the options flow configures those through its own
-    menu/step sub-flow instead of this single form.
-
-    ``include_shutters=False`` leaves out the per-shutter sections: the options
-    flow moves those to a dedicated "Tapparelle" step, shown only when the panel
-    actually has shutter modules.
-
-    GSM / system faults / log events (and their fetch limit) are
-    PrimeLAN-exclusive today, so they're omitted entirely when PrimeLAN
-    isn't configured for this entry.
+    Used both by the all-in-one config-flow form and by the options flow's
+    dedicated "Intervalli di scansione" step.
     """
-    panel_log_events_fetch_limit = PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
-    # With both backends the live data is on Native, so the PrimeLAN-only pollers
-    # (GSM, faults, log) default to a slower interval to cut PrimeLAN traffic.
     both_backends = has_native and has_primelan
     gsm_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT
     faults_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
@@ -262,8 +244,6 @@ def build_options_schema(
         scan_intervals_defaults["gsm"] = current_options.gsm_scan_interval if current_options.gsm_scan_interval is not None else scan_intervals_defaults["gsm"]
         scan_intervals_defaults["system_faults"] = current_options.system_faults_scan_interval if current_options.system_faults_scan_interval is not None else scan_intervals_defaults["system_faults"]
         scan_intervals_defaults["panel_log_events"] = current_options.panel_log_events_scan_interval if current_options.panel_log_events_scan_interval is not None else scan_intervals_defaults["panel_log_events"]
-
-        panel_log_events_fetch_limit = current_options.panel_log_events_fetch_limit if current_options.panel_log_events_fetch_limit is not None else panel_log_events_fetch_limit
 
     scan_interval_fields: dict = {
         vol.Required(
@@ -336,9 +316,87 @@ def build_options_schema(
             unit_of_measurement = "ms",
         ))
 
-    schema: dict = {
+    return {
         vol.Required("scan_intervals"): section(vol.Schema(scan_interval_fields)),
     }
+
+
+def build_general_params_schema(
+        *,
+        has_native: bool,
+        has_primelan: bool,
+        current_options: ConfigOptions | None = None,
+) -> dict:
+    """The non-interval general parameters: hide unused areas, show hidden
+    outputs (both backends) and the log fetch limit (PrimeLAN)."""
+    schema: dict = {}
+    schema[vol.Required(
+        OptionsKey.HIDE_UNUSED_PARTITIONS,
+        default = bool(current_options.hide_unused_partitions) if current_options else True,
+    )] = bool
+    if has_native and has_primelan:
+        schema[vol.Required(
+            OptionsKey.SHOW_HIDDEN_OUTPUTS,
+            default = bool(current_options.show_hidden_outputs) if current_options else False,
+        )] = bool
+    if has_primelan:
+        fetch = (
+            current_options.panel_log_events_fetch_limit
+            if current_options and current_options.panel_log_events_fetch_limit is not None
+            else PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
+        )
+        schema[vol.Required(
+            OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT,
+            default = fetch,
+        )] = NumberSelector(NumberSelectorConfig(
+            min = PANEL_LOG_EVENTS_FETCH_LIMIT_MIN,
+            max = PANEL_LOG_EVENTS_FETCH_LIMIT_MAX,
+            mode = NumberSelectorMode.BOX,
+        ))
+    return schema
+
+
+def build_options_schema(
+        *,
+        has_native: bool,
+        has_primelan: bool,
+        current_options: ConfigOptions | None = None,
+        migrating_from_native: bool | None = None,
+        migrating_from_primelan: bool | None = None,
+        shutters: list[int] | None = None,
+        output_choices: list[tuple[int, str]] | None = None,
+        module_names: dict[int, str] | None = None,
+        partitions: list[tuple[int, str]] | None = None,
+        include_alarm: bool = True,
+        include_shutters: bool = True,
+) -> dict:
+    """Build the options schema, only including fields the active backend(s) support.
+
+    ``include_alarm=False`` leaves out the alarm-panel fields (scenario map and
+    the per-command blocks): the options flow configures those through its own
+    menu/step sub-flow instead of this single form.
+
+    ``include_shutters=False`` leaves out the per-shutter sections: the options
+    flow moves those to a dedicated "Tapparelle" step, shown only when the panel
+    actually has shutter modules.
+
+    GSM / system faults / log events (and their fetch limit) are
+    PrimeLAN-exclusive today, so they're omitted entirely when PrimeLAN
+    isn't configured for this entry.
+    """
+    schema: dict = dict(build_scan_intervals_schema(
+        has_native = has_native,
+        has_primelan = has_primelan,
+        current_options = current_options,
+        migrating_from_native = migrating_from_native,
+        migrating_from_primelan = migrating_from_primelan,
+    ))
+
+    panel_log_events_fetch_limit = (
+        current_options.panel_log_events_fetch_limit
+        if current_options and current_options.panel_log_events_fetch_limit is not None
+        else PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
+    )
 
     # Areas never configured keep the panel's default name ("AREA 013"...).
     schema[vol.Required(

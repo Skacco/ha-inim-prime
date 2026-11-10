@@ -346,13 +346,15 @@
       "init": {
         "title": "Opzioni INIM Prime",
         "menu_options": {
-          "general": "Impostazioni generali",
+          "params": "Parametri generali",
+          "scan": "Intervalli di scansione",
           "alarm": "Pannello allarme",
           "shutters": "Tapparelle"
         }
       },
       "alarm": {
         "title": "Pannello allarme",
+        "description": "Scegli quale comando del pannello di allarme configurare. Per ogni comando decidi cosa succede quando viene attivato dal pannello di Home Assistant: con entrambi i backend puoi scegliere se eseguire uno scenario (PrimeLAN) oppure inserire direttamente le partizioni (Native); con un solo backend viene usato quello disponibile. Disinserimento spegne tutto. Ogni comando si salva da solo quando premi Salva. ‹ Indietro torna al menù principale.",
         "menu_options": {
           "cmd_disarm": "Disinserimento",
           "cmd_arm_away": "Fuori casa",
@@ -362,8 +364,8 @@
           "init": "‹ Indietro"
         }
       },
-      "general": {
-        "title": "Impostazioni generali",
+      "params": {
+        "title": "Parametri generali",
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
@@ -373,7 +375,10 @@
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
           "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
           "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità."
-        },
+        }
+      },
+      "scan": {
+        "title": "Intervalli di scansione",
         "sections": {
           "scan_intervals": {
             "name": "Intervalli di scansione",
@@ -401,7 +406,7 @@
       },
       "shutters": {
         "title": "Tapparelle",
-        "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
+        "description": "Il titolo di ogni sezione è il nome del modulo Mod.dom letto dalla centrale (non modificabile qui). Per ogni tapparella scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi tenda sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
       },
       "method": {
         "title": "Allarme · {command} — metodo",

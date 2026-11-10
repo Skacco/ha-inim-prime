@@ -161,7 +161,7 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
     opts = hass.config_entries.options
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
         result = await opts.async_init(entry.entry_id)                       # main menu
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "general"})
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "scan"})
         fields = result["data_schema"].schema["scan_intervals"].schema.schema
         keys = {str(k): k.default() for k in fields}
         assert keys["outputs"] == 30000 and keys["scenarios"] == 10000
@@ -170,7 +170,7 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
         new = {**keys, "outputs": 2000, "scenarios": 4000}
         result = await opts.async_configure(                                  # submit -> save & close
             result["flow_id"],
-            {"scan_intervals": new, "panel_log_events_fetch_limit": 40},
+            {"scan_intervals": new},
         )
         await hass.async_block_till_done()
 
