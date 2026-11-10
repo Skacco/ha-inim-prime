@@ -136,11 +136,15 @@ def extract_hybrid_sections(
     """Split the per-command form sections into (scenario_map, native_map).
 
     Each command is its own form section (keyed by the command, e.g. 'arm_away').
-    A section holds, optionally, a 'scenario' field (both backends), one mode
-    field per partition (keyed by the partition's label, value 'disarmed'/'total'/
-    'stay'/'instant') and an 'outputs' field. When the scenario is set the command
-    is scenario-driven and its partition fields are ignored; otherwise it is
-    partition-driven. ``partition_index`` maps a partition label to its id.
+    A section holds, optionally, a 'scenario_method' selector (both backends;
+    'scenari' or 'partizioni'), a 'scenario' field, one mode field per partition
+    (keyed by the partition's label, value 'disarmed'/'total'/'stay'/'instant')
+    and an 'outputs' field. ``partition_index`` maps a partition label to its id.
+
+    Routing: with both backends the 'scenario_method' selector decides whether the
+    command is scenario- or partition-driven (the other method's fields are
+    ignored). Without the selector (single backend) a set scenario wins, else the
+    partitions are used.
 
     Returns ({command: scenario_id}, {command: {mode|outputs: [ids]}}). The
     matching keys are popped from ``data`` so they are not stored as stray
@@ -156,12 +160,23 @@ def extract_hybrid_sections(
         section = data.pop(command)
         if not isinstance(section, dict):
             continue
+        method = section.pop(OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method", None)
         scenario = section.pop(OptionsKey.AlarmPanel.SCENARIO_FIELD, None)
         outputs = section.pop(OptionsKey.AlarmPanel.NATIVE_OUTPUT, None)
-        if scenario is not None and str(scenario).strip() != "":
-            # Scenario-driven: ignore partition fields (and the panel's own
-            # scenario handles its outputs).
-            scenario_map[command] = int(scenario)
+
+        scenario_set = scenario is not None and str(scenario).strip() != ""
+        if method == OptionsKey.PanelType.SCENARI:
+            use_scenario = True
+        elif method == OptionsKey.PanelType.PARTIZIONI:
+            use_scenario = False
+        else:  # single backend: no selector -> scenario wins if set
+            use_scenario = scenario_set
+
+        if use_scenario:
+            # Scenario-driven: ignore partition fields (the scenario handles its
+            # own outputs on the panel).
+            if scenario_set:
+                scenario_map[command] = int(scenario)
             continue
         # Partition-driven: group each partition's chosen mode.
         modes: dict[str, list[int]] = {}

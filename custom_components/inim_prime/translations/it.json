@@ -107,51 +107,61 @@
           "arm_away": {
             "name": "Fuori casa (Away)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_home": {
             "name": "In casa (Home)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_night": {
             "name": "Notte (Night)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_vacation": {
             "name": "Vacanza (Vacation)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "disarm": {
             "name": "Disinserimento (Disarm)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni."
+              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "shutters": {
@@ -258,51 +268,61 @@
           "arm_away": {
             "name": "Fuori casa (Away)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_home": {
             "name": "In casa (Home)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_night": {
             "name": "Notte (Night)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "arm_vacation": {
             "name": "Vacanza (Vacation)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto."
+              "scenario": "Compila per usare questo scenario (mantiene i controlli della centrale); lascia vuoto per inserire le partizioni qui sotto.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "disarm": {
             "name": "Disinserimento (Disarm)",
             "data": {
+              "scenario_method": "Metodo",
               "scenario": "Scenario",
               "outputs": "Attivazione uscite"
             },
             "data_description": {
-              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni."
+              "scenario": "Compila per usare lo scenario di disinserimento; lascia vuoto per spegnere tutte le partizioni.",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
             }
           },
           "shutters": {
@@ -325,14 +345,6 @@
     "step": {
       "init": {
         "title": "Opzioni INIM Prime",
-        "menu_options": {
-          "general": "Impostazioni generali",
-          "alarm": "Pannello allarme",
-          "save": "Salva ed esci"
-        }
-      },
-      "general": {
-        "title": "Impostazioni generali",
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
@@ -366,38 +378,82 @@
               "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
           },
+          "alarm_panel": {
+            "name": "Pannello allarme",
+            "description": "Numero di scenario (0-49) che la centrale attiva per ogni comando. Lascia vuoto per nascondere un comando; senza uno scenario di disinserimento il pannello non viene creato.",
+            "data": {
+              "disarm": "Scenario disinserimento",
+              "arm_away": "Scenario inserimento totale (away)",
+              "arm_home": "Scenario inserimento parziale (home)",
+              "arm_night": "Scenario inserimento notte",
+              "arm_vacation": "Scenario inserimento vacanza",
+              "arm_custom_bypass": "Scenario inserimento personalizzato"
+            }
+          },
+          "arm_away": {
+            "name": "Fuori casa (Away)",
+            "data": {
+              "scenario_method": "Metodo",
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Numero di scenario (0–49), usato quando il Metodo è «Scenario».",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
+            }
+          },
+          "arm_home": {
+            "name": "In casa (Home)",
+            "data": {
+              "scenario_method": "Metodo",
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Numero di scenario (0–49), usato quando il Metodo è «Scenario».",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
+            }
+          },
+          "arm_night": {
+            "name": "Notte (Night)",
+            "data": {
+              "scenario_method": "Metodo",
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Numero di scenario (0–49), usato quando il Metodo è «Scenario».",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacanza (Vacation)",
+            "data": {
+              "scenario_method": "Metodo",
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Numero di scenario (0–49), usato quando il Metodo è «Scenario».",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
+            }
+          },
+          "disarm": {
+            "name": "Disinserimento (Disarm)",
+            "data": {
+              "scenario_method": "Metodo",
+              "scenario": "Scenario",
+              "outputs": "Attivazione uscite"
+            },
+            "data_description": {
+              "scenario": "Numero di scenario (0–49), usato quando il Metodo è «Scenario».",
+              "scenario_method": "Con «Scenario» conta solo il numero scenario; con «Partizioni» contano le modalità impostate sulle partizioni qui sotto."
+            }
+          },
           "shutters": {
             "name": "Tapparelle",
             "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
           }
-        }
-      },
-      "alarm": {
-        "title": "Pannello allarme",
-        "menu_options": {
-          "cmd_disarm": "Disinserimento",
-          "cmd_arm_away": "Fuori casa",
-          "cmd_arm_home": "In casa",
-          "cmd_arm_night": "Notte",
-          "cmd_arm_vacation": "Vacanza",
-          "init": "‹ Indietro"
-        }
-      },
-      "method": {
-        "title": "{command} — metodo",
-        "description": "Scegli come eseguire «{command}»: con uno scenario della centrale oppure impostando direttamente le partizioni.",
-        "data": {
-          "scenario_method": "Metodo"
-        }
-      },
-      "cmd_detail": {
-        "title": "Allarme · {command}",
-        "data": {
-          "scenario": "Scenario",
-          "outputs": "Attivazione uscite"
-        },
-        "data_description": {
-          "scenario": "Numero di scenario (0–49) da attivare per questo comando."
         }
       }
     }

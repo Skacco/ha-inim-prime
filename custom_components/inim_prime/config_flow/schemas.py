@@ -396,6 +396,28 @@ def build_options_schema(
                 mode = SelectSelectorMode.DROPDOWN,
             ))
 
+        def _method_field(fields: dict, command: str) -> None:
+            # Only with both backends: declare whether this command uses the
+            # scenario field or the partition rows. The extractor honours it, so
+            # the fields of the other method are simply ignored (HA can't hide
+            # them in a single form).
+            if not has_primelan:
+                return
+            if current_alarm.get(command) is not None:
+                default = OptionsKey.PanelType.SCENARI
+            elif (current_native.get(command) or {}):
+                default = OptionsKey.PanelType.PARTIZIONI
+            else:
+                default = OptionsKey.PanelType.SCENARI
+            fields[vol.Required(
+                OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method",
+                default = default,
+            )] = SelectSelector(SelectSelectorConfig(
+                options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.PARTIZIONI],
+                translation_key = "alarm_method",
+                mode = SelectSelectorMode.LIST,
+            ))
+
         def _scenario_field(fields: dict, command: str) -> None:
             # Only with both backends: a scenario id for this command (hybrid).
             if not has_primelan:
@@ -420,6 +442,7 @@ def build_options_schema(
             command_modes = current_native.get(command, {}) or {}
             has_scenario = has_primelan and current_alarm.get(command) is not None
             fields = {}
+            _method_field(fields, command)
             _scenario_field(fields, command)
             # A row per partition, keyed by its label (shown as the field name);
             # default = its current mode, or "disarmed".
@@ -441,6 +464,7 @@ def build_options_schema(
         disarm_current = current_native.get(OptionsKey.AlarmPanel.DISARM, {}) or {}
         disarm_has_scenario = has_primelan and current_alarm.get(OptionsKey.AlarmPanel.DISARM) is not None
         disarm_fields = {}
+        _method_field(disarm_fields, OptionsKey.AlarmPanel.DISARM)
         _scenario_field(disarm_fields, OptionsKey.AlarmPanel.DISARM)
         disarm_marker = vol.Optional(
             OptionsKey.AlarmPanel.NATIVE_OUTPUT,
@@ -489,7 +513,7 @@ def build_options_schema(
                     mode = SelectSelectorMode.DROPDOWN,
                 ))
             schema[vol.Optional(section_key)] = section(
-                vol.Schema(fields), {"collapsed": not cur},
+                vol.Schema(fields), {"collapsed": True},
             )
     return schema
 

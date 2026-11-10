@@ -107,51 +107,61 @@
           "arm_away": {
             "name": "Away",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_home": {
             "name": "Home (Stay)",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_night": {
             "name": "Night",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_vacation": {
             "name": "Vacation",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "disarm": {
             "name": "Disarm",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off."
+              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "shutters": {
@@ -258,51 +268,61 @@
           "arm_away": {
             "name": "Away",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_home": {
             "name": "Home (Stay)",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_night": {
             "name": "Night",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "arm_vacation": {
             "name": "Vacation",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below."
+              "scenario": "Fill in to use this scenario (keeps the panel's checks); leave empty to arm the partitions below.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "disarm": {
             "name": "Disarm",
             "data": {
+              "scenario_method": "Method",
               "scenario": "Scenario",
               "outputs": "Output activation"
             },
             "data_description": {
-              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off."
+              "scenario": "Fill in to use the disarm scenario; leave empty to turn all partitions off.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
             }
           },
           "shutters": {
@@ -325,14 +345,6 @@
     "step": {
       "init": {
         "title": "INIM Prime options",
-        "menu_options": {
-          "general": "General settings",
-          "alarm": "Alarm panel",
-          "save": "Save and exit"
-        }
-      },
-      "general": {
-        "title": "General settings",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
@@ -366,38 +378,82 @@
               "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
+          "alarm_panel": {
+            "name": "Alarm panel",
+            "description": "Scenario number (0-49) the panel activates for each command. Leave empty to hide a command; without a disarm scenario the panel is not created.",
+            "data": {
+              "disarm": "Disarm scenario",
+              "arm_away": "Arm away scenario",
+              "arm_home": "Arm home scenario",
+              "arm_night": "Arm night scenario",
+              "arm_vacation": "Arm vacation scenario",
+              "arm_custom_bypass": "Arm custom bypass scenario"
+            }
+          },
+          "arm_away": {
+            "name": "Away",
+            "data": {
+              "scenario_method": "Method",
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Scenario number (0–49), used when Method is “Scenario”.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
+            }
+          },
+          "arm_home": {
+            "name": "Home (Stay)",
+            "data": {
+              "scenario_method": "Method",
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Scenario number (0–49), used when Method is “Scenario”.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
+            }
+          },
+          "arm_night": {
+            "name": "Night",
+            "data": {
+              "scenario_method": "Method",
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Scenario number (0–49), used when Method is “Scenario”.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacation",
+            "data": {
+              "scenario_method": "Method",
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Scenario number (0–49), used when Method is “Scenario”.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
+            }
+          },
+          "disarm": {
+            "name": "Disarm",
+            "data": {
+              "scenario_method": "Method",
+              "scenario": "Scenario",
+              "outputs": "Output activation"
+            },
+            "data_description": {
+              "scenario": "Scenario number (0–49), used when Method is “Scenario”.",
+              "scenario_method": "With “Scenario” only the scenario number is used; with “Partitions” the modes set on the partitions below are used."
+            }
+          },
           "shutters": {
             "name": "Roller shutters",
             "description": "For each shutter (numbered by its Mod.dom module) give it an optional name (also used as the cover name, e.g. \"Sala\") and choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger and has no stop. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
           }
-        }
-      },
-      "alarm": {
-        "title": "Alarm panel",
-        "menu_options": {
-          "cmd_disarm": "Disarm",
-          "cmd_arm_away": "Away",
-          "cmd_arm_home": "Home",
-          "cmd_arm_night": "Night",
-          "cmd_arm_vacation": "Vacation",
-          "init": "‹ Back"
-        }
-      },
-      "method": {
-        "title": "{command} — method",
-        "description": "Choose how to run “{command}”: a panel scenario, or by arming the partitions directly.",
-        "data": {
-          "scenario_method": "Method"
-        }
-      },
-      "cmd_detail": {
-        "title": "Alarm · {command}",
-        "data": {
-          "scenario": "Scenario",
-          "outputs": "Output activation"
-        },
-        "data_description": {
-          "scenario": "Scenario number (0–49) to activate for this command."
         }
       }
     }

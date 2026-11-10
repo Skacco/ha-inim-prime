@@ -87,6 +87,21 @@ def test_extract_hybrid_sections_mixed():
     assert native_map == {"arm_vacation": {"total": [0, 1], "instant": [2]}}
 
 
+def test_extract_hybrid_sections_method_selector():
+    # With both backends the 'scenario_method' selector decides the routing,
+    # overriding the other method's fields.
+    data = {
+        "arm_away": {"scenario_method": "scenari", "scenario": "2", "P0": "total"},
+        "arm_vacation": {"scenario_method": "partizioni", "scenario": "1",
+                         "P0": "total", "P2": "instant"},
+        "arm_home": {"scenario_method": "scenari", "scenario": ""},  # empty -> not offered
+    }
+    scenario_map, native_map = extract_hybrid_sections(data, PIDX)
+    assert scenario_map == {"arm_away": 2}                       # partitions ignored
+    assert native_map == {"arm_vacation": {"total": [0], "instant": [2]}}  # scenario ignored
+    assert "arm_home" not in scenario_map and "arm_home" not in native_map
+
+
 def test_clean_native_panel():
     assert clean_native_panel(None) == {}
     assert clean_native_panel({
