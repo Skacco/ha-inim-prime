@@ -1,6 +1,4 @@
 import asyncio
-import logging
-import time
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
@@ -56,8 +54,6 @@ from .runtime_data import (
     InimPrimeRuntimeData,
 )
 
-_LOGGER = logging.getLogger(__name__)
-
 PLATFORMS = [
     "binary_sensor",
     "sensor",
@@ -110,10 +106,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     """Set up INIM Prime integration."""
     hass.data.setdefault(DOMAIN, {})
 
-    # Startup timing (diagnostic): logged at WARNING so it shows without turning
-    # on debug. Tells where setup time goes (connect / first refreshes / platforms).
-    _t_start = time.monotonic()
-
     # Get the data as typed dict
     data = get_entry_data(entry)
     options = get_entry_options(entry)
@@ -135,14 +127,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # The panel can reset the native TCP link (one client at a time) or drop
     # the PrimeLAN HTTP connection. Treat a connect failure as "not ready" so
     # Home Assistant retries with backoff instead of leaving the entry failed.
-    _t_connect = time.monotonic()
     try:
         await inim_gateway.connect()
     except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
         raise ConfigEntryNotReady(
             f"Cannot connect to INIM Prime panel yet: {err}"
         ) from err
-    _LOGGER.warning("[timing] connect() -> %.1fs", time.monotonic() - _t_connect)
 
     ###
     ### Coordinators
@@ -264,10 +254,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     async def _run_native() -> None:
         for coordinator in native_chain:
-            _t = time.monotonic()
             await coordinator.async_config_entry_first_refresh()
-            _LOGGER.warning("[timing] native %s -> %.1fs",
-                            type(coordinator).__name__, time.monotonic() - _t)
         # Thermostats are Native-only and optional. Probe here (inside the native
         # chain, so it overlaps the PrimeLAN loads) and keep the coordinator only
         # if the panel actually returns thermostats (the status command fails
@@ -279,22 +266,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
                 entry = entry,
                 gateway = inim_gateway,
             )
-            _t = time.monotonic()
             await probe.async_refresh()
-            _LOGGER.warning("[timing] native thermostats probe -> %.1fs", time.monotonic() - _t)
             if probe.last_update_success and inim_gateway.thermostats:
                 thermostats_probe["coordinator"] = probe
 
     async def _run_primelan() -> None:
         for coordinator in primelan_chain:
-            _t = time.monotonic()
             await coordinator.async_config_entry_first_refresh()
-            _LOGGER.warning("[timing] primelan %s -> %.1fs",
-                            type(coordinator).__name__, time.monotonic() - _t)
 
-    _t_refresh = time.monotonic()
     await asyncio.gather(_run_native(), _run_primelan())
-    _LOGGER.warning("[timing] first refreshes (both chains) -> %.1fs", time.monotonic() - _t_refresh)
     thermostats_coordinator = thermostats_probe.get("coordinator")
 
     # Typed, no hass.data[DOMAIN][entry.entry_id] bookkeeping, no manual
@@ -315,12 +295,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     )
 
 
-    _t_platforms = time.monotonic()
     await hass.config_entries.async_forward_entry_setups(
         entry = entry,
         platforms = PLATFORMS,
     )
-    _LOGGER.warning("[timing] platform setup (entities) -> %.1fs", time.monotonic() - _t_platforms)
 
     _link_child_devices(hass, entry)
     debug_services.async_register(hass)
@@ -366,8 +344,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             hass, _load_deferred(), "inim_prime_deferred"
         )
 
-    _LOGGER.warning("[timing] async_setup_entry TOTAL (blocking) -> %.1fs "
-                    "(GSM/faults/log continue in background)", time.monotonic() - _t_start)
     return True
 
 
@@ -439,9 +415,7 @@ def _remove_empty_group_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry
             entity_registry, device.id, include_disabled_entities = True
         )
         if not entities:
-            device_registry.async_update_device(
-                device.id, remove_config_entry_id = entry.entry_id
-            )
+            device_registry.async_remove_device(device.id)
 
 
 def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
@@ -465,9 +439,7 @@ def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry
                 continue
             for prefix in prefixes:
                 if identifier.startswith(prefix) and identifier[len(prefix):].isdigit():
-                    device_registry.async_update_device(
-                        device.id, remove_config_entry_id = entry.entry_id
-                    )
+                    device_registry.async_remove_device(device.id)
                     break
 
 
