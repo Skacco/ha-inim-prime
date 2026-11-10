@@ -175,7 +175,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             if not errors:
                 await self.async_set_unique_id(self._data.serial_number)
                 self._abort_if_unique_id_configured()
-                return await self.async_step_options()
+                return self._create_entry_with_defaults()
 
         schema = vol.Schema(
             build_connection_schema(
@@ -192,55 +192,22 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         )
 
     # ------------------------------------------------------------------
-    # Step 4: integration options (scan intervals)
+    # Finish setup: create the entry with default options
     # ------------------------------------------------------------------
-    async def async_step_options(self, user_input: dict[str, Any] | None = None):
-
-        if user_input is not None:
-            scan_intervals = user_input["scan_intervals"]
-
-            self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
-            self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
-            self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
-            self._options.show_hidden_outputs = user_input.get(OptionsKey.SHOW_HIDDEN_OUTPUTS)
-            self._options.hide_unused_partitions = user_input.get(OptionsKey.HIDE_UNUSED_PARTITIONS)
-
-            if self._data.use_primelan:
-                self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]
-                self._options.gsm_scan_interval = scan_intervals[OptionsKey.ScanIntervals.GSM]
-                self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
-                self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
-                self._options.panel_log_events_fetch_limit = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
-                if not self._data.use_native:
-                    self._options.alarm_panel = clean_alarm_panel(user_input.get(OptionsKey.ALARM_PANEL)) or None
-
-            # Per-command blocks (Native present): split into scenario + partition
-            # maps. With both backends a command with a scenario is scenario-driven.
-            scenario_map, native_map = extract_hybrid_sections(user_input)
-            self._options.alarm_panel_native = native_map or None
-            if self._data.use_native and self._data.use_primelan:
-                self._options.alarm_panel = scenario_map or None
-
-            assert self._data.serial_number is not None
-            return self.async_create_entry(
-                title = f"INIM Prime ({self._data.serial_number})",
-                data = self._data.to_entry_data(),
-                options = self._options.to_options_dict(),
-            )
-
-        schema = vol.Schema(
-            build_options_schema(
-                has_native = self._data.use_native,
-                has_primelan = self._data.use_primelan,
-            )
-        )
-
-        return self.async_show_form(
-            step_id = "options",
-            data_schema = schema,
-            description_placeholders = {
-                "state_backend": "Native" if self._data.use_native else "PrimeLAN",
-            },
+    # The first setup only collects the connection. Everything else (scan
+    # intervals, alarm panel, roller shutters, the toggles) has sensible
+    # defaults and is tuned afterwards from the integration's Options --
+    # where the panel's scenario/partition names and shutter modules are
+    # already loaded, so the forms there are far more useful than at setup.
+    def _create_entry_with_defaults(self):
+        # Keep the previous form default of hiding unused areas; the rest
+        # fall back to their runtime defaults when the option is absent.
+        self._options.hide_unused_partitions = True
+        assert self._data.serial_number is not None
+        return self.async_create_entry(
+            title = f"INIM Prime ({self._data.serial_number})",
+            data = self._data.to_entry_data(),
+            options = self._options.to_options_dict(),
         )
 
     @staticmethod

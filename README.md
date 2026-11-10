@@ -1,11 +1,11 @@
-> **Fork gestito da [skaccox](https://github.com/skaccox).** Rispetto all'originale aggiunge: il **backend Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari, i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
+> **Fork gestito da [skaccox](https://github.com/skaccox).** Rispetto all'originale aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari, i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 > Basato su [Pitscheider/ha-inim-prime](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0).
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
 
 ## Modalità di integrazione
-Puoi usare due backend, **singolarmente o insieme**. La scelta si fa durante la configurazione dell'integrazione.
+Puoi usare due modalità di integrazione, **singolarmente o insieme**. La scelta si fa durante la configurazione dell'integrazione.
 
 ### Native — protocollo locale (TCP)
 Comunica **direttamente con la centrale** sulla porta del protocollo locale (TCP, default **6004**), con cifratura AES. È il canale **veloce e completamente locale**: non passa dal cloud né dalla Web API.
@@ -29,7 +29,7 @@ Usa la **Web API ufficiale Inim** esposta dalla scheda di rete **PrimeLAN**. Agg
 Richiede la **scheda di rete PrimeLAN** installata nella centrale.
 
 ### Entrambi (consigliato)
-Attivi i due backend insieme: **Native** fa il lavoro locale e veloce (zone, partizioni, uscite, tapparelle, termostati, timer), **PrimeLAN** aggiunge scenari, GSM, guasti e registro. Il **pannello di allarme** di Home Assistant unisce i due mondi: legge lo stato dalle partizioni e invia i comandi di inserimento/disinserimento tramite gli **scenari** PrimeLAN.
+Attivi le due modalità di integrazione insieme: **Native** fa il lavoro locale e veloce (zone, partizioni, uscite, tapparelle, termostati, timer), **PrimeLAN** aggiunge scenari, GSM, guasti e registro. Il **pannello di allarme** di Home Assistant unisce i due mondi: legge lo stato dalle partizioni e invia i comandi di inserimento/disinserimento tramite gli **scenari** PrimeLAN.
 
 ## Compatibilità firmware
 Testata sia con centrali a **firmware 4.x** sia a **firmware 5.x**.
@@ -56,8 +56,8 @@ Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o 
 
 # Configurazione della centrale Inim Prime
 ## Requisiti
-- Per il backend **PrimeLAN** serve una centrale Inim Prime con la **scheda di rete PrimeLAN**: senza quella scheda PrimeLAN non è utilizzabile (puoi acquistarla e installarla da solo o tramite un installatore). Il manuale della scheda è qui: [manuale Inim PrimeLAN](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
-- Per il backend **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo (default `pass`).
+- Per la modalità **PrimeLAN** serve una centrale Inim Prime con la **scheda di rete PrimeLAN**: senza quella scheda PrimeLAN non è utilizzabile (puoi acquistarla e installarla da solo o tramite un installatore). Il manuale della scheda è qui: [manuale Inim PrimeLAN](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
+- Per la modalità **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo (default `pass`).
 
 In entrambi i casi si configura la centrale con il software **Prime/STUDIO** su Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
 
@@ -105,7 +105,7 @@ Consigliato aggiornare il firmware della centrale, cliccando qui (in alto a dest
 
 <img width="112" height="102" alt="img06" src="https://github.com/user-attachments/assets/79168438-cfd7-42e8-93f4-d3dfaf3d19d9" />
 
-### Configura PrimeLAN (solo per il backend PrimeLAN)
+### Configura PrimeLAN (solo per la modalità PrimeLAN)
 A centrale aggiornata, clicca `PrimeLAN settings` nel pannello di sinistra:
 
 <img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
@@ -143,8 +143,8 @@ Scarica il codice sorgente dell'ultima release da [https://github.com/skaccox/ha
 # Configurazione dell'integrazione in Home Assistant
 Vai in `Impostazioni` → `Dispositivi e servizi` → `Aggiungi integrazione`, cerca `Inim Prime`.
 
-### Scelta del backend
-All'inizio scegli quale backend usare: **Solo Native**, **Solo PrimeLAN** o **Native + PrimeLAN**.
+### Scelta della modalità di integrazione
+All'inizio scegli quale modalità di integrazione usare: **Solo Native**, **Solo PrimeLAN** o **Native + PrimeLAN**.
 
 ### Configurazione iniziale
 - **Numero di serie** — incollalo (quello copiato da Prime/STUDIO). Non viene verificato dall'integrazione e **non è modificabile in seguito**: identifica l'installazione e determina dove vengono salvati i dati. Se non ce l'hai, un'alternativa è il MAC di rete.
@@ -152,14 +152,14 @@ All'inizio scegli quale backend usare: **Solo Native**, **Solo PrimeLAN** o **Na
 - Sezione **Native** (se attivo): porta (default 6004), password del protocollo (default `pass`), eventuale PIN personalizzato.
 - Sezione **PrimeLAN** (se attivo): `Usa HTTPS` (consigliato) e la `Chiave API` generata in Prime/STUDIO.
 
-Poi puoi configurare le opzioni (vedi sotto); se hai dubbi lascia i valori predefiniti.
+Il primo setup chiede **solo la connessione**. Intervalli di scansione, pannello allarme, tapparelle e gli altri parametri partono con valori predefiniti e si regolano in qualsiasi momento dalle **Opzioni** (vedi sotto) — dove i nomi di scenari/partizioni e i moduli tapparella sono già caricati.
 La prima configurazione può richiedere un po': è normale, la centrale Inim Prime non è velocissima 😅.
 
 ### Fine setup
 Al termine vedrai i dispositivi creati dall'integrazione, che puoi rinominare e assegnare a un'Area. Premi `Fine`.
 
 # Riconfigurazione
-Per cambiare host, HTTPS, chiave API, porta/password/PIN o passare da un backend all'altro: apri l'integrazione, clicca i tre puntini del dispositivo (nome di default `INIM Prime (numero_di_serie)`) e premi `Riconfigura`.
+Per cambiare host, HTTPS, chiave API, porta/password/PIN o cambiare modalità di integrazione: apri l'integrazione, clicca i tre puntini del dispositivo (nome di default `INIM Prime (numero_di_serie)`) e premi `Riconfigura`.
 
 # Opzioni
 Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
@@ -168,11 +168,11 @@ Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
 Numero massimo di eventi scaricati quando vengono rilevati nuovi log. Consigliato il valore predefinito; l'integrazione ne scarica automaticamente di più se serve. Non è in tempo reale (il recupero è asincrono).
 
 ## Intervalli di scansione
-Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni campo indica il **backend** usato: **Zone / Partizioni / Uscite** sono lette dal **Native** se configurato (locale, veloce), altrimenti da **PrimeLAN**; **GSM / Guasti / Eventi registro / Scenari** sono **solo PrimeLAN**.
+Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni campo indica la **modalità di integrazione** usata: **Zone / Partizioni / Uscite** sono lette dal **Native** se configurato (locale, veloce), altrimenti da **PrimeLAN**; **GSM / Guasti / Eventi registro / Scenari** sono **solo PrimeLAN**.
 
-⚠️ Il backend **Native** supporta intervalli molto più bassi di PrimeLAN per zone, partizioni e uscite (polling locale).
+⚠️ La modalità **Native** supporta intervalli molto più bassi di PrimeLAN per zone, partizioni e uscite (polling locale).
 
-ℹ️ Quando usi **entrambi** i backend, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
+ℹ️ Quando usi **entrambe** le modalità di integrazione, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
 
 ## Pannello allarme
 L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'impianto. Un comando può essere eseguito in **due modi**, che si differenziano per una cosa importante: cosa succede con **zone/finestre aperte**.
@@ -183,19 +183,19 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
 
-Scegli un comando e, **con entrambi i backend**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
+Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
 - **Scenario** → la schermata dopo mostra una **tendina con i nomi degli scenari** letti dalla centrale (scegli quello da attivare per il comando).
 - **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
 
 Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Ogni schermata termina con il **Salva** standard (salva e chiude); per tornare indietro usa la freccia di HA in alto. Per modificare un altro comando riapri le Opzioni.
 
-Esempio tipico (entrambi i backend):
+Esempio tipico (entrambe le modalità):
 - **Fuori casa** → Metodo *Scenario*, Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
 - **Notte** → Metodo *Scenario*, Scenario = `3`
 - **Vacanza** → Metodo *Partizioni*, poi su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
 - **Disinserimento** → Metodo *Scenario*, Scenario = `1` (oppure *Partizioni* senza nulla = spegne tutte)
 
-> Con un solo backend il Metodo non viene chiesto: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
+> Con una sola modalità di integrazione il Metodo non viene chiesto: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
 
 Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
@@ -204,7 +204,7 @@ Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una
 ### Quale pannello viene creato
 - **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
 - **Solo PrimeLAN** → mappatura **a scenari** (si sceglie lo scenario per comando da una tendina con i nomi; senza scenario di disinserimento il pannello non viene creato).
-- **Entrambi i backend** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
+- **Entrambe le modalità di integrazione** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
 
 ## Tapparelle
 Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale.
@@ -233,7 +233,7 @@ L'integrazione raggruppa le entità in pochi dispositivi.
 ## Centrale Inim Prime
 Rappresenta la centrale.
 - **Sensori:** Zone escluse, Memoria allarme zone, Memoria allarme partizioni, Scenario attivo.
-- **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per backend (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling del backend è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni backend configurato — due se usi entrambi.
+- **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni modalità configurata — due se usi entrambi.
 - **Registro eventi** (event entity): traccia i log della centrale. Non è in tempo reale (vedi sezione sulla card del registro).
 - **Pulsanti:** Annulla esclusioni zone, Azzera memorie partizioni, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
@@ -259,7 +259,7 @@ Device unico con tutte le uscite della centrale, come interruttori (`switch`) o 
 Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale posizione).
 
 ## Termostati
-Device unico con i sensori di temperatura dei termostati (solo backend Native, se presenti sulla centrale).
+Device unico con i sensori di temperatura dei termostati (solo modalità Native, se presenti sulla centrale).
 
 ## Timer
 Device unico con i timer della centrale: un binary sensor "attivo" e uno switch "abilitato" per ciascuno. Creato **solo se la centrale ha dei timer** (come Termostati, Tapparelle e Uscite).
