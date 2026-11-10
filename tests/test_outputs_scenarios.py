@@ -297,19 +297,18 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         # The submenu shows a dynamic label per command (current config).
         assert any("Disinserimento" in lbl for lbl in result["menu_options"].values())
 
-        # Scenario is a menu (PrimeLAN-only -> straight to it): entries are the
-        # panel's scenario names, the current one marked with ●.
+        # Scenario is a form with a name dropdown (PrimeLAN-only -> straight to it).
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
-        assert result["type"] == "menu" and result["step_id"] == "scenario_menu"
-        names = {lbl.lstrip("● ") for lbl in result["menu_options"].values()}
-        assert {"Spento", "Totale", "Notte"} <= names
-        # Picking a scenario returns to the submenu (no close, nothing saved yet).
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "scen_0"})
+        sel = next(v for k, v in result["data_schema"].schema.items() if str(k) == "scenario")
+        labels = {o["label"] for o in sel.config["options"]}
+        assert {"Spento", "Totale", "Notte"} <= labels
+        # Submitting returns to the submenu (no close, nothing saved yet).
+        result = await opts.async_configure(result["flow_id"], {"scenario": "0"})
         assert result["type"] == "menu" and result["step_id"] == "alarm"
         assert "alarm_panel" not in entry.options  # not persisted until save
 
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "scen_2"})
+        result = await opts.async_configure(result["flow_id"], {"scenario": "2"})
         # Back to the main menu, then the single "Save and exit".
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "init"})
         await opts.async_configure(result["flow_id"], {"next_step_id": "save_exit"})

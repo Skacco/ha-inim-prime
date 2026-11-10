@@ -186,8 +186,10 @@ Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scan
 In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Imposti i comandi che vuoi e torni al menù con **‹ Torna al menù**; il salvataggio è quello unico del menù principale.
 
 Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*); la voce del metodo **attualmente impostato** è marcata con ●:
-- **Scenario** → un **menù con i nomi degli scenari** letti dalla centrale: tocchi quello da attivare (lo scenario attuale è marcato con ●), oppure *Nessuno*. C'è la voce *‹ Indietro* e nessun pulsante «Invia».
-- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Essendo un form multi-campo si conferma con **«Avanti»** (torni all'elenco; il salvataggio vero è *Salva ed esci*). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form.
+- **Scenario** → un form con una **tendina** che elenca i **nomi degli scenari** letti dalla centrale: scegli quello da attivare (la X nella tendina lo lascia non impostato).
+- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
+
+Entrambi sono form a tendine: si confermano con **«Avanti»** (torni all'elenco; il salvataggio vero è l'unico *Salva ed esci* del menù). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form.
 
 Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri, torna al menù e premi **💾 Salva ed esci** (unico salvataggio). Anche i form (Parametri, Intervalli, Tapparelle, Partizioni) usano **«Avanti»** e tornano al menù, dove avviene il salvataggio.
 

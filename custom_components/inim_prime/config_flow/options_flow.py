@@ -237,11 +237,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         self._cmd = command
         if self._has_native and self._has_primelan:
             return await self.async_step_method()
-        if self._has_native:
-            self._method = OptionsKey.PanelType.PARTIZIONI
-            return await self.async_step_cmd_detail()
-        self._method = OptionsKey.PanelType.SCENARI
-        return await self.async_step_scenario_menu()
+        self._method = (
+            OptionsKey.PanelType.PARTIZIONI if self._has_native
+            else OptionsKey.PanelType.SCENARI
+        )
+        return await self.async_step_cmd_detail()
 
     async def async_step_method(self, user_input: dict[str, Any] | None = None):
         # A menu (not a form) so it carries a "‹ Indietro" entry, and the labels
@@ -270,48 +270,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
     async def async_step_method_scenario(self, user_input=None):
         self._method = OptionsKey.PanelType.SCENARI
-        return await self.async_step_scenario_menu()
+        return await self.async_step_cmd_detail()
 
     async def async_step_method_partizioni(self, user_input=None):
         self._method = OptionsKey.PanelType.PARTIZIONI
         return await self.async_step_cmd_detail()
-
-    # --- Scenario pick: a menu (back + current marked, no "Submit" button) ---
-    async def async_step_scenario_menu(self, user_input: dict[str, Any] | None = None):
-        self._load()
-        current = self._scenarios.get(self._cmd)
-        menu: dict[str, str] = {}
-        for sid, name in self._scenario_choices():
-            menu[f"scen_{sid}"] = f"● {name}" if sid == current else name
-        menu["scen_none"] = ("● " if current is None else "") + "Nessuno (non impostato)"
-        # Back to the method menu when both backends are present, else the list.
-        menu["method" if (self._has_native and self._has_primelan) else "alarm"] = "‹ Indietro"
-        return self.async_show_menu(
-            step_id="scenario_menu",
-            menu_options=menu,
-            description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
-        )
-
-    async def async_step_scen_none(self, user_input=None):
-        self._scenarios.pop(self._cmd, None)
-        self._natives.pop(self._cmd, None)
-        return await self.async_step_alarm()
-
-    def __getattr__(self, name: str):
-        # Dynamic handlers for the scenario menu entries (async_step_scen_<id>):
-        # pick that scenario for the current command and return to the submenu.
-        if name.startswith("async_step_scen_"):
-            suffix = name[len("async_step_scen_"):]
-            if suffix.isdigit():
-                sid = int(suffix)
-
-                async def _pick(user_input=None):
-                    self._scenarios[self._cmd] = sid
-                    self._natives.pop(self._cmd, None)
-                    return await self.async_step_alarm()
-
-                return _pick
-        raise AttributeError(name)
 
     async def async_step_cmd_detail(self, user_input: dict[str, Any] | None = None):
         # Reads and writes the in-memory maps; "Save and exit" persists them.
