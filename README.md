@@ -181,13 +181,13 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
+Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Puoi modificare **più comandi di seguito** senza uscire: le modifiche restano in memoria e si salvano tutte insieme con **💾 Salva ed esci**. **‹ Torna al menù** mantiene le modifiche (vengono scritte al primo salvataggio); chiudendo con la **X** si annulla tutto.
 
 Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
 - **Scenario** → la schermata dopo mostra una **tendina con i nomi degli scenari** letti dalla centrale (scegli quello da attivare per il comando).
 - **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
 
-Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Ogni schermata termina con il **Salva** standard (salva e chiude); per tornare indietro usa la freccia di HA in alto. Per modificare un altro comando riapri le Opzioni.
+Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri e alla fine premi **Salva ed esci**.
 
 Esempio tipico (entrambe le modalità):
 - **Fuori casa** → Metodo *Scenario*, Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)

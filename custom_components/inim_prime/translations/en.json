@@ -242,7 +242,7 @@
       },
       "alarm": {
         "title": "Alarm panel",
-        "description": "Choose which command to configure. For each one you set what the panel should do when you trigger it from the Home Assistant alarm card. The choice between scenario and areas (when available) is on each command's own screen.",
+        "description": "Pick a command to set it: each entry shows its current configuration. Edit as many as you like (they are kept while you navigate), then press “Save and exit” to save them all. “‹ Back to menu” keeps your edits; they are written on the next save. Closing with the X discards everything.",
         "menu_options": {
           "cmd_disarm": "Disarm",
           "cmd_arm_away": "Away",
@@ -292,7 +292,7 @@
         "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi tenda sala\"). The Smart module runs the full travel from a single trigger: there is no stop, but while it is moving you can send another command and the shutter immediately takes the new one. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
       },
       "method": {
-        "title": "Alarm · {command} — method",
+        "title": "Alarm · method",
         "description": "Choose how to run “{command}”: a panel scenario, or by arming the partitions directly.",
         "menu_options": {
           "method_scenario": "Scenario",
@@ -307,7 +307,7 @@
           "outputs": "Output activation"
         },
         "data_description": {
-          "scenario": "Scenario number (0–49) to activate for this command."
+          "scenario": "Pick the scenario (read from the panel) to activate for this command from the dropdown."
         }
       }
     }

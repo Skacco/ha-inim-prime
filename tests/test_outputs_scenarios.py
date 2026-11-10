@@ -288,23 +288,27 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
     entry = await _setup(hass, panel)
     opts = hass.config_entries.options
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
-        # Save-on-submit: one command per flow session. PrimeLAN-only -> each
-        # command goes straight to the scenario form (no Method step).
+        # Accumulate several commands in one session, then "Save and exit".
+        # PrimeLAN-only -> each command goes straight to the scenario form.
         result = await opts.async_init(entry.entry_id)
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
+        # The submenu shows a dynamic label per command (current config).
+        assert any("Disinserimento" in lbl for lbl in result["menu_options"].values())
+        assert "alarm_save" in result["menu_options"]
+
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
         # Scenario is a name dropdown built from the panel's scenario list.
         sel = next(v for k, v in result["data_schema"].schema.items() if str(k) == "scenario")
         labels = {o["label"] for o in sel.config["options"]}
         assert {"Spento", "Totale", "Notte"} <= labels
-        # value is the scenario id as a string.
-        await opts.async_configure(result["flow_id"], {"scenario": "0"})   # save & close
-        await hass.async_block_till_done()
+        # Submitting returns to the submenu (no close); value is the id as a string.
+        result = await opts.async_configure(result["flow_id"], {"scenario": "0"})
+        assert result["type"] == "menu" and result["step_id"] == "alarm"
 
-        result = await opts.async_init(entry.entry_id)
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
-        await opts.async_configure(result["flow_id"], {"scenario": "2"})  # save & close (merges)
+        result = await opts.async_configure(result["flow_id"], {"scenario": "2"})
+        # Persist everything with "Save and exit".
+        await opts.async_configure(result["flow_id"], {"next_step_id": "alarm_save"})
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
     assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
