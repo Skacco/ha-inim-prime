@@ -181,13 +181,15 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Puoi modificare **più comandi di seguito** senza uscire: le modifiche restano in memoria e si salvano tutte insieme con **💾 Salva ed esci**. **‹ Torna al menù** mantiene le modifiche (vengono scritte al primo salvataggio); chiudendo con la **X** si annulla tutto.
+Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme*, — **solo se la centrale ha moduli tapparella** — *Tapparelle*, e **💾 Salva ed esci**. Ogni sezione modifica una copia in memoria e torna al menù; **niente viene scritto finché non premi «💾 Salva ed esci»**. La **X** in alto chiude senza salvare. Così c'è un solo salvataggio e un solo annulla: tornare indietro non salva mai nulla a metà.
+
+In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Imposti i comandi che vuoi e torni al menù con **‹ Torna al menù**; il salvataggio è quello unico del menù principale.
 
 Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*); la voce del metodo **attualmente impostato** è marcata con ●:
 - **Scenario** → un **menù con i nomi degli scenari** letti dalla centrale: tocchi quello da attivare (lo scenario attuale è marcato con ●), oppure *Nessuno*. C'è la voce *‹ Indietro* e nessun pulsante «Invia».
 - **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Essendo un form multi-campo si conferma con **«Avanti»** (torni all'elenco; il salvataggio vero è *Salva ed esci*). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form.
 
-Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri e alla fine premi **Salva ed esci**.
+Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri, torna al menù e premi **💾 Salva ed esci** (unico salvataggio). Anche i form (Parametri, Intervalli, Tapparelle, Partizioni) usano **«Avanti»** e tornano al menù, dove avviene il salvataggio.
 
 Esempio tipico (entrambe le modalità):
 - **Fuori casa** → Metodo *Scenario*, Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)

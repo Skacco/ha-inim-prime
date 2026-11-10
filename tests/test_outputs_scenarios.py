@@ -169,9 +169,9 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
         assert keys["partitions"] == 10000  # entry's stored value is kept
 
         new = {**keys, "outputs": 2000, "scenarios": 4000}
-        result = await opts.async_configure(                                  # submit -> save & close
-            result["flow_id"], new,
-        )
+        result = await opts.async_configure(result["flow_id"], new)           # -> back to menu
+        # Single save from the main menu.
+        await opts.async_configure(result["flow_id"], {"next_step_id": "save_exit"})
         await hass.async_block_till_done()
 
     assert entry.options["scan_intervals"]["outputs"] == 2000
@@ -291,10 +291,11 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         # Accumulate several commands in one session, then "Save and exit".
         # PrimeLAN-only -> each command goes straight to the scenario form.
         result = await opts.async_init(entry.entry_id)
+        # Main menu carries the single save entry.
+        assert "save_exit" in result["menu_options"]
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         # The submenu shows a dynamic label per command (current config).
         assert any("Disinserimento" in lbl for lbl in result["menu_options"].values())
-        assert "alarm_save" in result["menu_options"]
 
         # Scenario is a menu (PrimeLAN-only -> straight to it): entries are the
         # panel's scenario names, the current one marked with ●.
@@ -302,14 +303,16 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         assert result["type"] == "menu" and result["step_id"] == "scenario_menu"
         names = {lbl.lstrip("● ") for lbl in result["menu_options"].values()}
         assert {"Spento", "Totale", "Notte"} <= names
-        # Picking a scenario returns to the submenu (no close).
+        # Picking a scenario returns to the submenu (no close, nothing saved yet).
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "scen_0"})
         assert result["type"] == "menu" and result["step_id"] == "alarm"
+        assert "alarm_panel" not in entry.options  # not persisted until save
 
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "scen_2"})
-        # Persist everything with "Save and exit".
-        await opts.async_configure(result["flow_id"], {"next_step_id": "alarm_save"})
+        # Back to the main menu, then the single "Save and exit".
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "init"})
+        await opts.async_configure(result["flow_id"], {"next_step_id": "save_exit"})
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
     assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")

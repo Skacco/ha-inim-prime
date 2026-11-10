@@ -48,23 +48,22 @@ _SCAN_INTERVAL_KEYS = frozenset(
 
 
 class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
-    """Menu-driven options flow.
+    """Menu-driven options flow with a single final save.
 
     The main menu lists general parameters, scan intervals, the alarm panel and
-    (when present) shutters. The alarm panel is a submenu with one entry per
-    command: each entry shows its current configuration, edits are kept in memory
-    while you move between commands, and a single "Save and exit" writes them all
-    at once -- so configuring several commands no longer means opening and closing
-    the options four times.
+    (when present) shutters, plus "Save and exit". Every section edits an
+    in-memory copy of the options and returns to this menu; nothing is written to
+    the entry until "Save and exit". Going back (or closing with the X) therefore
+    never persists a half-made change -- there is one clear save and one clear
+    cancel.
     """
 
     _cmd: str | None = None
     _method: str | None = None
-    # Alarm edits are accumulated here across the submenu and persisted only on
-    # "Save and exit"; snapshotted from the stored options on first entry.
-    _alarm_loaded: bool = False
-    _alarm_scenarios: dict | None = None
-    _alarm_natives: dict | None = None
+    # In-memory working copy of the options; written to the entry only on
+    # "Save and exit". Loaded from the stored options on first use.
+    _loaded: bool = False
+    _pending: dict | None = None
 
     @property
     def _has_native(self) -> bool:
@@ -75,7 +74,28 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return bool(get_entry_data(self.config_entry).get("primelan"))
 
     # ------------------------------------------------------------------
+    def _load(self) -> None:
+        if self._loaded:
+            return
+        opts = dict(get_entry_options(self.config_entry))
+        # Normalise the alarm maps to plain mutable dicts for in-place edits.
+        opts[OptionsKey.ALARM_PANEL] = dict(opts.get(OptionsKey.ALARM_PANEL) or {})
+        opts[OptionsKey.ALARM_PANEL_NATIVE] = dict(opts.get(OptionsKey.ALARM_PANEL_NATIVE) or {})
+        self._pending = opts
+        self._loaded = True
+
+    @property
+    def _scenarios(self) -> dict:
+        self._load()
+        return self._pending[OptionsKey.ALARM_PANEL]
+
+    @property
+    def _natives(self) -> dict:
+        self._load()
+        return self._pending[OptionsKey.ALARM_PANEL_NATIVE]
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        self._load()
         # General parameters first, scan intervals second.
         options = ["params", "scan"]
         if self._has_native or self._has_primelan:
@@ -84,75 +104,50 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         shutters, _ = self._shutter_context()
         if shutters:
             options.append("shutters")
+        options.append("save_exit")
         return self.async_show_menu(step_id="init", menu_options=options)
 
-    def _load_alarm(self) -> None:
-        if self._alarm_loaded:
-            return
-        opts = get_entry_options(self.config_entry)
-        self._alarm_scenarios = dict(opts.get(OptionsKey.ALARM_PANEL) or {})
-        self._alarm_natives = dict(opts.get(OptionsKey.ALARM_PANEL_NATIVE) or {})
-        self._alarm_loaded = True
+    async def async_step_save_exit(self, user_input: dict[str, Any] | None = None):
+        # The single write: persist the working copy, dropping empty alarm maps.
+        self._load()
+        opts = dict(self._pending)
+        if not opts.get(OptionsKey.ALARM_PANEL):
+            opts.pop(OptionsKey.ALARM_PANEL, None)
+        if not opts.get(OptionsKey.ALARM_PANEL_NATIVE):
+            opts.pop(OptionsKey.ALARM_PANEL_NATIVE, None)
+        return self.async_create_entry(title="", data=opts)
 
     def _alarm_label(self, cmd: str) -> str:
         """Menu label showing the command's current (pending) configuration."""
         name = _CMD_LABELS.get(cmd, cmd)
-        if cmd in (self._alarm_scenarios or {}):
-            sid = self._alarm_scenarios[cmd]
+        if cmd in self._scenarios:
+            sid = self._scenarios[cmd]
             scen = dict(self._scenario_choices()).get(sid, f"Scenario {sid}")
             return f"{name} — Scenario «{scen}»"
-        if (self._alarm_natives or {}).get(cmd):
+        if self._natives.get(cmd):
             return f"{name} — Partizioni"
         return f"{name} — —"
 
     async def async_step_alarm(self, user_input: dict[str, Any] | None = None):
-        # Dynamic labels (dict menu) so each command shows its current config;
-        # "Save and exit" persists everything, "Back" discards pending edits.
-        self._load_alarm()
+        # Dynamic labels (dict menu) so each command shows its current config.
+        self._load()
         menu: dict[str, str] = {
             step: self._alarm_label(_STEP_TO_CMD[step]) for step in _CMD_STEPS
         }
-        menu["alarm_save"] = "💾 Salva ed esci"
         menu["init"] = "‹ Torna al menù"
         return self.async_show_menu(step_id="alarm", menu_options=menu)
 
-    def _apply_pending_alarm(self, opts: dict) -> None:
-        """Merge the accumulated alarm maps into opts (no-op if alarm untouched).
-
-        Called from every save path so alarm edits made during the session are
-        persisted whichever section the user saves from, not only "Save and exit".
-        """
-        if not self._alarm_loaded:
-            return
-        if self._alarm_scenarios:
-            opts[OptionsKey.ALARM_PANEL] = self._alarm_scenarios
-        else:
-            opts.pop(OptionsKey.ALARM_PANEL, None)
-        if self._alarm_natives:
-            opts[OptionsKey.ALARM_PANEL_NATIVE] = self._alarm_natives
-        else:
-            opts.pop(OptionsKey.ALARM_PANEL_NATIVE, None)
-
-    async def async_step_alarm_save(self, user_input: dict[str, Any] | None = None):
-        # Persist the accumulated alarm maps and close.
-        self._load_alarm()
-        opts = dict(get_entry_options(self.config_entry))
-        self._apply_pending_alarm(opts)
-        return self.async_create_entry(title="", data=opts)
-
     # --- General parameters (no intervals, no alarm, no shutters) -------
     async def async_step_params(self, user_input: dict[str, Any] | None = None):
+        self._load()
         if user_input is not None:
-            opts = dict(get_entry_options(self.config_entry))
-            gi = dict(user_input)
-            if OptionsKey.HIDE_UNUSED_PARTITIONS in gi:
-                opts[OptionsKey.HIDE_UNUSED_PARTITIONS] = gi[OptionsKey.HIDE_UNUSED_PARTITIONS]
-            if OptionsKey.SHOW_HIDDEN_OUTPUTS in gi:
-                opts[OptionsKey.SHOW_HIDDEN_OUTPUTS] = gi[OptionsKey.SHOW_HIDDEN_OUTPUTS]
-            if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in gi:
-                opts[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = gi[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
-            self._apply_pending_alarm(opts)
-            return self.async_create_entry(title="", data=opts)
+            if OptionsKey.HIDE_UNUSED_PARTITIONS in user_input:
+                self._pending[OptionsKey.HIDE_UNUSED_PARTITIONS] = user_input[OptionsKey.HIDE_UNUSED_PARTITIONS]
+            if OptionsKey.SHOW_HIDDEN_OUTPUTS in user_input:
+                self._pending[OptionsKey.SHOW_HIDDEN_OUTPUTS] = user_input[OptionsKey.SHOW_HIDDEN_OUTPUTS]
+            if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
+                self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
+            return await self.async_step_init()
 
         schema = vol.Schema(
             build_general_params_schema(
@@ -161,24 +156,25 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 current_options=self._config_options(),
             )
         )
-        return self.async_show_form(step_id="params", data_schema=schema)
+        # Not the last step: submitting returns to the menu (the single save is
+        # there), so HA shows "Avanti" and a back arrow back to the menu.
+        return self.async_show_form(step_id="params", data_schema=schema, last_step=False)
 
     # --- Scan intervals (flat: its own page, no accordion) --------------
     async def async_step_scan(self, user_input: dict[str, Any] | None = None):
+        self._load()
         if user_input is not None:
-            opts = dict(get_entry_options(self.config_entry))
             # Fields are flat on this page; collect them back into scan_intervals.
             intervals = {
                 key: value for key, value in user_input.items()
                 if key in _SCAN_INTERVAL_KEYS
             }
             if intervals:
-                opts["scan_intervals"] = {
-                    **(opts.get("scan_intervals") or {}),
+                self._pending["scan_intervals"] = {
+                    **(self._pending.get("scan_intervals") or {}),
                     **intervals,
                 }
-            self._apply_pending_alarm(opts)
-            return self.async_create_entry(title="", data=opts)
+            return await self.async_step_init()
 
         schema = vol.Schema(
             build_scan_intervals_schema(
@@ -188,20 +184,19 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 as_section=False,
             )
         )
-        return self.async_show_form(step_id="scan", data_schema=schema)
+        return self.async_show_form(step_id="scan", data_schema=schema, last_step=False)
 
     # --- Shutters (only shown when the panel has shutter modules) -------
     async def async_step_shutters(self, user_input: dict[str, Any] | None = None):
+        self._load()
         shutters, output_choices = self._shutter_context()
         if user_input is not None:
-            opts = dict(get_entry_options(self.config_entry))
             shutter_commands = _extract_shutter_commands(dict(user_input))
             if shutter_commands:
-                opts[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
+                self._pending[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
             else:
-                opts.pop(OptionsKey.SHUTTER_COMMANDS, None)
-            self._apply_pending_alarm(opts)
-            return self.async_create_entry(title="", data=opts)
+                self._pending.pop(OptionsKey.SHUTTER_COMMANDS, None)
+            return await self.async_step_init()
 
         module_names: dict[int, str] = {}
         if shutters:
@@ -219,7 +214,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 current_options=self._config_options(),
             )
         )
-        return self.async_show_form(step_id="shutters", data_schema=schema)
+        return self.async_show_form(step_id="shutters", data_schema=schema, last_step=False)
 
     # --- Per-command routers -------------------------------------------
     async def async_step_cmd_disarm(self, user_input=None):
@@ -238,7 +233,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return await self._enter_command(OptionsKey.AlarmPanel.ARM_VACATION)
 
     async def _enter_command(self, command: str):
-        self._load_alarm()
+        self._load()
         self._cmd = command
         if self._has_native and self._has_primelan:
             return await self.async_step_method()
@@ -251,17 +246,17 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     async def async_step_method(self, user_input: dict[str, Any] | None = None):
         # A menu (not a form) so it carries a "‹ Indietro" entry, and the labels
         # mark which method is currently configured for this command.
-        self._load_alarm()
+        self._load()
         cmd = self._cmd
-        if cmd in (self._alarm_scenarios or {}):
-            sid = self._alarm_scenarios[cmd]
+        if cmd in self._scenarios:
+            sid = self._scenarios[cmd]
             name = dict(self._scenario_choices()).get(sid, f"Scenario {sid}")
             scen_label = f"● Scenario — attuale: «{name}»"
         else:
             scen_label = "Scenario"
         part_label = (
             "● Partizioni (Native) — attuale"
-            if (self._alarm_natives or {}).get(cmd) else "Partizioni (Native)"
+            if self._natives.get(cmd) else "Partizioni (Native)"
         )
         return self.async_show_menu(
             step_id="method",
@@ -283,8 +278,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
     # --- Scenario pick: a menu (back + current marked, no "Submit" button) ---
     async def async_step_scenario_menu(self, user_input: dict[str, Any] | None = None):
-        self._load_alarm()
-        current = (self._alarm_scenarios or {}).get(self._cmd)
+        self._load()
+        current = self._scenarios.get(self._cmd)
         menu: dict[str, str] = {}
         for sid, name in self._scenario_choices():
             menu[f"scen_{sid}"] = f"● {name}" if sid == current else name
@@ -298,9 +293,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         )
 
     async def async_step_scen_none(self, user_input=None):
-        self._load_alarm()
-        self._alarm_scenarios.pop(self._cmd, None)
-        self._alarm_natives.pop(self._cmd, None)
+        self._scenarios.pop(self._cmd, None)
+        self._natives.pop(self._cmd, None)
         return await self.async_step_alarm()
 
     def __getattr__(self, name: str):
@@ -312,46 +306,45 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 sid = int(suffix)
 
                 async def _pick(user_input=None):
-                    self._load_alarm()
-                    self._alarm_scenarios[self._cmd] = sid
-                    self._alarm_natives.pop(self._cmd, None)
+                    self._scenarios[self._cmd] = sid
+                    self._natives.pop(self._cmd, None)
                     return await self.async_step_alarm()
 
                 return _pick
         raise AttributeError(name)
 
     async def async_step_cmd_detail(self, user_input: dict[str, Any] | None = None):
-        # Reads and writes the in-memory maps; the submenu persists them later.
-        self._load_alarm()
+        # Reads and writes the in-memory maps; "Save and exit" persists them.
+        self._load()
 
         if user_input is not None:
             if self._method == OptionsKey.PanelType.PARTIZIONI:
                 index = {label: pid for pid, label in self._partition_choices()}
                 entry = extract_command_partitions(dict(user_input), index)
                 if entry:
-                    self._alarm_natives[self._cmd] = entry
+                    self._natives[self._cmd] = entry
                 else:
-                    self._alarm_natives.pop(self._cmd, None)
-                self._alarm_scenarios.pop(self._cmd, None)
+                    self._natives.pop(self._cmd, None)
+                self._scenarios.pop(self._cmd, None)
             else:
                 value = user_input.get(OptionsKey.AlarmPanel.SCENARIO_FIELD)
                 if value not in (None, ""):
-                    self._alarm_scenarios[self._cmd] = int(value)
+                    self._scenarios[self._cmd] = int(value)
                 else:
-                    self._alarm_scenarios.pop(self._cmd, None)
-                self._alarm_natives.pop(self._cmd, None)
+                    self._scenarios.pop(self._cmd, None)
+                self._natives.pop(self._cmd, None)
             # Back to the submenu (not closing) so more commands can be edited.
             return await self.async_step_alarm()
 
         if self._method == OptionsKey.PanelType.PARTIZIONI:
             _, output_choices = self._shutter_context()
             schema = build_alarm_partitions_schema(
-                self._cmd, self._alarm_natives.get(self._cmd),
+                self._cmd, self._natives.get(self._cmd),
                 self._partition_choices(), output_choices,
             )
         else:
             schema = build_alarm_scenario_schema(
-                self._alarm_scenarios.get(self._cmd), self._scenario_choices(),
+                self._scenarios.get(self._cmd), self._scenario_choices(),
             )
         return self.async_show_form(
             step_id="cmd_detail",
@@ -366,7 +359,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
     # ------------------------------------------------------------------
     def _config_options(self) -> ConfigOptions:
-        o = get_entry_options(self.config_entry)
+        # Read from the in-memory working copy so forms reflect in-session edits.
+        o = self._pending if self._loaded else get_entry_options(self.config_entry)
         scan = o.get("scan_intervals") or {}
         return ConfigOptions(
             zones_scan_interval=scan.get("zones"),

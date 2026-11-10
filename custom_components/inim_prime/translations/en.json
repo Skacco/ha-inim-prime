@@ -232,17 +232,18 @@
     "step": {
       "init": {
         "title": "INIM Prime options",
-        "description": "To change the integration mode (Native / PrimeLAN) or the connection settings use Reconfigure (⋮ menu on the integration card).",
+        "description": "Edit whichever sections you like, then press “💾 Save and exit” to save everything. The X at the top closes without saving. To change the integration mode (Native / PrimeLAN) or the connection settings use Reconfigure (⋮ menu on the integration card).",
         "menu_options": {
           "params": "General parameters",
           "scan": "Scan intervals",
           "alarm": "Alarm panel",
-          "shutters": "Roller shutters"
+          "shutters": "Roller shutters",
+          "save_exit": "💾 Save and exit"
         }
       },
       "alarm": {
         "title": "Alarm panel",
-        "description": "Pick a command to set it: each entry shows its current configuration. Edit as many as you like (they are kept while you navigate), then press “Save and exit” to save them all. “‹ Back to menu” keeps your edits; they are written on the next save. Closing with the X discards everything.",
+        "description": "Pick a command to set it: each entry shows its current configuration. “‹ Back to menu” returns to the main menu, where “💾 Save and exit” saves everything. Nothing is written until you save.",
         "menu_options": {
           "cmd_disarm": "Disarm",
           "cmd_arm_away": "Away",

@@ -232,17 +232,18 @@
     "step": {
       "init": {
         "title": "Opzioni INIM Prime",
-        "description": "Per cambiare la modalità di integrazione (Native / PrimeLAN) o i parametri di connessione usa Riconfigura (menù ⋮ sulla scheda dell'integrazione).",
+        "description": "Modifica le sezioni che vuoi, poi premi «💾 Salva ed esci» per salvare tutto. La X in alto chiude senza salvare. Per cambiare la modalità di integrazione (Native / PrimeLAN) o i parametri di connessione usa Riconfigura (menù ⋮ sulla scheda dell'integrazione).",
         "menu_options": {
           "params": "Parametri generali",
           "scan": "Intervalli di scansione",
           "alarm": "Pannello allarme",
-          "shutters": "Tapparelle"
+          "shutters": "Tapparelle",
+          "save_exit": "💾 Salva ed esci"
         }
       },
       "alarm": {
         "title": "Pannello allarme",
-        "description": "Scegli un comando per impostarlo: ogni voce mostra la configurazione attuale. Modificane quanti vuoi (restano in memoria mentre navighi), poi premi «Salva ed esci» per salvarli tutti. «‹ Torna al menù» mantiene le modifiche fatte; vengono salvate al primo salvataggio. Chiudendo con la X si annulla tutto.",
+        "description": "Scegli un comando per impostarlo: ogni voce mostra la configurazione attuale. «‹ Torna al menù» torna al menù principale, dove salvi tutto con «💾 Salva ed esci». Finché non salvi non viene scritto nulla.",
         "menu_options": {
           "cmd_disarm": "Disinserimento",
           "cmd_arm_away": "Fuori casa",
