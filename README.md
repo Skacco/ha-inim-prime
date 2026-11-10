@@ -69,7 +69,7 @@ Apri Prime/STUDIO:
 
 Clicca su `Open panel connected`, poi seleziona `Prime LAN`:
 
-<img width="905" height="495" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
+<img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
 
 Inserisci IP e password della centrale (default `pass`) e clicca `Next`.
 Verificata la comunicazione, vedrai la centrale rilevata, la versione firmware e il **numero di serie**.
