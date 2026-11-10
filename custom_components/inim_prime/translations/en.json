@@ -257,43 +257,43 @@
         "title": "Alarm panel",
         "description": "One group per Home Assistant panel command. In the dropdown pick a panel scenario (by name) or “Custom partitions…”: in that case open the section right below and set each partition's mode and the outputs to activate. Leave the dropdown empty to not offer that command.",
         "data": {
-          "disarm": "Disarm",
-          "arm_away": "Arm away",
-          "arm_home": "Arm home",
-          "arm_night": "Arm night",
-          "arm_vacation": "Arm vacation"
+          "arm_home": "Home",
+          "arm_away": "Away",
+          "arm_night": "Night",
+          "arm_vacation": "Vacation",
+          "disarm": "Disarmed"
         },
         "sections": {
-          "disarm_partitions": {
-            "name": "↳ Disarm: custom partitions and outputs",
+          "arm_home_partitions": {
+            "name": "↳ Home: custom partitions and outputs",
             "description": "Used only when “Custom partitions…” is selected above.",
             "data": {
               "outputs": "Output activation"
             }
           },
           "arm_away_partitions": {
-            "name": "↳ Arm away: custom partitions and outputs",
-            "description": "Used only when “Custom partitions…” is selected above.",
-            "data": {
-              "outputs": "Output activation"
-            }
-          },
-          "arm_home_partitions": {
-            "name": "↳ Arm home: custom partitions and outputs",
+            "name": "↳ Away: custom partitions and outputs",
             "description": "Used only when “Custom partitions…” is selected above.",
             "data": {
               "outputs": "Output activation"
             }
           },
           "arm_night_partitions": {
-            "name": "↳ Arm night: custom partitions and outputs",
+            "name": "↳ Night: custom partitions and outputs",
             "description": "Used only when “Custom partitions…” is selected above.",
             "data": {
               "outputs": "Output activation"
             }
           },
           "arm_vacation_partitions": {
-            "name": "↳ Arm vacation: custom partitions and outputs",
+            "name": "↳ Vacation: custom partitions and outputs",
+            "description": "Used only when “Custom partitions…” is selected above.",
+            "data": {
+              "outputs": "Output activation"
+            }
+          },
+          "disarm_partitions": {
+            "name": "↳ Disarmed: custom partitions and outputs",
             "description": "Used only when “Custom partitions…” is selected above.",
             "data": {
               "outputs": "Output activation"

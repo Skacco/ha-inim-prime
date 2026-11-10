@@ -183,17 +183,17 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme*, — **solo se la centrale ha moduli tapparella** — *Tapparelle*, e **💾 Salva ed esci**. Ogni sezione modifica una copia in memoria e torna al menù; **niente viene scritto finché non premi «💾 Salva ed esci»**. La **X** in alto chiude senza salvare. Così c'è un solo salvataggio e un solo annulla: tornare indietro non salva mai nulla a metà.
 
-In *Pannello allarme* (con scenari disponibili, cioè con PrimeLAN) c'è **una sola schermata con un gruppo per comando**, con gli stessi nomi di Home Assistant (*Disattiva* / *Attiva fuori casa* / *Attiva in casa* / *Attiva notte* / *Attiva vacanza*). Ogni gruppo ha:
+In *Pannello allarme* (con scenari disponibili, cioè con PrimeLAN) c'è **una sola schermata con un gruppo per comando**, con gli stessi nomi di Home Assistant e nello stesso ordine (*In casa* / *Fuori casa* / *Notte* / *Vacanza* / *Disattivato*). Ogni gruppo ha:
 - una **tendina**: gli **scenari della centrale per nome**, oppure **Partizioni personalizzate…** (solo se è attiva anche la modalità Native); vuota (la X) = comando non offerto nel pannello;
-- subito sotto una **sezione chiusa** «↳ … partizioni personalizzate e uscite» con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Vale **solo** se nella tendina hai scelto *Partizioni personalizzate…*; altrimenti viene ignorata.
+- subito sotto una **sezione chiusa** «↳ Vacanza: partizioni personalizzate e uscite» con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Vale **solo** se nella tendina hai scelto *Partizioni personalizzate…*; altrimenti viene ignorata.
 
 Vedi subito cosa è impostato per tutti i comandi e fai tutto in una schermata. Premi **«Avanti»** per tornare al menù, dove salvi con **💾 Salva ed esci**. Una partizione ha **una sola modalità** per comando (stato doppio impossibile). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form, per questo i form usano «Avanti».
 
 Esempio tipico (entrambe le modalità):
-- **Attiva fuori casa** → scenario *Acceso giorno* (mantieni l'avviso finestre aperte per l'uso quotidiano)
-- **Attiva notte** → scenario *Acceso notte*
-- **Attiva vacanza** → *Partizioni personalizzate…*, poi nella sezione sotto, su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
-- **Disattiva** → scenario *Spento* (oppure *Partizioni personalizzate…* senza nulla = spegne tutte)
+- **Fuori casa** → scenario *Acceso giorno* (mantieni l'avviso finestre aperte per l'uso quotidiano)
+- **Notte** → scenario *Acceso notte*
+- **Vacanza** → *Partizioni personalizzate…*, poi nella sezione sotto, su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
+- **Disattivato** → scenario *Spento* (oppure *Partizioni personalizzate…* senza nulla = spegne tutte)
 
 > Solo Native → non ci sono scenari: *Pannello allarme* mostra l'elenco dei comandi e ognuno apre direttamente il form partizioni. Solo PrimeLAN → le tendine contengono solo scenari.
 

@@ -25,22 +25,23 @@ from .schemas import (
 # module, used to store the mapping (so renaming the module can't lose it).
 _SECTION_KEY = re.compile(r"^(\d{1,3})\s*·")
 
+# Same wording and order as Home Assistant's alarm card.
 _CMD_LABELS = {
-    OptionsKey.AlarmPanel.DISARM: "Disinserimento",
-    OptionsKey.AlarmPanel.ARM_AWAY: "Fuori casa",
     OptionsKey.AlarmPanel.ARM_HOME: "In casa",
+    OptionsKey.AlarmPanel.ARM_AWAY: "Fuori casa",
     OptionsKey.AlarmPanel.ARM_NIGHT: "Notte",
     OptionsKey.AlarmPanel.ARM_VACATION: "Vacanza",
+    OptionsKey.AlarmPanel.DISARM: "Disattivato",
 }
 _CMD_STEPS = (
-    "cmd_disarm", "cmd_arm_away", "cmd_arm_home", "cmd_arm_night", "cmd_arm_vacation",
+    "cmd_arm_home", "cmd_arm_away", "cmd_arm_night", "cmd_arm_vacation", "cmd_disarm",
 )
 _STEP_TO_CMD = {
-    "cmd_disarm": OptionsKey.AlarmPanel.DISARM,
-    "cmd_arm_away": OptionsKey.AlarmPanel.ARM_AWAY,
     "cmd_arm_home": OptionsKey.AlarmPanel.ARM_HOME,
+    "cmd_arm_away": OptionsKey.AlarmPanel.ARM_AWAY,
     "cmd_arm_night": OptionsKey.AlarmPanel.ARM_NIGHT,
     "cmd_arm_vacation": OptionsKey.AlarmPanel.ARM_VACATION,
+    "cmd_disarm": OptionsKey.AlarmPanel.DISARM,
 }
 # Dropdown value meaning "arm via custom partitions" (scenario ids are digits).
 _PARTITIONS_CHOICE = "partizioni"

@@ -257,43 +257,43 @@
         "title": "Pannello allarme",
         "description": "Un gruppo per ogni comando del pannello di Home Assistant. Nella tendina scegli uno scenario della centrale (per nome) oppure «Partizioni personalizzate…»: in quel caso apri la sezione subito sotto e imposta la modalità di ogni partizione e le uscite da attivare. Lascia vuota la tendina per non offrire quel comando.",
         "data": {
-          "disarm": "Disattiva",
-          "arm_away": "Attiva fuori casa",
-          "arm_home": "Attiva in casa",
-          "arm_night": "Attiva notte",
-          "arm_vacation": "Attiva vacanza"
+          "arm_home": "In casa",
+          "arm_away": "Fuori casa",
+          "arm_night": "Notte",
+          "arm_vacation": "Vacanza",
+          "disarm": "Disattivato"
         },
         "sections": {
-          "disarm_partitions": {
-            "name": "↳ Disattiva: partizioni personalizzate e uscite",
+          "arm_home_partitions": {
+            "name": "↳ In casa: partizioni personalizzate e uscite",
             "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
             "data": {
               "outputs": "Attivazione uscite"
             }
           },
           "arm_away_partitions": {
-            "name": "↳ Attiva fuori casa: partizioni personalizzate e uscite",
-            "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
-            "data": {
-              "outputs": "Attivazione uscite"
-            }
-          },
-          "arm_home_partitions": {
-            "name": "↳ Attiva in casa: partizioni personalizzate e uscite",
+            "name": "↳ Fuori casa: partizioni personalizzate e uscite",
             "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
             "data": {
               "outputs": "Attivazione uscite"
             }
           },
           "arm_night_partitions": {
-            "name": "↳ Attiva notte: partizioni personalizzate e uscite",
+            "name": "↳ Notte: partizioni personalizzate e uscite",
             "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
             "data": {
               "outputs": "Attivazione uscite"
             }
           },
           "arm_vacation_partitions": {
-            "name": "↳ Attiva vacanza: partizioni personalizzate e uscite",
+            "name": "↳ Vacanza: partizioni personalizzate e uscite",
+            "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
+            "data": {
+              "outputs": "Attivazione uscite"
+            }
+          },
+          "disarm_partitions": {
+            "name": "↳ Disattivato: partizioni personalizzate e uscite",
             "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
             "data": {
               "outputs": "Attivazione uscite"
