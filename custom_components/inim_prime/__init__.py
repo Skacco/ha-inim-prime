@@ -235,17 +235,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # Each chain stays sequential internally: the Native protocol handles one
     # command at a time, so its coordinators must not overlap each other.
     prefer_native = bool(data.get("native"))
+    # With Native preferred, the output list is loaded by connect()/initialize(),
+    # so the entities (switches/lights/covers) can be built without the slow
+    # status read -- defer it to the background (see below). With PrimeLAN the list
+    # comes from the outputs refresh itself, so it must stay blocking or the output
+    # entities wouldn't be created.
+    defer_outputs = prefer_native and outputs_coordinator is not None
     state_coordinators = [
-        c for c in (zones_coordinator, partitions_coordinator, outputs_coordinator)
+        c for c in (zones_coordinator, partitions_coordinator)
         if c is not None
     ]
+    if outputs_coordinator is not None and not defer_outputs:
+        state_coordinators.append(outputs_coordinator)
     native_chain = list(state_coordinators) if prefer_native else []
     primelan_chain = [] if prefer_native else list(state_coordinators)
     if timers_coordinator is not None:
         native_chain.append(timers_coordinator)
     # Scenarios block setup: the scenario buttons and the active-scenario sensor
     # are built from the scenario list during platform setup, so it must be loaded
-    # first. GSM, system faults and the event log are diagnostic and loaded in the
+    # first. Outputs, GSM, system faults and the event log are loaded in the
     # background (see below), so they don't gate startup.
     primelan_chain.extend(
         c for c in (scenarios_coordinator,)
@@ -335,20 +343,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # background task after setup. Their entities are already created and show
     # "unavailable" until this fills them in, so setup finishes as soon as the
     # fast Native chain (and the blocking scenarios refresh) are done.
-    deferred_primelan = [
-        c for c in (system_faults_coordinator, gsm_coordinator)
+    # Outputs first (native status read: switches/lights/covers go from
+    # "unavailable" to their real state as soon as it lands), then the PrimeLAN
+    # diagnostics, then the event log (slowest).
+    deferred = [
+        c for c in (
+            outputs_coordinator if defer_outputs else None,
+            system_faults_coordinator,
+            gsm_coordinator,
+        )
         if c is not None
     ]
-    if deferred_primelan or panel_log_events_coordinator is not None:
-        async def _load_deferred_primelan() -> None:
-            for coordinator in deferred_primelan:
+    if deferred or panel_log_events_coordinator is not None:
+        async def _load_deferred() -> None:
+            for coordinator in deferred:
                 await coordinator.async_refresh()
             if panel_log_events_coordinator is not None:
                 await panel_log_events_coordinator.async_startup()
                 await panel_log_events_coordinator.async_refresh()
 
         entry.async_create_background_task(
-            hass, _load_deferred_primelan(), "inim_prime_deferred_primelan"
+            hass, _load_deferred(), "inim_prime_deferred"
         )
 
     _LOGGER.warning("[timing] async_setup_entry TOTAL (blocking) -> %.1fs "
