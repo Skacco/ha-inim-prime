@@ -213,6 +213,13 @@ class InimPrimeGateway:
         """
         if self._native is None:
             return {}
+        # Names are cached after the first successful read: the read goes
+        # through the single Native connection and would otherwise queue behind
+        # the polling (slow options screen). A rename on the panel shows up
+        # after the integration is reloaded.
+        cached = getattr(self, "_module_labels_cache", None)
+        if cached is not None and cached[0] >= count:
+            return {k: v for k, v in cached[1].items() if k <= count}
         from .const import MODULE_LABELS_ADDRESS, MODULE_LABEL_SIZE
         try:
             data = await self._native.read_memory(
@@ -226,6 +233,7 @@ class InimPrimeGateway:
             name = raw.split(b"\x00", 1)[0].decode("latin-1").strip()
             if name:
                 labels[index + 1] = name
+        self._module_labels_cache = (count, labels)
         return labels
 
     @property

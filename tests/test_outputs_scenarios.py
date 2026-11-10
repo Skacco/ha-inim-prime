@@ -553,3 +553,24 @@ async def test_alarm_form_mixed_scenario_and_partitions():
     assert result["type"] == "menu" and result["step_id"] == "init"
     assert flow._pending["alarm_panel"] == {"arm_night": 2}
     assert set(flow._pending["alarm_panel_native"]) == {"arm_vacation"}
+
+
+async def test_module_labels_cached():
+    """Module names are read from the panel once, then served from memory."""
+    from custom_components.inim_prime.gateway import InimPrimeGateway
+    from custom_components.inim_prime.const import MODULE_LABEL_SIZE
+
+    class Native:
+        reads = 0
+
+        async def read_memory(self, address, length):
+            Native.reads += 1
+            names = [b"TENDA SALA", b"TENDA NICOLE"]
+            return b"".join(n.ljust(MODULE_LABEL_SIZE, b"\x00") for n in names)[:length]
+
+    gw = object.__new__(InimPrimeGateway)
+    gw._native = Native()
+    assert await gw.module_labels(2) == {1: "TENDA SALA", 2: "TENDA NICOLE"}
+    assert await gw.module_labels(2) == {1: "TENDA SALA", 2: "TENDA NICOLE"}
+    assert await gw.module_labels(1) == {1: "TENDA SALA"}
+    assert Native.reads == 1
