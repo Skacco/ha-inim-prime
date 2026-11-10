@@ -651,8 +651,29 @@ def build_alarm_method_schema(default_method: str) -> dict:
     }
 
 
-def build_alarm_scenario_schema(current_scenario: int | None) -> dict:
-    """One scenario-id field for a command."""
+def build_alarm_scenario_schema(
+        current_scenario: int | None,
+        scenarios: list[tuple[int, str]] | None = None,
+) -> dict:
+    """One scenario field for a command.
+
+    When the panel's scenario list is available it's a name dropdown (value =
+    scenario id, label = the panel's scenario name); otherwise it falls back to
+    a plain id box (0-49).
+    """
+    if scenarios:
+        options = [
+            SelectOptionDict(value = str(sid), label = (label or f"Scenario {sid}"))
+            for sid, label in scenarios
+        ]
+        return {
+            vol.Optional(
+                OptionsKey.AlarmPanel.SCENARIO_FIELD,
+                description = {"suggested_value": str(current_scenario) if current_scenario is not None else None},
+            ): SelectSelector(SelectSelectorConfig(
+                options = options, mode = SelectSelectorMode.DROPDOWN,
+            ))
+        }
     return {
         vol.Optional(
             OptionsKey.AlarmPanel.SCENARIO_FIELD,

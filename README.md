@@ -184,7 +184,7 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
 
 Scegli un comando e, **con entrambi i backend**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
-- **Scenario** → la schermata dopo chiede solo il **numero di scenario**.
+- **Scenario** → la schermata dopo mostra una **tendina con i nomi degli scenari** letti dalla centrale (scegli quello da attivare per il comando).
 - **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
 
 Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Ogni schermata termina con il **Salva** standard (salva e chiude); per tornare indietro usa la freccia di HA in alto. Per modificare un altro comando riapri le Opzioni.
@@ -203,7 +203,7 @@ Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una
 
 ### Quale pannello viene creato
 - **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
-- **Solo PrimeLAN** → mappatura **a scenari** (un numero di scenario per comando; senza scenario di disinserimento il pannello non viene creato).
+- **Solo PrimeLAN** → mappatura **a scenari** (si sceglie lo scenario per comando da una tendina con i nomi; senza scenario di disinserimento il pannello non viene creato).
 - **Entrambi i backend** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
 
 ## Tapparelle

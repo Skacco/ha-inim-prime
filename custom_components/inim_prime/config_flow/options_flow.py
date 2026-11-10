@@ -245,7 +245,9 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 self._partition_choices(), output_choices,
             )
         else:
-            schema = build_alarm_scenario_schema(scenarios.get(self._cmd))
+            schema = build_alarm_scenario_schema(
+                scenarios.get(self._cmd), self._scenario_choices(),
+            )
         return self.async_show_form(
             step_id="cmd_detail",
             data_schema=vol.Schema(schema),
@@ -271,6 +273,15 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             show_hidden_outputs=o.get("show_hidden_outputs"),
             hide_unused_partitions=o.get("hide_unused_partitions"),
             shutter_commands=o.get("shutter_commands"),
+        )
+
+    def _scenario_choices(self) -> list[tuple[int, str]]:
+        runtime = getattr(self.config_entry, "runtime_data", None)
+        gateway = getattr(runtime, "gateway", None) if runtime else None
+        scenarios = dict(getattr(gateway, "scenarios", None) or {}) if gateway else {}
+        return sorted(
+            ((sid, (s.label or f"Scenario {sid}")) for sid, s in scenarios.items()),
+            key=lambda item: item[0],
         )
 
     def _partition_choices(self) -> list[tuple[int, str]]:

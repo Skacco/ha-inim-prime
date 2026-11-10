@@ -293,13 +293,18 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         result = await opts.async_init(entry.entry_id)
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
-        await opts.async_configure(result["flow_id"], {"scenario": 0})   # save & close
+        # Scenario is a name dropdown built from the panel's scenario list.
+        sel = next(v for k, v in result["data_schema"].schema.items() if str(k) == "scenario")
+        labels = {o["label"] for o in sel.config["options"]}
+        assert {"Spento", "Totale", "Notte"} <= labels
+        # value is the scenario id as a string.
+        await opts.async_configure(result["flow_id"], {"scenario": "0"})   # save & close
         await hass.async_block_till_done()
 
         result = await opts.async_init(entry.entry_id)
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
-        await opts.async_configure(result["flow_id"], {"scenario": 2.0})  # save & close (merges)
+        await opts.async_configure(result["flow_id"], {"scenario": "2"})  # save & close (merges)
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
     assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
