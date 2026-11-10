@@ -175,7 +175,25 @@ Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traff
 ℹ️ Quando usi **entrambi** i backend, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
 
 ## Pannello allarme
-Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** della centrale. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello allarme non viene creato**.
+L'integrazione può creare un'entità `alarm_control_panel` per inserire/disinserire l'impianto. Ci sono **due tipi** di pannello:
+
+### Scenari (PrimeLAN)
+Inserisce/disinserisce **attivando uno scenario** della centrale. Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** (0–49). Lo stato viene letto dalle partizioni e dallo scenario attivo. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello non viene creato**. Richiede **PrimeLAN** (lettura/attivazione scenari). È l'equivalente del comportamento di sdomotica.
+
+### Partizioni (Native)
+Inserisce/disinserisce agendo **direttamente sulle partizioni** (nessuno scenario, nessun PrimeLAN): ogni comando porta a `ARM_AWAY` un **insieme di partizioni** che scegli tu, e mette a riposo le altre; il **disinserimento** spegne tutte le partizioni. Lo stato viene derivato dallo stato di inserimento delle partizioni (e una partizione in allarme → *triggered*). È **più veloce** (tutto locale) e funziona **anche senza PrimeLAN**.
+
+Per ogni comando (Fuori casa / In casa / Notte / Vacanza) selezioni quali partizioni armare. Un comando senza partizioni non viene offerto. Esempio tipico:
+- **Fuori casa** = esterni + finestre + volumetrici
+- **Notte** = finestre + scuri (volumetrici a riposo)
+- **In casa** = esterni + casetta
+
+### Quale viene creato
+- **Solo Native** → pannello **a partizioni** (è l'unico possibile).
+- **Solo PrimeLAN** → pannello **a scenari**.
+- **Entrambi i backend** → compare l'opzione **"Tipo pannello allarme"** (default: *Scenari*) per scegliere quale usare. Una sola entità, quella del tipo scelto.
+
+> Nota: il pannello **a scenari** scrive via PrimeLAN (più lento), quello **a partizioni** scrive via Native (quasi istantaneo). Se hai entrambi ma vuoi inserimento/disinserimento rapidi, scegli *Partizioni (Native)* e tieni PrimeLAN solo per scenari/GSM/guasti/registro.
 
 ## Tapparelle
 Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale.

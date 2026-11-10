@@ -23,7 +23,9 @@ class OptionsKey:
     SHOW_HIDDEN_OUTPUTS: Final = "show_hidden_outputs"
     HIDE_UNUSED_PARTITIONS: Final = "hide_unused_partitions"
     SCAN_INTERVALS: Final = "scan_intervals"
-    ALARM_PANEL: Final = "alarm_panel"
+    ALARM_PANEL: Final = "alarm_panel"        # scenario mapping (PrimeLAN)
+    ALARM_PANEL_TYPE: Final = "alarm_panel_type"    # "scenari" | "partizioni"
+    ALARM_PANEL_NATIVE: Final = "alarm_panel_native"  # per-arm partition sets
     SHUTTERS: Final = "shutters"              # the options-form section
     SHUTTER_COMMANDS: Final = "shutter_commands"  # stored mapping
 
@@ -39,6 +41,15 @@ class OptionsKey:
         ALL: Final[tuple[str, ...]] = (
             DISARM, ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION, ARM_CUSTOM_BYPASS,
         )
+        # Arm commands offered by the Native (partition-based) panel: each maps
+        # to a set of partitions to arm (disarm = all partitions off).
+        NATIVE_ARMS: Final[tuple[str, ...]] = (
+            ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION,
+        )
+
+    class PanelType:
+        SCENARI: Final[str] = "scenari"
+        PARTIZIONI: Final[str] = "partizioni"
 
     class ScanIntervals:
         ZONES: Final[str] = "zones"

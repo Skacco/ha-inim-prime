@@ -7,7 +7,7 @@ from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
-from .models import ConfigOptions, clean_alarm_panel
+from .models import ConfigOptions, clean_alarm_panel, clean_native_panel
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import build_options_schema, shutter_section_key
@@ -25,6 +25,10 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
                 if alarm_panel:
                     data["alarm_panel"] = alarm_panel
+            if OptionsKey.ALARM_PANEL_NATIVE in data:
+                native_panel = clean_native_panel(data.pop(OptionsKey.ALARM_PANEL_NATIVE))
+                if native_panel:
+                    data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
             shutter_commands = _extract_shutter_commands(data)  # pops the sections
             if shutter_commands:
                 data[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
@@ -42,6 +46,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             scenarios_scan_interval = options["scan_intervals"].get("scenarios"),
             panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
             alarm_panel = options.get("alarm_panel"),
+            alarm_panel_type = options.get("alarm_panel_type"),
+            alarm_panel_native = options.get("alarm_panel_native"),
             show_hidden_outputs = options.get("show_hidden_outputs"),
             hide_unused_partitions = options.get("hide_unused_partitions"),
             shutter_commands = options.get("shutter_commands"),
@@ -51,6 +57,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         has_primelan = bool(data.get("primelan"))
 
         shutters, output_choices = self._shutter_context()
+        partition_choices = self._partition_choices()
         module_names: dict[int, str] = {}
         if shutters:
             gateway = self.config_entry.runtime_data.gateway
@@ -67,9 +74,20 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 shutters = shutters,
                 output_choices = output_choices,
                 module_names = module_names,
+                partitions = partition_choices,
             )
         )
         return self.async_show_form(step_id = "init", data_schema = schema)
+
+    def _partition_choices(self) -> list[tuple[int, str]]:
+        """Partitions to offer in the Native alarm-panel mapping (id -> label)."""
+        runtime = getattr(self.config_entry, "runtime_data", None)
+        gateway = getattr(runtime, "gateway", None) if runtime else None
+        partitions = dict(getattr(gateway, "partitions", None) or {}) if gateway else {}
+        return sorted(
+            ((pid, (p.label or f"Partizione {pid}")) for pid, p in partitions.items()),
+            key = lambda item: item[0],
+        )
 
     def _shutter_context(self) -> tuple[list[int], list[tuple[int, str]]]:
         """Discovered shutter modules and the current outputs to choose from."""

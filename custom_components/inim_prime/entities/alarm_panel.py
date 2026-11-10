@@ -258,3 +258,129 @@ class ScenarioAlarmPanel(
 
     async def async_alarm_arm_custom_bypass(self, code: str | None = None) -> None:
         await self._run("arm_custom_bypass")
+
+
+class PartitionAlarmPanel(
+    CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
+    AlarmControlPanelEntity,
+):
+    """Whole-system alarm panel driven directly by the partitions (Native).
+
+    Works without PrimeLAN: each arm command sets a configured set of partitions
+    to ARM_AWAY and the rest to disarmed; disarm turns every partition off. The
+    state comes from the partitions' arming status (and ALARM -> triggered), with
+    the armed set matched back to the configured command.
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "Allarme"
+    _attr_code_arm_required = False
+    _attr_code_format = None
+    _PENDING_TIMEOUT = 20.0
+    _ARM_MODE = UnifiedArmingStatus.ARM_AWAY
+
+    def __init__(
+            self,
+            partitions_coordinator: InimPrimePartitionsUpdateCoordinator,
+            arm_map: dict[str, frozenset[int]],
+    ):
+        super().__init__(partitions_coordinator)
+        self._arm_map = {cmd: frozenset(pids) for cmd, pids in arm_map.items() if pids}
+
+        features = AlarmControlPanelEntityFeature(0)
+        for command, feature in _COMMAND_FEATURE.items():
+            if command in self._arm_map:
+                features |= feature
+        self._attr_supported_features = features
+
+        self._pending: tuple[str, float] | None = None
+        self._last_command: dict[str, Any] | None = None
+        self._attr_unique_id = f"{partitions_coordinator.serial_number}_alarm_panel_native"
+        self._attr_device_info = create_panel_device_info(partitions_coordinator.serial_number)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def _partitions(self):
+        return list(self.coordinator.gateway.partitions.values())
+
+    def _armed_set(self) -> frozenset[int]:
+        return frozenset(
+            p.partition_id for p in self._partitions
+            if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        )
+
+    @property
+    def alarm_state(self) -> AlarmControlPanelState | None:
+        partitions = self._partitions
+        if any(p.partition_state == UnifiedPartitionState.ALARM for p in partitions):
+            return AlarmControlPanelState.TRIGGERED
+
+        armed = self._armed_set()
+        if self._pending is not None:
+            command, deadline = self._pending
+            target = self._arm_map.get(command, frozenset())
+            if armed == target or time.monotonic() > deadline:
+                self._pending = None
+            else:
+                return (
+                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    else AlarmControlPanelState.ARMING
+                )
+
+        known = [p.arming_status for p in partitions if p.arming_status is not None]
+        if not known:
+            return None
+        if not armed:
+            return AlarmControlPanelState.DISARMED
+        for command, pids in self._arm_map.items():
+            if pids == armed:
+                return _COMMAND_STATE[command]
+        return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "last_command": self._last_command,
+            "armed_partitions": [
+                p.label for p in self._partitions
+                if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+            ],
+        }
+
+    async def _apply(self, command: str, armed_pids: frozenset[int]) -> None:
+        self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
+        self.async_write_ha_state()
+        statuses = {
+            p.partition_id: (
+                self._ARM_MODE if p.partition_id in armed_pids
+                else UnifiedArmingStatus.DISARMED
+            )
+            for p in self._partitions
+        }
+        try:
+            await self.coordinator.gateway.set_partition_arming_statuses(statuses)
+        except Exception:
+            self._pending = None
+            self.async_write_ha_state()
+            raise
+        await self.coordinator.async_refresh()
+        self._last_command = {"command": command, "armed_partitions": sorted(armed_pids)}
+        self.async_write_ha_state()
+
+    async def async_alarm_disarm(self, code: str | None = None) -> None:
+        await self._apply("disarm", frozenset())
+
+    async def async_alarm_arm_away(self, code: str | None = None) -> None:
+        await self._apply("arm_away", self._arm_map.get("arm_away", frozenset()))
+
+    async def async_alarm_arm_home(self, code: str | None = None) -> None:
+        await self._apply("arm_home", self._arm_map.get("arm_home", frozenset()))
+
+    async def async_alarm_arm_night(self, code: str | None = None) -> None:
+        await self._apply("arm_night", self._arm_map.get("arm_night", frozenset()))
+
+    async def async_alarm_arm_vacation(self, code: str | None = None) -> None:
+        await self._apply("arm_vacation", self._arm_map.get("arm_vacation", frozenset()))

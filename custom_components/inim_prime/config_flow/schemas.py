@@ -213,6 +213,7 @@ def build_options_schema(
         shutters: list[int] | None = None,
         output_choices: list[tuple[int, str]] | None = None,
         module_names: dict[int, str] | None = None,
+        partitions: list[tuple[int, str]] | None = None,
 ) -> dict:
     """Build the options schema, only including fields the active backend(s) support.
 
@@ -357,6 +358,48 @@ def build_options_schema(
             ))
         schema[vol.Optional(OptionsKey.ALARM_PANEL)] = section(
             vol.Schema(alarm_fields), {"collapsed": not current_alarm},
+        )
+
+    # Alarm panel type: only a real choice when both backends are present.
+    # Native-only -> partitions; PrimeLAN-only -> scenarios (forced at setup).
+    if has_native and has_primelan:
+        schema[vol.Required(
+            OptionsKey.ALARM_PANEL_TYPE,
+            default = (
+                current_options.alarm_panel_type
+                if current_options and current_options.alarm_panel_type
+                else OptionsKey.PanelType.SCENARI
+            ),
+        )] = SelectSelector(SelectSelectorConfig(
+            options = [
+                SelectOptionDict(value = OptionsKey.PanelType.SCENARI, label = "Scenari (PrimeLAN)"),
+                SelectOptionDict(value = OptionsKey.PanelType.PARTIZIONI, label = "Partizioni (Native)"),
+            ],
+            mode = SelectSelectorMode.DROPDOWN,
+        ))
+
+    # Native (partition-based) panel: for each HA arm command, which partitions
+    # to arm. Shown whenever Native is available (used when the panel type is
+    # "partizioni", or always on Native-only). Disarm = all partitions off.
+    if has_native:
+        current_native = (current_options.alarm_panel_native if current_options else None) or {}
+        partition_options = [
+            SelectOptionDict(value = str(pid), label = label)
+            for pid, label in (partitions or [])
+        ]
+        native_fields: dict = {}
+        for key in OptionsKey.AlarmPanel.NATIVE_ARMS:
+            marker = vol.Optional(
+                key,
+                description = {"suggested_value": [str(p) for p in current_native.get(key, [])]},
+            )
+            native_fields[marker] = SelectSelector(SelectSelectorConfig(
+                options = partition_options,
+                multiple = True,
+                mode = SelectSelectorMode.DROPDOWN,
+            ))
+        schema[vol.Optional(OptionsKey.ALARM_PANEL_NATIVE)] = section(
+            vol.Schema(native_fields), {"collapsed": not current_native},
         )
 
     if has_primelan:

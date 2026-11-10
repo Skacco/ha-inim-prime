@@ -70,6 +70,8 @@ class ConfigOptions:
     scenarios_scan_interval: int | None = None
     panel_log_events_fetch_limit: int | None = None
     alarm_panel: dict[str, int] | None = None
+    alarm_panel_type: str | None = None
+    alarm_panel_native: dict | None = None
     show_hidden_outputs: bool | None = None
     hide_unused_partitions: bool | None = None
     shutter_commands: dict | None = None
@@ -98,6 +100,10 @@ class ConfigOptions:
             options["panel_log_events_fetch_limit"] = self.panel_log_events_fetch_limit
         if self.alarm_panel:
             options["alarm_panel"] = self.alarm_panel
+        if self.alarm_panel_type:
+            options["alarm_panel_type"] = self.alarm_panel_type
+        if self.alarm_panel_native:
+            options["alarm_panel_native"] = self.alarm_panel_native
         if self.show_hidden_outputs is not None:
             options["show_hidden_outputs"] = self.show_hidden_outputs
         if self.hide_unused_partitions is not None:
@@ -120,3 +126,16 @@ def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
     if not raw:
         return {}
     return {key: int(value) for key, value in raw.items() if value is not None and value != ""}
+
+def clean_native_panel(raw: dict | None) -> dict[str, list[int]]:
+    """Keep only the Native-panel commands that have at least one partition."""
+    if not raw:
+        return {}
+    result: dict[str, list[int]] = {}
+    for key, value in raw.items():
+        if not value:
+            continue
+        ids = [int(v) for v in value if str(v).strip() != ""]
+        if ids:
+            result[key] = ids
+    return result

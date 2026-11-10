@@ -62,7 +62,8 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
+          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -102,6 +103,16 @@
               "arm_night": "Arm night scenario",
               "arm_vacation": "Arm vacation scenario",
               "arm_custom_bypass": "Arm custom bypass scenario"
+            }
+          },
+          "alarm_panel_native": {
+            "name": "Alarm panel (Native, partition-based)",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "data": {
+              "arm_away": "Away",
+              "arm_home": "Home",
+              "arm_night": "Night",
+              "arm_vacation": "Vacation"
             }
           },
           "shutters": {
@@ -163,7 +174,8 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
+          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -205,6 +217,16 @@
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
           },
+          "alarm_panel_native": {
+            "name": "Alarm panel (Native, partition-based)",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "data": {
+              "arm_away": "Away",
+              "arm_home": "Home",
+              "arm_night": "Night",
+              "arm_vacation": "Vacation"
+            }
+          },
           "shutters": {
             "name": "Roller shutters",
             "description": "For each shutter (numbered by its Mod.dom module) give it an optional name (also used as the cover name, e.g. \"Sala\") and choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi ... sala\"). The Smart module runs the full travel from a single trigger and has no stop. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
@@ -228,7 +250,8 @@
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
+          "alarm_panel_type": "Alarm panel type (Scenarios = PrimeLAN · Partitions = Native)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
@@ -268,6 +291,16 @@
               "arm_night": "Arm night scenario",
               "arm_vacation": "Arm vacation scenario",
               "arm_custom_bypass": "Arm custom bypass scenario"
+            }
+          },
+          "alarm_panel_native": {
+            "name": "Alarm panel (Native, partition-based)",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "data": {
+              "arm_away": "Away",
+              "arm_home": "Home",
+              "arm_night": "Night",
+              "arm_vacation": "Vacation"
             }
           },
           "shutters": {
