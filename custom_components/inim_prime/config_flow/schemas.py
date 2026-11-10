@@ -210,11 +210,14 @@ def build_scan_intervals_schema(
         current_options: ConfigOptions | None = None,
         migrating_from_native: bool | None = None,
         migrating_from_primelan: bool | None = None,
+        as_section: bool = True,
 ) -> dict:
-    """Just the scan-intervals section (one poller per field).
+    """The scan-interval fields (one poller per field).
 
-    Used both by the all-in-one config-flow form and by the options flow's
-    dedicated "Intervalli di scansione" step.
+    ``as_section=True`` wraps them in a collapsible "scan_intervals" section
+    (used by the all-in-one config-flow form, where it sits among other
+    sections). ``as_section=False`` returns the fields flat -- the options flow
+    shows them on a page of their own, so the accordion would just be noise.
     """
     both_backends = has_native and has_primelan
     gsm_default = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if both_backends else GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT
@@ -316,6 +319,8 @@ def build_scan_intervals_schema(
             unit_of_measurement = "ms",
         ))
 
+    if not as_section:
+        return scan_interval_fields
     return {
         vol.Required("scan_intervals"): section(vol.Schema(scan_interval_fields)),
     }

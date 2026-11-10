@@ -41,6 +41,10 @@ _STEP_TO_CMD = {
     "cmd_arm_vacation": OptionsKey.AlarmPanel.ARM_VACATION,
 }
 _METHOD_FIELD = OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method"
+_SCAN_INTERVAL_KEYS = frozenset(
+    v for k, v in vars(OptionsKey.ScanIntervals).items()
+    if not k.startswith("_") and isinstance(v, str)
+)
 
 
 class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
@@ -104,13 +108,20 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         )
         return self.async_show_form(step_id="params", data_schema=schema)
 
-    # --- Scan intervals -------------------------------------------------
+    # --- Scan intervals (flat: its own page, no accordion) --------------
     async def async_step_scan(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             opts = dict(get_entry_options(self.config_entry))
-            gi = dict(user_input)
-            if "scan_intervals" in gi:
-                opts["scan_intervals"] = gi["scan_intervals"]
+            # Fields are flat on this page; collect them back into scan_intervals.
+            intervals = {
+                key: value for key, value in user_input.items()
+                if key in _SCAN_INTERVAL_KEYS
+            }
+            if intervals:
+                opts["scan_intervals"] = {
+                    **(opts.get("scan_intervals") or {}),
+                    **intervals,
+                }
             return self.async_create_entry(title="", data=opts)
 
         schema = vol.Schema(
@@ -118,6 +129,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 has_native=self._has_native,
                 has_primelan=self._has_primelan,
                 current_options=self._config_options(),
+                as_section=False,
             )
         )
         return self.async_show_form(step_id="scan", data_schema=schema)

@@ -354,7 +354,7 @@
       },
       "alarm": {
         "title": "Pannello allarme",
-        "description": "Scegli quale comando del pannello di allarme configurare. Per ogni comando decidi cosa succede quando viene attivato dal pannello di Home Assistant: con entrambi i backend puoi scegliere se eseguire uno scenario (PrimeLAN) oppure inserire direttamente le partizioni (Native); con un solo backend viene usato quello disponibile. Disinserimento spegne tutto. Ogni comando si salva da solo quando premi Salva. ‹ Indietro torna al menù principale.",
+        "description": "Scegli quale comando configurare. Per ciascuno imposti cosa deve fare la centrale quando lo attivi dalla card di allarme di Home Assistant. La scelta tra scenario e aree (se disponibile) è nella schermata del singolo comando.",
         "menu_options": {
           "cmd_disarm": "Disinserimento",
           "cmd_arm_away": "Fuori casa",
@@ -379,29 +379,24 @@
       },
       "scan": {
         "title": "Intervalli di scansione",
-        "sections": {
-          "scan_intervals": {
-            "name": "Intervalli di scansione",
-            "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il backend attivo (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
-            "data": {
-              "zones": "Intervallo scansione zone (Native/PrimeLAN)",
-              "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
-              "gsm": "Intervallo scansione GSM (PrimeLAN)",
-              "system_faults": "Intervallo scansione guasti di sistema (PrimeLAN)",
-              "panel_log_events": "Intervallo scansione eventi registro (PrimeLAN)",
-              "outputs": "Intervallo scansione uscite (Native/PrimeLAN)",
-              "scenarios": "Intervallo scansione scenari (PrimeLAN)"
-            },
-            "data_description": {
-              "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native/PrimeLAN.",
-              "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native/PrimeLAN.",
-              "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
-              "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
-              "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
-              "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
-              "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
-            }
-          }
+        "description": "Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni voce indica il backend: Native (protocollo locale, veloce) o PrimeLAN (Web API). Zone, partizioni e uscite usano il backend attivo (Native o PrimeLAN); GSM, guasti, eventi registro e scenari sono solo PrimeLAN. Con entrambi i backend i poller solo-PrimeLAN partono più lenti (60s) per ridurre il traffico. Dettagli nel README.",
+        "data": {
+          "zones": "Intervallo scansione zone (Native/PrimeLAN)",
+          "partitions": "Intervallo scansione partizioni (Native/PrimeLAN)",
+          "gsm": "Intervallo scansione GSM (PrimeLAN)",
+          "system_faults": "Intervallo scansione guasti di sistema (PrimeLAN)",
+          "panel_log_events": "Intervallo scansione eventi registro (PrimeLAN)",
+          "outputs": "Intervallo scansione uscite (Native/PrimeLAN)",
+          "scenarios": "Intervallo scansione scenari (PrimeLAN)"
+        },
+        "data_description": {
+          "zones": "Ogni quanto Home Assistant richiede lo stato delle zone. Backend: Native/PrimeLAN.",
+          "partitions": "Ogni quanto Home Assistant richiede lo stato delle partizioni. Backend: Native/PrimeLAN.",
+          "gsm": "Ogni quanto Home Assistant richiede lo stato del GSM. Solo PrimeLAN.",
+          "system_faults": "Ogni quanto Home Assistant richiede i guasti di sistema. Solo PrimeLAN.",
+          "panel_log_events": "Ogni quanto Home Assistant scarica i nuovi eventi del registro. Solo PrimeLAN.",
+          "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
+          "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
         }
       },
       "shutters": {
