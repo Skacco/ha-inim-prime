@@ -257,11 +257,13 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         # Save-on-submit: one command per flow session. PrimeLAN-only -> each
         # command goes straight to the scenario form (no Method step).
         result = await opts.async_init(entry.entry_id)
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
         await opts.async_configure(result["flow_id"], {"scenario": 0})   # save & close
         await hass.async_block_till_done()
 
         result = await opts.async_init(entry.entry_id)
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
         await opts.async_configure(result["flow_id"], {"scenario": 2.0})  # save & close (merges)
         await hass.async_block_till_done()

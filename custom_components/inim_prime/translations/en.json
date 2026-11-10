@@ -347,11 +347,18 @@
         "title": "INIM Prime options",
         "menu_options": {
           "general": "General settings",
+          "alarm": "Alarm panel"
+        }
+      },
+      "alarm": {
+        "title": "Alarm panel",
+        "menu_options": {
           "cmd_disarm": "Disarm",
           "cmd_arm_away": "Away",
           "cmd_arm_home": "Home",
           "cmd_arm_night": "Night",
-          "cmd_arm_vacation": "Vacation"
+          "cmd_arm_vacation": "Vacation",
+          "init": "‹ Back"
         }
       },
       "general": {

@@ -66,8 +66,14 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         options = ["general"]
         if self._has_native or self._has_primelan:
-            options.extend(_CMD_STEPS)
+            options.append("alarm")
         return self.async_show_menu(step_id="init", menu_options=options)
+
+    async def async_step_alarm(self, user_input: dict[str, Any] | None = None):
+        # One entry per command, plus a "‹ Indietro" that returns to the main menu.
+        return self.async_show_menu(
+            step_id="alarm", menu_options=list(_CMD_STEPS) + ["init"],
+        )
 
     # --- General settings (everything except the alarm panel) ----------
     async def async_step_general(self, user_input: dict[str, Any] | None = None):

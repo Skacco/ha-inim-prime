@@ -181,7 +181,7 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Le opzioni si aprono con un **menù**: *Impostazioni generali* e un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza).
+Le opzioni si aprono con un **menù**: *Impostazioni generali* e *Pannello allarme*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
 
 Scegli un comando e, **con entrambi i backend**, ti viene chiesto prima il **Metodo** (pulsante *Avanti*):
 - **Scenario** → la schermata dopo chiede solo il **numero di scenario**.

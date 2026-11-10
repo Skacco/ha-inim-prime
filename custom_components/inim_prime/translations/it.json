@@ -347,11 +347,18 @@
         "title": "Opzioni INIM Prime",
         "menu_options": {
           "general": "Impostazioni generali",
+          "alarm": "Pannello allarme"
+        }
+      },
+      "alarm": {
+        "title": "Pannello allarme",
+        "menu_options": {
           "cmd_disarm": "Disinserimento",
           "cmd_arm_away": "Fuori casa",
           "cmd_arm_home": "In casa",
           "cmd_arm_night": "Notte",
-          "cmd_arm_vacation": "Vacanza"
+          "cmd_arm_vacation": "Vacanza",
+          "init": "‹ Indietro"
         }
       },
       "general": {
