@@ -12,6 +12,7 @@ from custom_components.inim_prime.config_flow.const import OptionsKey
 from custom_components.inim_prime.config_flow.models import (
     clean_native_panel,
     extract_hybrid_sections,
+    extract_command_partitions,
 )
 from custom_components.inim_prime.entities.alarm_panel import PartitionAlarmPanel
 from custom_components.inim_prime.models.partitions import (
@@ -119,6 +120,20 @@ def test_native_output_map_builds_per_command_outputs():
     assert m["disarm"] == [7]
     assert "arm_home" not in m and "bogus" not in m
     assert _native_output_map({}) == {}
+
+
+def test_extract_command_partitions():
+    idx = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+    # one command's detail form: a mode per partition + outputs
+    section = {"P0": "total", "P1": "total", "P2": "instant", "P3": "disarmed", "outputs": ["31"]}
+    assert extract_command_partitions(section, idx) == {
+        "total": [0, 1], "instant": [2], "outputs": [31],
+    }
+    # disarm detail: outputs only
+    assert extract_command_partitions({"outputs": ["7"]}, idx) == {"outputs": [7]}
+    # nothing armed -> empty
+    assert extract_command_partitions({"P0": "disarmed"}, idx) == {}
+    assert extract_command_partitions(None, idx) == {}
 
 
 def test_extract_sections_ignores_non_dict_values():

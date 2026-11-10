@@ -214,8 +214,13 @@ def build_options_schema(
         output_choices: list[tuple[int, str]] | None = None,
         module_names: dict[int, str] | None = None,
         partitions: list[tuple[int, str]] | None = None,
+        include_alarm: bool = True,
 ) -> dict:
     """Build the options schema, only including fields the active backend(s) support.
+
+    ``include_alarm=False`` leaves out the alarm-panel fields (scenario map and
+    the per-command blocks): the options flow configures those through its own
+    menu/step sub-flow instead of this single form.
 
     GSM / system faults / log events (and their fetch limit) are
     PrimeLAN-exclusive today, so they're omitted entirely when PrimeLAN
@@ -346,7 +351,7 @@ def build_options_schema(
 
     current_alarm = (current_options.alarm_panel if current_options else None) or {}
 
-    if has_primelan and not has_native:
+    if include_alarm and has_primelan and not has_native:
         # PrimeLAN-only alarm panel: one scenario id per command, like the
         # Sdomotica panel. Empty fields = command not offered.
         alarm_fields: dict = {}
@@ -365,7 +370,7 @@ def build_options_schema(
     # available. With both backends each block also offers a Scenario field:
     # if set, the command runs that scenario (keeps the panel's checks);
     # if empty, it arms the partitions below (forced). Disarm = all off.
-    if has_native:
+    if include_alarm and has_native:
         current_native = (current_options.alarm_panel_native if current_options else None) or {}
         native_output_options = [
             SelectOptionDict(value = str(oid), label = label)
@@ -499,3 +504,81 @@ def shutter_section_key(module: int, name: str | None) -> str:
     """
     label = (name or "").strip() or f"Tapparella {module:02d}"
     return f"{module:02d} · {label}"
+
+
+# ----------------------------------------------------------------------
+# Alarm-panel per-command sub-forms (menu/step options flow)
+# ----------------------------------------------------------------------
+
+def _mode_select() -> SelectSelector:
+    """Single-choice mode for one partition (localised via selector.partition_mode)."""
+    return SelectSelector(SelectSelectorConfig(
+        options = [
+            OptionsKey.AlarmPanel.NATIVE_MODE_OFF,
+            *OptionsKey.AlarmPanel.NATIVE_MODES,
+        ],
+        translation_key = "partition_mode",
+        mode = SelectSelectorMode.DROPDOWN,
+    ))
+
+
+def build_alarm_method_schema(default_method: str) -> dict:
+    """One Required 'method' selector: scenario vs partitions (both backends)."""
+    return {
+        vol.Required(
+            OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method",  # distinct key
+            default = default_method,
+        ): SelectSelector(SelectSelectorConfig(
+            options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.PARTIZIONI],
+            translation_key = "alarm_method",
+            mode = SelectSelectorMode.LIST,
+        ))
+    }
+
+
+def build_alarm_scenario_schema(current_scenario: int | None) -> dict:
+    """One scenario-id field for a command."""
+    return {
+        vol.Optional(
+            OptionsKey.AlarmPanel.SCENARIO_FIELD,
+            description = {"suggested_value": current_scenario},
+        ): NumberSelector(NumberSelectorConfig(min = 0, max = 49, mode = NumberSelectorMode.BOX))
+    }
+
+
+def build_alarm_partitions_schema(
+        command: str,
+        current_cmd: dict | None,
+        partitions: list[tuple[int, str]] | None,
+        output_choices: list[tuple[int, str]] | None,
+) -> dict:
+    """Per-partition mode selects (arm commands) + outputs for one command.
+
+    Disarm has no arming modes, only the outputs it may switch on.
+    """
+    current_cmd = current_cmd or {}
+    fields: dict = {}
+
+    def _current_mode(pid: int) -> str:
+        for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
+            if pid in (current_cmd.get(mode) or []):
+                return mode
+        return OptionsKey.AlarmPanel.NATIVE_MODE_OFF
+
+    if command != OptionsKey.AlarmPanel.DISARM:
+        for pid, label in (partitions or []):
+            fields[vol.Optional(label, default = _current_mode(pid))] = _mode_select()
+
+    output_options = [
+        SelectOptionDict(value = str(oid), label = label)
+        for oid, label in (output_choices or [])
+    ]
+    fields[vol.Optional(
+        OptionsKey.AlarmPanel.NATIVE_OUTPUT,
+        description = {"suggested_value": [
+            str(o) for o in current_cmd.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
+        ]},
+    )] = SelectSelector(SelectSelectorConfig(
+        options = output_options, multiple = True, mode = SelectSelectorMode.DROPDOWN,
+    ))
+    return fields

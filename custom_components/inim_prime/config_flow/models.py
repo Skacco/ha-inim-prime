@@ -174,6 +174,28 @@ def extract_hybrid_sections(
             raw_native[command] = modes
     return scenario_map, clean_native_panel(raw_native)
 
+def extract_command_partitions(
+    section: dict | None,
+    partition_index: dict | None = None,
+) -> dict[str, list[int]]:
+    """Reshape one command's partitions detail form into {mode|outputs: [ids]}.
+
+    ``section`` holds a mode per partition (keyed by the partition label) plus an
+    'outputs' list. Returns the cleaned mapping (empty when nothing is armed)."""
+    if not section:
+        return {}
+    partition_index = partition_index or {}
+    modes: dict[str, list] = {}
+    for label, value in section.items():
+        if label == OptionsKey.AlarmPanel.NATIVE_OUTPUT:
+            continue
+        if value in OptionsKey.AlarmPanel.NATIVE_MODES and label in partition_index:
+            modes.setdefault(value, []).append(partition_index[label])
+    outputs = section.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT)
+    if outputs:
+        modes[OptionsKey.AlarmPanel.NATIVE_OUTPUT] = outputs
+    return clean_native_panel({"_": modes}).get("_", {})
+
 def clean_native_panel(raw: dict | None) -> dict[str, dict[str, list[int]]]:
     """Normalise the Native-panel mapping {command: {mode: [partition_ids]}}.
 

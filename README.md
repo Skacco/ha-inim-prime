@@ -181,15 +181,21 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Per ogni comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) c'è un **blocco** con un campo **Scenario**, poi **una riga per ogni partizione** con un menù a scelta singola (**Disinserita** / Totale / Parziale / Istantaneo), e infine **Attivazione uscite**. Una partizione ha una sola modalità per comando, quindi non può trovarsi in due stati.
+Le opzioni dell'integrazione si aprono con un **menù**: *Impostazioni generali*, *Pannello allarme*, *Salva ed esci*. Il pannello allarme ha un sottomenù con **un comando per voce** (Disinserimento / Fuori casa / In casa / Notte / Vacanza).
 
-**Regola:** se compili il campo **Scenario**, quel comando usa lo scenario (le partizioni del blocco vengono ignorate). Se lasci **Scenario vuoto**, il comando arma le partizioni secondo la modalità scelta su ciascuna riga. Così decidi **comando per comando** quale metodo usare.
+Scegli un comando e, **con entrambi i backend**, ti viene chiesto prima il **Metodo**:
+- **Scenario** → compare solo il campo del numero di scenario.
+- **Partizioni** → compare solo **una riga per partizione** con un menù a scelta singola (**Disinserita** / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
+
+Così vedi **solo** i campi del metodo scelto (niente scenario e partizioni mischiati nella stessa schermata), e una partizione ha **una sola modalità** per comando — stato doppio impossibile. Le modifiche si accumulano e vengono scritte quando scegli **Salva ed esci**.
 
 Esempio tipico (entrambi i backend):
-- **Fuori casa** → Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
-- **Notte** → Scenario = `3`
-- **Vacanza** → Scenario vuoto, poi su ogni partizione scegli la modalità (es. perimetrali su *Totale*, volumetrici interni su *Istantaneo*, quelle non usate su *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
-- **Disinserimento** → Scenario = `1` (oppure vuoto = spegne tutte le partizioni)
+- **Fuori casa** → Metodo *Scenario* = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
+- **Notte** → Metodo *Scenario* = `3`
+- **Vacanza** → Metodo *Partizioni*, poi su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
+- **Disinserimento** → Metodo *Scenario* = `1` (oppure *Partizioni* senza nulla = spegne tutte)
+
+> Con un solo backend il Metodo non viene chiesto: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
 
 Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
