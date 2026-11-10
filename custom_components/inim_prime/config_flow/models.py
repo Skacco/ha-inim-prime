@@ -131,17 +131,23 @@ def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
 
 def extract_hybrid_sections(
     data: dict | None,
+    partition_index: dict | None = None,
 ) -> tuple[dict[str, int], dict[str, dict[str, list[int]]]]:
     """Split the per-command form sections into (scenario_map, native_map).
 
     Each command is its own form section (keyed by the command, e.g. 'arm_away').
-    With both backends a section also has a 'scenario' field: when it is set the
-    command is scenario-driven and its partition fields are ignored; otherwise it
-    is partition-driven. Returns ({command: scenario_id}, {command: {mode|outputs:
-    [ids]}}). The matching keys are popped from ``data`` so they are not stored as
-    stray top-level options."""
+    A section holds, optionally, a 'scenario' field (both backends), one mode
+    field per partition (keyed by the partition's label, value 'disarmed'/'total'/
+    'stay'/'instant') and an 'outputs' field. When the scenario is set the command
+    is scenario-driven and its partition fields are ignored; otherwise it is
+    partition-driven. ``partition_index`` maps a partition label to its id.
+
+    Returns ({command: scenario_id}, {command: {mode|outputs: [ids]}}). The
+    matching keys are popped from ``data`` so they are not stored as stray
+    top-level options."""
     if not data:
         return {}, {}
+    partition_index = partition_index or {}
     scenario_map: dict[str, int] = {}
     raw_native: dict[str, dict] = {}
     for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
@@ -151,11 +157,21 @@ def extract_hybrid_sections(
         if not isinstance(section, dict):
             continue
         scenario = section.pop(OptionsKey.AlarmPanel.SCENARIO_FIELD, None)
+        outputs = section.pop(OptionsKey.AlarmPanel.NATIVE_OUTPUT, None)
         if scenario is not None and str(scenario).strip() != "":
-            # Scenario-driven: ignore any partition fields for this command.
+            # Scenario-driven: ignore partition fields (and the panel's own
+            # scenario handles its outputs).
             scenario_map[command] = int(scenario)
-        else:
-            raw_native[command] = section
+            continue
+        # Partition-driven: group each partition's chosen mode.
+        modes: dict[str, list[int]] = {}
+        for label, mode in section.items():
+            if mode in OptionsKey.AlarmPanel.NATIVE_MODES and label in partition_index:
+                modes.setdefault(mode, []).append(partition_index[label])
+        if outputs:
+            modes[OptionsKey.AlarmPanel.NATIVE_OUTPUT] = outputs
+        if modes:
+            raw_native[command] = modes
     return scenario_map, clean_native_panel(raw_native)
 
 def clean_native_panel(raw: dict | None) -> dict[str, dict[str, list[int]]]:

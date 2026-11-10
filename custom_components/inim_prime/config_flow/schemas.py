@@ -367,18 +367,20 @@ def build_options_schema(
     # if empty, it arms the partitions below (forced). Disarm = all off.
     if has_native:
         current_native = (current_options.alarm_panel_native if current_options else None) or {}
-        partition_options = [
-            SelectOptionDict(value = str(pid), label = label)
-            for pid, label in (partitions or [])
-        ]
         native_output_options = [
             SelectOptionDict(value = str(oid), label = label)
             for oid, label in (output_choices or [])
         ]
-        def _partition_select():
+        # One single-select per partition: a partition can only have ONE mode per
+        # command, so a double state is impossible by construction. Localised via
+        # translation_key (selector.partition_mode.*).
+        def _mode_select():
             return SelectSelector(SelectSelectorConfig(
-                options = partition_options,
-                multiple = True,
+                options = [
+                    OptionsKey.AlarmPanel.NATIVE_MODE_OFF,
+                    *OptionsKey.AlarmPanel.NATIVE_MODES,  # total / stay / instant
+                ],
+                translation_key = "partition_mode",
                 mode = SelectSelectorMode.DROPDOWN,
             ))
 
@@ -401,17 +403,24 @@ def build_options_schema(
                 min = 0, max = 49, mode = NumberSelectorMode.BOX,
             ))
 
+        def _current_mode(command_modes: dict, pid: int) -> str:
+            for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
+                if pid in (command_modes.get(mode) or []):
+                    return mode
+            return OptionsKey.AlarmPanel.NATIVE_MODE_OFF
+
+        partition_list = list(partitions or [])
+
         for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
             command_modes = current_native.get(command, {}) or {}
             has_scenario = has_primelan and current_alarm.get(command) is not None
             fields = {}
             _scenario_field(fields, command)
-            for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
-                marker = vol.Optional(
-                    mode,
-                    description = {"suggested_value": [str(p) for p in command_modes.get(mode, [])]},
-                )
-                fields[marker] = _partition_select()
+            # A row per partition, keyed by its label (shown as the field name);
+            # default = its current mode, or "disarmed".
+            for pid, label in partition_list:
+                marker = vol.Optional(label, default = _current_mode(command_modes, pid))
+                fields[marker] = _mode_select()
             out_marker = vol.Optional(
                 OptionsKey.AlarmPanel.NATIVE_OUTPUT,
                 description = {"suggested_value": [

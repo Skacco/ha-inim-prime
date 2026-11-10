@@ -23,7 +23,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             data = dict(user_input)
             # Per-command blocks (Native present): split into scenario + partition
             # maps. With both backends a command with a scenario is scenario-driven.
-            scenario_map, native_panel = extract_hybrid_sections(data)  # pops sections
+            partition_index = {label: pid for pid, label in self._partition_choices()}
+            scenario_map, native_panel = extract_hybrid_sections(data, partition_index)
             if native_panel:
                 data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
             if scenario_map:

@@ -49,17 +49,21 @@ def _panel(parts, targets):
     return PartitionAlarmPanel(_FakeCoord(parts), targets)
 
 
+# Partition label -> id, as the flow builds it from the gateway.
+PIDX = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P5": 5, "P6": 6, "P8": 8}
+
+
 def test_extract_hybrid_sections_partition_only():
     data = {
-        "arm_away": {"total": ["1", "2"], "instant": ["3"], "stay": [], "outputs": ["5", "6"]},
+        "arm_away": {"P0": "total", "P1": "total", "P2": "instant", "P3": "disarmed", "outputs": ["5", "6"]},
         "disarm": {"outputs": ["7"]},
-        "arm_home": {"total": [], "outputs": []},   # empty -> dropped
-        "scan_intervals": {"zones": 5000},          # unrelated -> left intact
+        "arm_home": {"P0": "disarmed", "outputs": []},   # nothing armed -> dropped
+        "scan_intervals": {"zones": 5000},               # unrelated -> left intact
     }
-    scenario_map, native_map = extract_hybrid_sections(data)
+    scenario_map, native_map = extract_hybrid_sections(data, PIDX)
     assert scenario_map == {}
     assert native_map == {
-        "arm_away": {"total": [1, 2], "instant": [3], "outputs": [5, 6]},
+        "arm_away": {"total": [0, 1], "instant": [2], "outputs": [5, 6]},
         "disarm": {"outputs": [7]},
     }
     # command sections are popped; unrelated keys stay
@@ -72,12 +76,12 @@ def test_extract_hybrid_sections_mixed():
     # scenario set -> scenario-driven (partition fields ignored); empty scenario
     # -> partition-driven.
     data = {
-        "arm_away": {"scenario": "2", "total": ["1"]},   # scenario wins
+        "arm_away": {"scenario": "2", "P0": "total"},   # scenario wins
         "arm_night": {"scenario": "3"},
-        "arm_vacation": {"scenario": "", "total": ["0", "1"], "instant": ["2"]},
+        "arm_vacation": {"scenario": "", "P0": "total", "P1": "total", "P2": "instant"},
         "disarm": {"scenario": "1"},
     }
-    scenario_map, native_map = extract_hybrid_sections(data)
+    scenario_map, native_map = extract_hybrid_sections(data, PIDX)
     assert scenario_map == {"arm_away": 2, "arm_night": 3, "disarm": 1}
     assert native_map == {"arm_vacation": {"total": [0, 1], "instant": [2]}}
 
@@ -119,8 +123,8 @@ def test_native_output_map_builds_per_command_outputs():
 
 def test_extract_sections_ignores_non_dict_values():
     # a stray non-dict under a command key must not crash extraction
-    data = {"arm_away": "oops", "arm_night": {"total": ["2"]}}
-    scenario_map, native_map = extract_hybrid_sections(data)
+    data = {"arm_away": "oops", "arm_night": {"P2": "total"}}
+    scenario_map, native_map = extract_hybrid_sections(data, {"P2": 2})
     assert scenario_map == {}
     assert native_map == {"arm_night": {"total": [2]}}
 

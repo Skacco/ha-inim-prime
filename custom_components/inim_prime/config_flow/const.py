@@ -58,6 +58,8 @@ class OptionsKey:
         # Per-command field (hybrid, both backends): a scenario id. When set, the
         # command runs that scenario; when empty, it arms its partitions.
         SCENARIO_FIELD: Final[str] = "scenario"
+        # Per-partition single-select value meaning "leave this partition off".
+        NATIVE_MODE_OFF: Final[str] = "disarmed"
 
     class PanelType:
         SCENARI: Final[str] = "scenari"
