@@ -4,6 +4,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import OptionsFlowWithReload
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     SelectOptionDict, SelectSelector, SelectSelectorConfig, SelectSelectorMode,
 )
@@ -43,6 +44,11 @@ _STEP_TO_CMD = {
 }
 # Dropdown value meaning "arm via custom partitions" (scenario ids are digits).
 _PARTITIONS_CHOICE = "partizioni"
+
+
+def _section_key(cmd: str) -> str:
+    """Key of a command's collapsed partitions section in the alarm form."""
+    return f"{cmd}_partitions"
 _SCAN_INTERVAL_KEYS = frozenset(
     v for k, v in vars(OptionsKey.ScanIntervals).items()
     if not k.startswith("_") and isinstance(v, str)
@@ -61,8 +67,6 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     """
 
     _cmd: str | None = None
-    # Commands still waiting for their partitions form (see alarm_form).
-    _queue: list | None = None
     # In-memory working copy of the options; written to the entry only on
     # "Save and exit". Loaded from the stored options on first use.
     _loaded: bool = False
@@ -141,24 +145,35 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return self.async_show_menu(step_id="alarm", menu_options=menu)
 
     async def async_step_alarm_form(self, user_input: dict[str, Any] | None = None):
-        """One dropdown per command: unset, a scenario by name, or (with Native)
-        "custom partitions" -- which opens that command's partitions form next."""
+        """The whole alarm panel on one screen, one group per command.
+
+        Each group is a dropdown (unset, a scenario by name or, with Native,
+        "custom partitions") followed by a collapsed section holding that
+        command's partition modes and output activation. The section is used
+        only when the dropdown says "custom partitions".
+        """
         self._load()
+        commands = list(_STEP_TO_CMD.values())
         if user_input is not None:
-            queue: list[str] = []
-            for cmd in _STEP_TO_CMD.values():
+            index = {label: pid for pid, label in self._partition_choices()}
+            for cmd in commands:
                 value = user_input.get(cmd)
-                if value in (None, ""):
+                if value == _PARTITIONS_CHOICE:
+                    entry = extract_command_partitions(
+                        dict(user_input.get(_section_key(cmd)) or {}), index,
+                    )
+                    if entry:
+                        self._natives[cmd] = entry
+                    else:
+                        self._natives.pop(cmd, None)
+                    self._scenarios.pop(cmd, None)
+                elif value in (None, ""):
                     self._scenarios.pop(cmd, None)
                     self._natives.pop(cmd, None)
-                elif value == _PARTITIONS_CHOICE:
-                    self._scenarios.pop(cmd, None)
-                    queue.append(cmd)
                 else:
                     self._scenarios[cmd] = int(value)
                     self._natives.pop(cmd, None)
-            self._queue = queue
-            return await self._next_detail()
+            return await self.async_step_init()
 
         options = [
             SelectOptionDict(value=str(sid), label=name)
@@ -168,11 +183,16 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             options.append(SelectOptionDict(
                 value=_PARTITIONS_CHOICE, label="Partizioni personalizzate…",
             ))
+        _, output_choices = self._shutter_context()
+        partitions = self._partition_choices()
         schema: dict = {}
-        for cmd in _STEP_TO_CMD.values():
+        for cmd in commands:
             if cmd in self._scenarios:
                 current = str(self._scenarios[cmd])
-            elif self._natives.get(cmd):
+            elif self._natives.get(cmd) or (
+                # With Native, disarm always works through the partitions.
+                self._has_native and cmd == OptionsKey.AlarmPanel.DISARM
+            ):
                 current = _PARTITIONS_CHOICE
             else:
                 current = None
@@ -181,17 +201,16 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             )] = SelectSelector(SelectSelectorConfig(
                 options=options, mode=SelectSelectorMode.DROPDOWN,
             ))
+            if self._has_native:
+                schema[vol.Optional(_section_key(cmd))] = section(
+                    vol.Schema(build_alarm_partitions_schema(
+                        cmd, self._natives.get(cmd), partitions, output_choices,
+                    )),
+                    {"collapsed": True},
+                )
         return self.async_show_form(
             step_id="alarm_form", data_schema=vol.Schema(schema), last_step=False,
         )
-
-    async def _next_detail(self):
-        # Partitions forms for the commands set to "custom partitions", one
-        # after the other; then back to the main menu.
-        if self._queue:
-            self._cmd = self._queue.pop(0)
-            return await self.async_step_cmd_detail()
-        return await self.async_step_init()
 
     # --- General parameters (no intervals, no alarm, no shutters) -------
     async def async_step_params(self, user_input: dict[str, Any] | None = None):
@@ -309,8 +328,6 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             else:
                 self._natives.pop(self._cmd, None)
             self._scenarios.pop(self._cmd, None)
-            if self._has_primelan:
-                return await self._next_detail()
             return await self.async_step_alarm()
 
         _, output_choices = self._shutter_context()

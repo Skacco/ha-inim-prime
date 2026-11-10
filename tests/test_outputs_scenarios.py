@@ -539,15 +539,17 @@ async def test_alarm_form_mixed_scenario_and_partitions():
     sel = next(v for k, v in form["data_schema"].schema.items() if str(k) == "arm_vacation")
     assert "partizioni" in {o["value"] for o in sel.config["options"]}
 
-    # Night by scenario, Vacation by custom partitions, Disarm cleared.
-    result = await flow.async_step_alarm_form(
-        {"arm_night": "2", "arm_vacation": "partizioni"}
-    )
-    assert result["step_id"] == "cmd_detail"          # partitions form for Vacation
-    assert flow._cmd == "arm_vacation"
-    assert flow._pending["alarm_panel"] == {"arm_night": 2}
+    assert "arm_vacation_partitions" in {str(k) for k in form["data_schema"].schema}
 
-    result = await flow.async_step_cmd_detail({"Casa": "total", "Esterni": "instant"})
+    # Night by scenario, Vacation by custom partitions (its section, same
+    # screen), Disarm cleared. One submit, straight back to the main menu.
+    result = await flow.async_step_alarm_form({
+        "arm_night": "2",
+        "arm_vacation": "partizioni",
+        "arm_vacation_partitions": {"Casa": "total", "Esterni": "instant"},
+        # a filled section is ignored when the dropdown is a scenario
+        "arm_night_partitions": {"Casa": "total"},
+    })
     assert result["type"] == "menu" and result["step_id"] == "init"
-    assert flow._pending["alarm_panel_native"]["arm_vacation"]
-    assert "arm_vacation" not in flow._pending["alarm_panel"]
+    assert flow._pending["alarm_panel"] == {"arm_night": 2}
+    assert set(flow._pending["alarm_panel_native"]) == {"arm_vacation"}
