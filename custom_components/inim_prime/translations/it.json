@@ -405,8 +405,10 @@
       "method": {
         "title": "Allarme · {command} — metodo",
         "description": "Scegli come eseguire «{command}»: con uno scenario della centrale oppure impostando direttamente le partizioni.",
-        "data": {
-          "scenario_method": "Metodo"
+        "menu_options": {
+          "method_scenario": "Scenario",
+          "method_partizioni": "Partizioni (Native)",
+          "alarm": "‹ Indietro"
         }
       },
       "cmd_detail": {

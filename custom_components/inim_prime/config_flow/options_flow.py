@@ -147,23 +147,21 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return await self.async_step_cmd_detail()
 
     async def async_step_method(self, user_input: dict[str, Any] | None = None):
-        if user_input is not None:
-            self._method = user_input[_METHOD_FIELD]
-            return await self.async_step_cmd_detail()
-
-        opts = get_entry_options(self.config_entry)
-        if self._cmd in (opts.get(OptionsKey.ALARM_PANEL) or {}):
-            default = OptionsKey.PanelType.SCENARI
-        elif self._cmd in (opts.get(OptionsKey.ALARM_PANEL_NATIVE) or {}):
-            default = OptionsKey.PanelType.PARTIZIONI
-        else:
-            default = OptionsKey.PanelType.SCENARI
-        return self.async_show_form(
+        # A menu (not a form) so it carries a "‹ Indietro" entry back to the
+        # alarm submenu -- HA doesn't put a back button on form steps.
+        return self.async_show_menu(
             step_id="method",
-            data_schema=vol.Schema(build_alarm_method_schema(default)),
+            menu_options=["method_scenario", "method_partizioni", "alarm"],
             description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
-            last_step=False,  # intermediate -> button reads "Next"/"Avanti"
         )
+
+    async def async_step_method_scenario(self, user_input=None):
+        self._method = OptionsKey.PanelType.SCENARI
+        return await self.async_step_cmd_detail()
+
+    async def async_step_method_partizioni(self, user_input=None):
+        self._method = OptionsKey.PanelType.PARTIZIONI
+        return await self.async_step_cmd_detail()
 
     async def async_step_cmd_detail(self, user_input: dict[str, Any] | None = None):
         opts = dict(get_entry_options(self.config_entry))

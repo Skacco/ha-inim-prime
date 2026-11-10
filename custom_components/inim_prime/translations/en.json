@@ -405,8 +405,10 @@
       "method": {
         "title": "Alarm · {command} — method",
         "description": "Choose how to run “{command}”: a panel scenario, or by arming the partitions directly.",
-        "data": {
-          "scenario_method": "Method"
+        "menu_options": {
+          "method_scenario": "Scenario",
+          "method_partizioni": "Partitions (Native)",
+          "alarm": "‹ Back"
         }
       },
       "cmd_detail": {

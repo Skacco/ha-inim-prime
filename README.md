@@ -183,7 +183,7 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Impostazioni generali* e *Pannello allarme*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza) e una voce **‹ Indietro** per tornare al menù principale.
 
-Scegli un comando e, **con entrambi i backend**, ti viene chiesto prima il **Metodo** (pulsante *Avanti*):
+Scegli un comando e, **con entrambi i backend**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
 - **Scenario** → la schermata dopo chiede solo il **numero di scenario**.
 - **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
 
