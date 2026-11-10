@@ -7,63 +7,91 @@ from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
-from .models import ConfigOptions, clean_alarm_panel, extract_hybrid_sections
+from .models import ConfigOptions, extract_command_partitions
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
-from .schemas import build_options_schema, shutter_section_key
+from .schemas import (
+    build_options_schema,
+    build_alarm_method_schema,
+    build_alarm_scenario_schema,
+    build_alarm_partitions_schema,
+)
 
 # A shutter section key looks like "01 · TENDA SALA": the leading number is the
 # module, used to store the mapping (so renaming the module can't lose it).
 _SECTION_KEY = re.compile(r"^(\d{1,3})\s*·")
 
+_CMD_LABELS = {
+    OptionsKey.AlarmPanel.DISARM: "Disinserimento",
+    OptionsKey.AlarmPanel.ARM_AWAY: "Fuori casa",
+    OptionsKey.AlarmPanel.ARM_HOME: "In casa",
+    OptionsKey.AlarmPanel.ARM_NIGHT: "Notte",
+    OptionsKey.AlarmPanel.ARM_VACATION: "Vacanza",
+}
+_CMD_STEPS = (
+    "cmd_disarm", "cmd_arm_away", "cmd_arm_home", "cmd_arm_night", "cmd_arm_vacation",
+)
+_STEP_TO_CMD = {
+    "cmd_disarm": OptionsKey.AlarmPanel.DISARM,
+    "cmd_arm_away": OptionsKey.AlarmPanel.ARM_AWAY,
+    "cmd_arm_home": OptionsKey.AlarmPanel.ARM_HOME,
+    "cmd_arm_night": OptionsKey.AlarmPanel.ARM_NIGHT,
+    "cmd_arm_vacation": OptionsKey.AlarmPanel.ARM_VACATION,
+}
+_METHOD_FIELD = OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method"
+
 
 class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
+    """Menu-driven options flow, save-on-submit.
+
+    A main menu lists General settings and one entry per alarm command. Each
+    command asks the Method (scenario vs partitions, only with both backends) and
+    then shows ONLY the fields of that method, so nothing is mixed. Every editing
+    screen ends with the standard Save button (it writes and closes); HA's own
+    back arrow handles going back. To change another command, reopen Options.
+    """
+
+    _cmd: str | None = None
+    _method: str | None = None
+
+    @property
+    def _has_native(self) -> bool:
+        return bool(get_entry_data(self.config_entry).get("native"))
+
+    @property
+    def _has_primelan(self) -> bool:
+        return bool(get_entry_data(self.config_entry).get("primelan"))
+
+    # ------------------------------------------------------------------
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        options = ["general"]
+        if self._has_native or self._has_primelan:
+            options.extend(_CMD_STEPS)
+        return self.async_show_menu(step_id="init", menu_options=options)
+
+    # --- General settings (everything except the alarm panel) ----------
+    async def async_step_general(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            data = dict(user_input)
-            # Per-command blocks (Native present): split into scenario + partition
-            # maps. With both backends a command with a scenario is scenario-driven.
-            partition_index = {label: pid for pid, label in self._partition_choices()}
-            scenario_map, native_panel = extract_hybrid_sections(data, partition_index)
-            if native_panel:
-                data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
-            if scenario_map:
-                # Both backends: scenarios come from the command blocks.
-                data[OptionsKey.ALARM_PANEL] = scenario_map
-            elif "alarm_panel" in data:
-                # PrimeLAN-only: scenarios come from the dedicated section.
-                alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
-                if alarm_panel:
-                    data["alarm_panel"] = alarm_panel
-            shutter_commands = _extract_shutter_commands(data)  # pops the sections
-            if shutter_commands:
-                data[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
-            return self.async_create_entry(title = "", data = data)
-
-        data = get_entry_data(self.config_entry)
-        options = get_entry_options(self.config_entry)
-        config_options = ConfigOptions(
-            zones_scan_interval = options["scan_intervals"].get("zones"),
-            partitions_scan_interval = options["scan_intervals"].get("partitions"),
-            gsm_scan_interval = options["scan_intervals"].get("gsm"),
-            system_faults_scan_interval = options["scan_intervals"].get("system_faults"),
-            panel_log_events_scan_interval = options["scan_intervals"].get("panel_log_events"),
-            outputs_scan_interval = options["scan_intervals"].get("outputs"),
-            scenarios_scan_interval = options["scan_intervals"].get("scenarios"),
-            panel_log_events_fetch_limit = options.get("panel_log_events_fetch_limit"),
-            alarm_panel = options.get("alarm_panel"),
-            alarm_panel_type = options.get("alarm_panel_type"),
-            alarm_panel_native = options.get("alarm_panel_native"),
-            show_hidden_outputs = options.get("show_hidden_outputs"),
-            hide_unused_partitions = options.get("hide_unused_partitions"),
-            shutter_commands = options.get("shutter_commands"),
-        )
-
-        has_native = bool(data.get("native"))
-        has_primelan = bool(data.get("primelan"))
+            opts = dict(get_entry_options(self.config_entry))
+            gi = dict(user_input)
+            had_shutters = any(_SECTION_KEY.match(k) for k in gi)
+            shutter_commands = _extract_shutter_commands(gi)
+            if "scan_intervals" in gi:
+                opts["scan_intervals"] = gi["scan_intervals"]
+            if OptionsKey.HIDE_UNUSED_PARTITIONS in gi:
+                opts[OptionsKey.HIDE_UNUSED_PARTITIONS] = gi[OptionsKey.HIDE_UNUSED_PARTITIONS]
+            if OptionsKey.SHOW_HIDDEN_OUTPUTS in gi:
+                opts[OptionsKey.SHOW_HIDDEN_OUTPUTS] = gi[OptionsKey.SHOW_HIDDEN_OUTPUTS]
+            if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in gi:
+                opts[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = gi[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
+            if had_shutters:
+                if shutter_commands:
+                    opts[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
+                else:
+                    opts.pop(OptionsKey.SHUTTER_COMMANDS, None)
+            return self.async_create_entry(title="", data=opts)
 
         shutters, output_choices = self._shutter_context()
-        partition_choices = self._partition_choices()
         module_names: dict[int, str] = {}
         if shutters:
             gateway = self.config_entry.runtime_data.gateway
@@ -74,58 +102,155 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
 
         schema = vol.Schema(
             build_options_schema(
-                has_native = has_native,
-                has_primelan = has_primelan,
-                current_options = config_options,
-                shutters = shutters,
-                output_choices = output_choices,
-                module_names = module_names,
-                partitions = partition_choices,
+                has_native=self._has_native,
+                has_primelan=self._has_primelan,
+                current_options=self._config_options(),
+                shutters=shutters,
+                output_choices=output_choices,
+                module_names=module_names,
+                partitions=self._partition_choices(),
+                include_alarm=False,
             )
         )
+        return self.async_show_form(step_id="general", data_schema=schema)
+
+    # --- Per-command routers -------------------------------------------
+    async def async_step_cmd_disarm(self, user_input=None):
+        return await self._enter_command(OptionsKey.AlarmPanel.DISARM)
+
+    async def async_step_cmd_arm_away(self, user_input=None):
+        return await self._enter_command(OptionsKey.AlarmPanel.ARM_AWAY)
+
+    async def async_step_cmd_arm_home(self, user_input=None):
+        return await self._enter_command(OptionsKey.AlarmPanel.ARM_HOME)
+
+    async def async_step_cmd_arm_night(self, user_input=None):
+        return await self._enter_command(OptionsKey.AlarmPanel.ARM_NIGHT)
+
+    async def async_step_cmd_arm_vacation(self, user_input=None):
+        return await self._enter_command(OptionsKey.AlarmPanel.ARM_VACATION)
+
+    async def _enter_command(self, command: str):
+        self._cmd = command
+        if self._has_native and self._has_primelan:
+            return await self.async_step_method()
+        self._method = (
+            OptionsKey.PanelType.PARTIZIONI if self._has_native
+            else OptionsKey.PanelType.SCENARI
+        )
+        return await self.async_step_cmd_detail()
+
+    async def async_step_method(self, user_input: dict[str, Any] | None = None):
+        if user_input is not None:
+            self._method = user_input[_METHOD_FIELD]
+            return await self.async_step_cmd_detail()
+
+        opts = get_entry_options(self.config_entry)
+        if self._cmd in (opts.get(OptionsKey.ALARM_PANEL) or {}):
+            default = OptionsKey.PanelType.SCENARI
+        elif self._cmd in (opts.get(OptionsKey.ALARM_PANEL_NATIVE) or {}):
+            default = OptionsKey.PanelType.PARTIZIONI
+        else:
+            default = OptionsKey.PanelType.SCENARI
         return self.async_show_form(
-            step_id = "init",
-            data_schema = schema,
-            description_placeholders = {
-                "state_backend": "Native" if has_native else "PrimeLAN",
-            },
+            step_id="method",
+            data_schema=vol.Schema(build_alarm_method_schema(default)),
+            description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
+            last_step=False,  # intermediate -> button reads "Next"/"Avanti"
+        )
+
+    async def async_step_cmd_detail(self, user_input: dict[str, Any] | None = None):
+        opts = dict(get_entry_options(self.config_entry))
+        scenarios = dict(opts.get(OptionsKey.ALARM_PANEL) or {})
+        natives = dict(opts.get(OptionsKey.ALARM_PANEL_NATIVE) or {})
+
+        if user_input is not None:
+            if self._method == OptionsKey.PanelType.PARTIZIONI:
+                index = {label: pid for pid, label in self._partition_choices()}
+                entry = extract_command_partitions(dict(user_input), index)
+                if entry:
+                    natives[self._cmd] = entry
+                else:
+                    natives.pop(self._cmd, None)
+                scenarios.pop(self._cmd, None)
+            else:
+                value = user_input.get(OptionsKey.AlarmPanel.SCENARIO_FIELD)
+                if value not in (None, ""):
+                    scenarios[self._cmd] = int(value)
+                else:
+                    scenarios.pop(self._cmd, None)
+                natives.pop(self._cmd, None)
+            if scenarios:
+                opts[OptionsKey.ALARM_PANEL] = scenarios
+            else:
+                opts.pop(OptionsKey.ALARM_PANEL, None)
+            if natives:
+                opts[OptionsKey.ALARM_PANEL_NATIVE] = natives
+            else:
+                opts.pop(OptionsKey.ALARM_PANEL_NATIVE, None)
+            return self.async_create_entry(title="", data=opts)
+
+        if self._method == OptionsKey.PanelType.PARTIZIONI:
+            _, output_choices = self._shutter_context()
+            schema = build_alarm_partitions_schema(
+                self._cmd, natives.get(self._cmd),
+                self._partition_choices(), output_choices,
+            )
+        else:
+            schema = build_alarm_scenario_schema(scenarios.get(self._cmd))
+        return self.async_show_form(
+            step_id="cmd_detail",
+            data_schema=vol.Schema(schema),
+            description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
+        )
+
+    # ------------------------------------------------------------------
+    def _config_options(self) -> ConfigOptions:
+        o = get_entry_options(self.config_entry)
+        scan = o.get("scan_intervals") or {}
+        return ConfigOptions(
+            zones_scan_interval=scan.get("zones"),
+            partitions_scan_interval=scan.get("partitions"),
+            gsm_scan_interval=scan.get("gsm"),
+            system_faults_scan_interval=scan.get("system_faults"),
+            panel_log_events_scan_interval=scan.get("panel_log_events"),
+            outputs_scan_interval=scan.get("outputs"),
+            scenarios_scan_interval=scan.get("scenarios"),
+            panel_log_events_fetch_limit=o.get("panel_log_events_fetch_limit"),
+            alarm_panel=o.get("alarm_panel"),
+            alarm_panel_type=o.get("alarm_panel_type"),
+            alarm_panel_native=o.get("alarm_panel_native"),
+            show_hidden_outputs=o.get("show_hidden_outputs"),
+            hide_unused_partitions=o.get("hide_unused_partitions"),
+            shutter_commands=o.get("shutter_commands"),
         )
 
     def _partition_choices(self) -> list[tuple[int, str]]:
-        """Partitions to offer in the Native alarm-panel mapping (id -> label)."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         gateway = getattr(runtime, "gateway", None) if runtime else None
         partitions = dict(getattr(gateway, "partitions", None) or {}) if gateway else {}
         return sorted(
             ((pid, (p.label or f"Partizione {pid}")) for pid, p in partitions.items()),
-            key = lambda item: item[0],
+            key=lambda item: item[0],
         )
 
     def _shutter_context(self) -> tuple[list[int], list[tuple[int, str]]]:
-        """Discovered shutter modules and the current outputs to choose from."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         gateway = getattr(runtime, "gateway", None) if runtime else None
         if gateway is None:
             return [], []
-        # Discover modules from the full output set (the Mod.dom motor terminals
-        # aren't on PrimeLAN), but offer only the normal outputs as the command
-        # choices (the Apri/Chiudi virtual outputs are on PrimeLAN).
         all_outputs = dict(getattr(gateway, "all_outputs", None) or {})
         outputs = dict(getattr(gateway, "outputs", None) or {})
         if not all_outputs:
             return [], []
         shutters = sorted(discover_shutters(all_outputs))
-        # Exclude the shutter modules' raw motor terminals (Mod.dom XX T03/T04)
-        # from the command choices: they're only used to detect the shutters, and
-        # driving them directly doesn't work (the Smart module reclaims the relay).
-        # The command to pick is the virtual "Apri/Chiudi" output, not the motor.
         choices = sorted(
             (
                 (oid, (o.label or f"Output {oid}"))
                 for oid, o in outputs.items()
                 if not _SHUTTER_LABEL.match((o.label or "").replace("\x00", "").strip())
             ),
-            key = lambda item: item[1].lower(),
+            key=lambda item: item[1].lower(),
         )
         return shutters, choices
 

@@ -158,15 +158,17 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
     assert coords.outputs.update_interval.total_seconds() == 30
     assert coords.scenarios.update_interval.total_seconds() == 10
 
+    opts = hass.config_entries.options
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await opts.async_init(entry.entry_id)                       # main menu
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "general"})
         fields = result["data_schema"].schema["scan_intervals"].schema.schema
         keys = {str(k): k.default() for k in fields}
         assert keys["outputs"] == 30000 and keys["scenarios"] == 10000
         assert keys["partitions"] == 10000  # entry's stored value is kept
 
         new = {**keys, "outputs": 2000, "scenarios": 4000}
-        result = await hass.config_entries.options.async_configure(
+        result = await opts.async_configure(                                  # submit -> save & close
             result["flow_id"],
             {"scan_intervals": new, "panel_log_events_fetch_limit": 40},
         )
@@ -250,14 +252,18 @@ async def entry_refresh(hass):
 async def test_options_flow_alarm_panel(hass: HomeAssistant):
     panel = FakePanel()
     entry = await _setup(hass, panel)
+    opts = hass.config_entries.options
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        scan = {str(k): k.default() for k in result["data_schema"].schema["scan_intervals"].schema.schema}
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            {"scan_intervals": scan, "panel_log_events_fetch_limit": 40,
-             "alarm_panel": {"disarm": 0, "arm_away": 2.0}},
-        )
+        # Save-on-submit: one command per flow session. PrimeLAN-only -> each
+        # command goes straight to the scenario form (no Method step).
+        result = await opts.async_init(entry.entry_id)
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
+        await opts.async_configure(result["flow_id"], {"scenario": 0})   # save & close
+        await hass.async_block_till_done()
+
+        result = await opts.async_init(entry.entry_id)
+        result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
+        await opts.async_configure(result["flow_id"], {"scenario": 2.0})  # save & close (merges)
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
     assert _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")

@@ -181,11 +181,13 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 - **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
-Le opzioni dell'integrazione sono un **unico form**, con un **blocco richiudibile per comando** (Disinserimento / Fuori casa / In casa / Notte / Vacanza). Con **entrambi i backend** ogni blocco ha in cima un selettore **Metodo**:
-- **Scenario** → viene usato solo il **numero di scenario**.
-- **Partizioni** → vengono usate le **righe partizione** (una per partizione, con *Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
+Le opzioni si aprono con un **menù**: *Impostazioni generali* e un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza).
 
-HA non può nascondere i campi dell'altro metodo nella stessa schermata, perciò restano visibili: ma è il **Metodo** a decidere cosa viene applicato (i campi dell'altro metodo sono ignorati). Una partizione ha **una sola modalità** per comando — stato doppio impossibile. In fondo c'è il pulsante **Salva** standard.
+Scegli un comando e, **con entrambi i backend**, ti viene chiesto prima il **Metodo** (pulsante *Avanti*):
+- **Scenario** → la schermata dopo chiede solo il **numero di scenario**.
+- **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
+
+Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Ogni schermata termina con il **Salva** standard (salva e chiude); per tornare indietro usa la freccia di HA in alto. Per modificare un altro comando riapri le Opzioni.
 
 Esempio tipico (entrambi i backend):
 - **Fuori casa** → Metodo *Scenario*, Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
@@ -193,7 +195,7 @@ Esempio tipico (entrambi i backend):
 - **Vacanza** → Metodo *Partizioni*, poi su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
 - **Disinserimento** → Metodo *Scenario*, Scenario = `1` (oppure *Partizioni* senza nulla = spegne tutte)
 
-> Con un solo backend il Metodo non compare: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
+> Con un solo backend il Metodo non viene chiesto: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
 
 Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
