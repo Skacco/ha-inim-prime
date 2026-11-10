@@ -192,6 +192,40 @@ async def test_new_primelan_defaults():
 
 
 
+def test_shutters_split_from_general():
+    """Shutter sections live in their own schema, not the general options form."""
+    import re
+    from custom_components.inim_prime.config_flow.schemas import (
+        build_options_schema, build_shutters_schema,
+    )
+    section_key = re.compile(r"^\d{1,3}\s*·")
+
+    # General form (options flow) excludes the per-shutter sections.
+    general = build_options_schema(
+        has_native=True, has_primelan=True,
+        shutters=[1, 2], output_choices=[(5, "Apri"), (6, "Chiudi")],
+        include_shutters=False,
+    )
+    assert not any(section_key.match(str(k)) for k in general)
+
+    # Dedicated shutters schema has one section per module.
+    shut = build_shutters_schema(
+        shutters=[1, 2], output_choices=[(5, "Apri"), (6, "Chiudi")],
+    )
+    assert sum(1 for k in shut if section_key.match(str(k))) == 2
+
+    # No modules -> empty (so the menu entry is hidden).
+    assert build_shutters_schema(shutters=[], output_choices=[(5, "Apri")]) == {}
+
+    # Back-compat: the single config-flow form still includes shutters.
+    full = build_options_schema(
+        has_native=True, has_primelan=True,
+        shutters=[1], output_choices=[(5, "Apri"), (6, "Chiudi")],
+        include_shutters=True,
+    )
+    assert any(section_key.match(str(k)) for k in full)
+
+
 async def test_alarm_panel_uses_scenarios(hass: HomeAssistant):
     panel = FakePanel()
     panel.scenarios[2]["st"] = 0

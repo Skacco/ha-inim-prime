@@ -347,7 +347,8 @@
         "title": "Opzioni INIM Prime",
         "menu_options": {
           "general": "Impostazioni generali",
-          "alarm": "Pannello allarme"
+          "alarm": "Pannello allarme",
+          "shutters": "Tapparelle"
         }
       },
       "alarm": {
@@ -395,12 +396,12 @@
               "outputs": "Ogni quanto Home Assistant legge lo stato delle uscite. Backend: Native/PrimeLAN.",
               "scenarios": "Ogni quanto Home Assistant legge quale scenario è attivo. Solo PrimeLAN."
             }
-          },
-          "shutters": {
-            "name": "Tapparelle",
-            "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
           }
         }
+      },
+      "shutters": {
+        "title": "Tapparelle",
+        "description": "Per ogni tapparella (numerata dal suo modulo Mod.dom) dai un nome opzionale (usato anche come nome della cover, es. \"Sala\") e scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi ... sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
       },
       "method": {
         "title": "Allarme · {command} — metodo",

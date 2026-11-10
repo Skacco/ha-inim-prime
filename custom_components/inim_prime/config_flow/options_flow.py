@@ -12,6 +12,7 @@ from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import (
     build_options_schema,
+    build_shutters_schema,
     build_alarm_method_schema,
     build_alarm_scenario_schema,
     build_alarm_partitions_schema,
@@ -67,6 +68,10 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         options = ["general"]
         if self._has_native or self._has_primelan:
             options.append("alarm")
+        # "Tapparelle" only when the panel actually has shutter modules.
+        shutters, _ = self._shutter_context()
+        if shutters:
+            options.append("shutters")
         return self.async_show_menu(step_id="init", menu_options=options)
 
     async def async_step_alarm(self, user_input: dict[str, Any] | None = None):
@@ -75,13 +80,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             step_id="alarm", menu_options=list(_CMD_STEPS) + ["init"],
         )
 
-    # --- General settings (everything except the alarm panel) ----------
+    # --- General settings (everything except alarm panel and shutters) --
     async def async_step_general(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
             opts = dict(get_entry_options(self.config_entry))
             gi = dict(user_input)
-            had_shutters = any(_SECTION_KEY.match(k) for k in gi)
-            shutter_commands = _extract_shutter_commands(gi)
             if "scan_intervals" in gi:
                 opts["scan_intervals"] = gi["scan_intervals"]
             if OptionsKey.HIDE_UNUSED_PARTITIONS in gi:
@@ -90,14 +93,32 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 opts[OptionsKey.SHOW_HIDDEN_OUTPUTS] = gi[OptionsKey.SHOW_HIDDEN_OUTPUTS]
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in gi:
                 opts[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = gi[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
-            if had_shutters:
-                if shutter_commands:
-                    opts[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
-                else:
-                    opts.pop(OptionsKey.SHUTTER_COMMANDS, None)
             return self.async_create_entry(title="", data=opts)
 
+        schema = vol.Schema(
+            build_options_schema(
+                has_native=self._has_native,
+                has_primelan=self._has_primelan,
+                current_options=self._config_options(),
+                partitions=self._partition_choices(),
+                include_alarm=False,
+                include_shutters=False,
+            )
+        )
+        return self.async_show_form(step_id="general", data_schema=schema)
+
+    # --- Shutters (only shown when the panel has shutter modules) -------
+    async def async_step_shutters(self, user_input: dict[str, Any] | None = None):
         shutters, output_choices = self._shutter_context()
+        if user_input is not None:
+            opts = dict(get_entry_options(self.config_entry))
+            shutter_commands = _extract_shutter_commands(dict(user_input))
+            if shutter_commands:
+                opts[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
+            else:
+                opts.pop(OptionsKey.SHUTTER_COMMANDS, None)
+            return self.async_create_entry(title="", data=opts)
+
         module_names: dict[int, str] = {}
         if shutters:
             gateway = self.config_entry.runtime_data.gateway
@@ -107,18 +128,14 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 module_names = {}
 
         schema = vol.Schema(
-            build_options_schema(
-                has_native=self._has_native,
-                has_primelan=self._has_primelan,
-                current_options=self._config_options(),
+            build_shutters_schema(
                 shutters=shutters,
                 output_choices=output_choices,
                 module_names=module_names,
-                partitions=self._partition_choices(),
-                include_alarm=False,
+                current_options=self._config_options(),
             )
         )
-        return self.async_show_form(step_id="general", data_schema=schema)
+        return self.async_show_form(step_id="shutters", data_schema=schema)
 
     # --- Per-command routers -------------------------------------------
     async def async_step_cmd_disarm(self, user_input=None):

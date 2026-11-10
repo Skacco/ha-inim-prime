@@ -215,12 +215,17 @@ def build_options_schema(
         module_names: dict[int, str] | None = None,
         partitions: list[tuple[int, str]] | None = None,
         include_alarm: bool = True,
+        include_shutters: bool = True,
 ) -> dict:
     """Build the options schema, only including fields the active backend(s) support.
 
     ``include_alarm=False`` leaves out the alarm-panel fields (scenario map and
     the per-command blocks): the options flow configures those through its own
     menu/step sub-flow instead of this single form.
+
+    ``include_shutters=False`` leaves out the per-shutter sections: the options
+    flow moves those to a dedicated "Tapparelle" step, shown only when the panel
+    actually has shutter modules.
 
     GSM / system faults / log events (and their fetch limit) are
     PrimeLAN-exclusive today, so they're omitted entirely when PrimeLAN
@@ -488,33 +493,56 @@ def build_options_schema(
             mode = NumberSelectorMode.BOX,
         ))
 
-    # Roller shutters: one section per shutter, titled with the shutter's name
-    # (read from the panel), each holding Open / Close (and optional 25/50/75 %)
-    # dropdowns that list the panel's command outputs. The Smart module runs the
-    # full travel from a single trigger, so HA just pulses the chosen command
-    # output; the module has no stop, so none is offered.
-    if shutters and output_choices:
-        option_items = [
-            SelectOptionDict(value = str(oid), label = name) for oid, name in output_choices
-        ]
-        current_map = (current_options.shutter_commands if current_options else None) or {}
-        names = module_names or {}
-        for module in shutters:
-            cur = current_map.get(str(module)) or current_map.get(module) or {}
-            section_key = shutter_section_key(module, names.get(module))
-            fields: dict = {}
-            for kind in SHUTTER_COMMAND_FIELDS:
-                value = cur.get(kind)
-                fields[vol.Optional(
-                    kind,
-                    description = {"suggested_value": str(value)} if value not in (None, "") else {},
-                )] = SelectSelector(SelectSelectorConfig(
-                    options = option_items,
-                    mode = SelectSelectorMode.DROPDOWN,
-                ))
-            schema[vol.Optional(section_key)] = section(
-                vol.Schema(fields), {"collapsed": True},
-            )
+    # Roller shutters: one section per shutter (see build_shutters_schema).
+    if include_shutters:
+        schema.update(build_shutters_schema(
+            shutters = shutters,
+            output_choices = output_choices,
+            module_names = module_names,
+            current_options = current_options,
+        ))
+    return schema
+
+
+def build_shutters_schema(
+        *,
+        shutters: list[int] | None = None,
+        output_choices: list[tuple[int, str]] | None = None,
+        module_names: dict[int, str] | None = None,
+        current_options: ConfigOptions | None = None,
+) -> dict:
+    """One section per shutter, titled with the shutter's name (read from the
+    panel), each holding Open / Close (and optional 25/50/75 %) dropdowns that
+    list the panel's command outputs. The Smart module runs the full travel from
+    a single trigger, so HA just pulses the chosen command output; the module has
+    no stop, so none is offered.
+
+    Returns an empty schema when the panel has no shutter modules.
+    """
+    schema: dict = {}
+    if not (shutters and output_choices):
+        return schema
+    option_items = [
+        SelectOptionDict(value = str(oid), label = name) for oid, name in output_choices
+    ]
+    current_map = (current_options.shutter_commands if current_options else None) or {}
+    names = module_names or {}
+    for module in shutters:
+        cur = current_map.get(str(module)) or current_map.get(module) or {}
+        section_key = shutter_section_key(module, names.get(module))
+        fields: dict = {}
+        for kind in SHUTTER_COMMAND_FIELDS:
+            value = cur.get(kind)
+            fields[vol.Optional(
+                kind,
+                description = {"suggested_value": str(value)} if value not in (None, "") else {},
+            )] = SelectSelector(SelectSelectorConfig(
+                options = option_items,
+                mode = SelectSelectorMode.DROPDOWN,
+            ))
+        schema[vol.Optional(section_key)] = section(
+            vol.Schema(fields), {"collapsed": True},
+        )
     return schema
 
 
