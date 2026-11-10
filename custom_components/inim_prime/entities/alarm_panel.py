@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any
+
+_LOGGER = logging.getLogger(__name__)
 
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelEntity,
@@ -266,10 +269,12 @@ class PartitionAlarmPanel(
 ):
     """Whole-system alarm panel driven directly by the partitions (Native).
 
-    Works without PrimeLAN: each arm command sets a configured set of partitions
-    to ARM_AWAY and the rest to disarmed; disarm turns every partition off. The
-    state comes from the partitions' arming status (and ALARM -> triggered), with
-    the armed set matched back to the configured command.
+    Works without PrimeLAN. Each arm command is a target: a {partition -> arming
+    mode} map (Totale/Parziale/Istantaneo per partition); partitions not in the
+    map are disarmed. Disarm turns every partition off. The state is read back
+    from the partitions' arming status (ALARM -> triggered) and matched to the
+    command whose target equals the current set, so mixed-mode setups (some
+    partitions Totale, some Istantaneo in the same command) are reproduced.
     """
 
     _attr_has_entity_name = True
@@ -277,19 +282,23 @@ class PartitionAlarmPanel(
     _attr_code_arm_required = False
     _attr_code_format = None
     _PENDING_TIMEOUT = 20.0
-    _ARM_MODE = UnifiedArmingStatus.ARM_AWAY
 
     def __init__(
             self,
             partitions_coordinator: InimPrimePartitionsUpdateCoordinator,
-            arm_map: dict[str, frozenset[int]],
+            arm_targets: dict[str, dict[int, "UnifiedArmingStatus"]],
+            arm_outputs: dict[str, list[int]] | None = None,
     ):
         super().__init__(partitions_coordinator)
-        self._arm_map = {cmd: frozenset(pids) for cmd, pids in arm_map.items() if pids}
+        # command -> {partition_id: arming mode}; drop commands with no partitions.
+        self._targets = {cmd: dict(target) for cmd, target in arm_targets.items() if target}
+        # command -> outputs to switch on (disarm included); monostable outputs
+        # self-release on the panel.
+        self._outputs = {cmd: list(ids) for cmd, ids in (arm_outputs or {}).items() if ids}
 
         features = AlarmControlPanelEntityFeature(0)
         for command, feature in _COMMAND_FEATURE.items():
-            if command in self._arm_map:
+            if command in self._targets:
                 features |= feature
         self._attr_supported_features = features
 
@@ -306,11 +315,12 @@ class PartitionAlarmPanel(
     def _partitions(self):
         return list(self.coordinator.gateway.partitions.values())
 
-    def _armed_set(self) -> frozenset[int]:
-        return frozenset(
-            p.partition_id for p in self._partitions
+    def _current_armed(self) -> dict[int, "UnifiedArmingStatus"]:
+        return {
+            p.partition_id: p.arming_status
+            for p in self._partitions
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
-        )
+        }
 
     @property
     def alarm_state(self) -> AlarmControlPanelState | None:
@@ -318,11 +328,11 @@ class PartitionAlarmPanel(
         if any(p.partition_state == UnifiedPartitionState.ALARM for p in partitions):
             return AlarmControlPanelState.TRIGGERED
 
-        armed = self._armed_set()
+        current = self._current_armed()
         if self._pending is not None:
             command, deadline = self._pending
-            target = self._arm_map.get(command, frozenset())
-            if armed == target or time.monotonic() > deadline:
+            target = self._targets.get(command, {})
+            if current == target or time.monotonic() > deadline:
                 self._pending = None
             else:
                 return (
@@ -333,10 +343,10 @@ class PartitionAlarmPanel(
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         if not known:
             return None
-        if not armed:
+        if not current:
             return AlarmControlPanelState.DISARMED
-        for command, pids in self._arm_map.items():
-            if pids == armed:
+        for command, target in self._targets.items():
+            if target == current:
                 return _COMMAND_STATE[command]
         return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
@@ -345,19 +355,16 @@ class PartitionAlarmPanel(
         return {
             "last_command": self._last_command,
             "armed_partitions": [
-                p.label for p in self._partitions
+                f"{p.label} ({p.arming_status.name})" for p in self._partitions
                 if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
             ],
         }
 
-    async def _apply(self, command: str, armed_pids: frozenset[int]) -> None:
+    async def _apply(self, command: str, target: dict[int, "UnifiedArmingStatus"]) -> None:
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
         self.async_write_ha_state()
         statuses = {
-            p.partition_id: (
-                self._ARM_MODE if p.partition_id in armed_pids
-                else UnifiedArmingStatus.DISARMED
-            )
+            p.partition_id: target.get(p.partition_id, UnifiedArmingStatus.DISARMED)
             for p in self._partitions
         }
         try:
@@ -366,21 +373,28 @@ class PartitionAlarmPanel(
             self._pending = None
             self.async_write_ha_state()
             raise
+        # Fire the command's outputs (best effort: the arming already succeeded,
+        # so an output error must not undo it). The panel self-releases them.
+        for output_id in self._outputs.get(command, []):
+            try:
+                await self.coordinator.gateway.set_output(output_id, True)
+            except Exception:  # noqa: BLE001 - outputs are an add-on to the arm
+                _LOGGER.warning("Alarm panel: failed to activate output %s", output_id)
         await self.coordinator.async_refresh()
-        self._last_command = {"command": command, "armed_partitions": sorted(armed_pids)}
+        self._last_command = {"command": command, "outputs": self._outputs.get(command, [])}
         self.async_write_ha_state()
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
-        await self._apply("disarm", frozenset())
+        await self._apply("disarm", {})
 
     async def async_alarm_arm_away(self, code: str | None = None) -> None:
-        await self._apply("arm_away", self._arm_map.get("arm_away", frozenset()))
+        await self._apply("arm_away", self._targets.get("arm_away", {}))
 
     async def async_alarm_arm_home(self, code: str | None = None) -> None:
-        await self._apply("arm_home", self._arm_map.get("arm_home", frozenset()))
+        await self._apply("arm_home", self._targets.get("arm_home", {}))
 
     async def async_alarm_arm_night(self, code: str | None = None) -> None:
-        await self._apply("arm_night", self._arm_map.get("arm_night", frozenset()))
+        await self._apply("arm_night", self._targets.get("arm_night", {}))
 
     async def async_alarm_arm_vacation(self, code: str | None = None) -> None:
-        await self._apply("arm_vacation", self._arm_map.get("arm_vacation", frozenset()))
+        await self._apply("arm_vacation", self._targets.get("arm_vacation", {}))

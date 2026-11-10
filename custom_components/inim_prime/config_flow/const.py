@@ -42,10 +42,24 @@ class OptionsKey:
             DISARM, ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION, ARM_CUSTOM_BYPASS,
         )
         # Arm commands offered by the Native (partition-based) panel: each maps
-        # to a set of partitions to arm (disarm = all partitions off).
+        # to per-mode sets of partitions (disarm = all partitions off).
         NATIVE_ARMS: Final[tuple[str, ...]] = (
             ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION,
         )
+        # Arming modes a partition can be set to for a command. Not listed in any
+        # mode -> that partition stays disarmed for that command.
+        NATIVE_MODES: Final[tuple[str, ...]] = ("total", "stay", "instant")
+        # Pseudo-mode holding the outputs a command also activates (the panel
+        # self-releases monostable outputs). Disarm can trigger outputs too.
+        NATIVE_OUTPUT: Final[str] = "outputs"
+        NATIVE_OUTPUT_COMMANDS: Final[tuple[str, ...]] = (
+            DISARM, ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION,
+        )
+
+    @staticmethod
+    def native_field(command: str, mode: str) -> str:
+        """Options-form field key for one (command, mode) pair."""
+        return f"{command}__{mode}"
 
     class PanelType:
         SCENARI: Final[str] = "scenari"

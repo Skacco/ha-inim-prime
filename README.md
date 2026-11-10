@@ -181,12 +181,13 @@ L'integrazione può creare un'entità `alarm_control_panel` per inserire/disinse
 Inserisce/disinserisce **attivando uno scenario** della centrale. Mappa ogni comando HA (disinserimento, inserimento totale/parziale/notte/vacanza/personalizzato) sul **numero di scenario** (0–49). Lo stato viene letto dalle partizioni e dallo scenario attivo. Lascia vuoto un comando per nasconderlo; **senza uno scenario di disinserimento il pannello non viene creato**. Richiede **PrimeLAN** (lettura/attivazione scenari). È l'equivalente del comportamento di sdomotica.
 
 ### Partizioni (Native)
-Inserisce/disinserisce agendo **direttamente sulle partizioni** (nessuno scenario, nessun PrimeLAN): ogni comando porta a `ARM_AWAY` un **insieme di partizioni** che scegli tu, e mette a riposo le altre; il **disinserimento** spegne tutte le partizioni. Lo stato viene derivato dallo stato di inserimento delle partizioni (e una partizione in allarme → *triggered*). È **più veloce** (tutto locale) e funziona **anche senza PrimeLAN**.
+Inserisce/disinserisce agendo **direttamente sulle partizioni** (nessuno scenario, nessun PrimeLAN). È **più veloce** (tutto locale) e funziona **anche senza PrimeLAN**. Lo stato viene derivato dallo stato di inserimento delle partizioni (e una partizione in allarme → *triggered*).
 
-Per ogni comando (Fuori casa / In casa / Notte / Vacanza) selezioni quali partizioni armare. Un comando senza partizioni non viene offerto. Esempio tipico:
-- **Fuori casa** = esterni + finestre + volumetrici
-- **Notte** = finestre + scuri (volumetrici a riposo)
-- **In casa** = esterni + casetta
+Per ogni comando (Fuori casa / In casa / Notte / Vacanza) scegli, **per ciascuna modalità** (Totale / Parziale / Istantaneo), **quali partizioni** inserire. Puoi **mescolare le modalità nello stesso comando** — esattamente come gli scenari della centrale (es. "Totale" con alcune partizioni in Totale e altre in Istantaneo). Le partizioni non elencate restano disinserite; il **disinserimento** le spegne tutte. Un comando senza partizioni non viene offerto.
+
+Lo stato HA mostrato corrisponde al comando il cui insieme **partizione→modalità** combacia esattamente con lo stato attuale; se non combacia nessuno → *custom bypass*.
+
+**Uscite.** Ogni comando (disinserimento incluso) può anche attivare **una o più uscite**, come fanno gli scenari INIM (es. "Chiusura PI" per chiudere le persiane). Le selezioni nel campo *Uscite*; la centrale rilascia da sola le uscite monostabili (si rispengono dopo qualche secondo). Lo stato del pannello resta basato sulle partizioni (le uscite sono un'azione, non concorrono allo stato).
 
 ### Quale viene creato
 - **Solo Native** → pannello **a partizioni** (è l'unico possibile).

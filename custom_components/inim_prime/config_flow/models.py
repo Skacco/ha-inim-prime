@@ -127,15 +127,34 @@ def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
         return {}
     return {key: int(value) for key, value in raw.items() if value is not None and value != ""}
 
-def clean_native_panel(raw: dict | None) -> dict[str, list[int]]:
-    """Keep only the Native-panel commands that have at least one partition."""
+def extract_native_panel(flat: dict | None) -> dict[str, dict[str, list[int]]]:
+    """Reshape the flat options section ('command__mode' -> ids) into the nested
+    {command: {mode: [ids]}} mapping, dropping empties."""
+    if not flat:
+        return {}
+    nested: dict[str, dict[str, list]] = {}
+    for field, value in flat.items():
+        if "__" not in field:
+            continue
+        command, mode = field.split("__", 1)
+        nested.setdefault(command, {})[mode] = value
+    return clean_native_panel(nested)
+
+def clean_native_panel(raw: dict | None) -> dict[str, dict[str, list[int]]]:
+    """Normalise the Native-panel mapping {command: {mode: [partition_ids]}}.
+
+    Drops empty modes and empty commands, coerces ids to int."""
     if not raw:
         return {}
-    result: dict[str, list[int]] = {}
-    for key, value in raw.items():
-        if not value:
+    result: dict[str, dict[str, list[int]]] = {}
+    for command, per_mode in raw.items():
+        if not isinstance(per_mode, dict):
             continue
-        ids = [int(v) for v in value if str(v).strip() != ""]
-        if ids:
-            result[key] = ids
+        modes: dict[str, list[int]] = {}
+        for mode, value in per_mode.items():
+            ids = [int(v) for v in (value or []) if str(v).strip() != ""]
+            if ids:
+                modes[mode] = ids
+        if modes:
+            result[command] = modes
     return result

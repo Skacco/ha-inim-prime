@@ -1,17 +1,44 @@
 from .config_flow.const import OptionsKey
 from .entities.alarm_panel import ScenarioAlarmPanel, PartitionAlarmPanel
+from .models.partitions import UnifiedArmingStatus
 from .runtime_data import InimPrimeConfigEntry
 
+# Native-panel mode key -> the partition arming status it applies.
+_MODE_STATUS = {
+    "total": UnifiedArmingStatus.ARM_AWAY,
+    "stay": UnifiedArmingStatus.ARM_STAY,
+    "instant": UnifiedArmingStatus.ARM_INSTANT,
+}
 
-def _native_arm_map(options) -> dict[str, frozenset[int]]:
-    """Read the Native panel's per-command partition sets from the options."""
+
+def _native_arm_map(options) -> dict[str, dict[int, UnifiedArmingStatus]]:
+    """Build each Native command's target: {partition_id: arming mode}.
+
+    Options shape: {command: {mode: [partition_ids]}}. A later mode wins if a
+    partition is listed under more than one mode for the same command.
+    """
     raw = options.get(OptionsKey.ALARM_PANEL_NATIVE) or {}
-    result: dict[str, frozenset[int]] = {}
+    result: dict[str, dict[int, UnifiedArmingStatus]] = {}
     for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
-        pids = raw.get(command) or []
-        ids = frozenset(
-            int(pid) for pid in pids if str(pid).strip() != ""
-        )
+        per_mode = raw.get(command) or {}
+        target: dict[int, UnifiedArmingStatus] = {}
+        for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
+            status = _MODE_STATUS[mode]
+            for pid in per_mode.get(mode) or []:
+                if str(pid).strip() != "":
+                    target[int(pid)] = status
+        if target:
+            result[command] = target
+    return result
+
+
+def _native_output_map(options) -> dict[str, list[int]]:
+    """Outputs each Native command (disarm included) also switches on."""
+    raw = options.get(OptionsKey.ALARM_PANEL_NATIVE) or {}
+    result: dict[str, list[int]] = {}
+    for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
+        outputs = (raw.get(command) or {}).get(OptionsKey.AlarmPanel.NATIVE_OUTPUT) or []
+        ids = [int(o) for o in outputs if str(o).strip() != ""]
         if ids:
             result[command] = ids
     return result
@@ -40,7 +67,11 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         if coordinators.partitions is None:
             return
         async_add_entities([
-            PartitionAlarmPanel(coordinators.partitions, _native_arm_map(options))
+            PartitionAlarmPanel(
+                coordinators.partitions,
+                _native_arm_map(options),
+                _native_output_map(options),
+            )
         ])
         return
 

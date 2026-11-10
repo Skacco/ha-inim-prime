@@ -73,23 +73,23 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use {state_backend}; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
             "data": {
-              "zones": "Zones Scan Interval (Native/PrimeLAN)",
-              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "zones": "Zones Scan Interval ({state_backend})",
+              "partitions": "Partitions Scan Interval ({state_backend})",
               "gsm": "GSM Scan Interval (PrimeLAN)",
               "system_faults": "System Faults Scan Interval (PrimeLAN)",
               "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
-              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "outputs": "Outputs Scan Interval ({state_backend})",
               "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
-              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "zones": "How often Home Assistant fetches zone status. Backend: {state_backend}.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: {state_backend}.",
               "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
               "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
               "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
-              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: {state_backend}.",
               "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
@@ -107,12 +107,25 @@
           },
           "alarm_panel_native": {
             "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
             "data": {
-              "arm_away": "Away",
-              "arm_home": "Home",
-              "arm_night": "Night",
-              "arm_vacation": "Vacation"
+              "arm_away__total": "Away · Total",
+              "arm_away__stay": "Away · Partial",
+              "arm_away__instant": "Away · Instant",
+              "arm_home__total": "Home · Total",
+              "arm_home__stay": "Home · Partial",
+              "arm_home__instant": "Home · Instant",
+              "arm_night__total": "Night · Total",
+              "arm_night__stay": "Night · Partial",
+              "arm_night__instant": "Night · Instant",
+              "arm_vacation__total": "Vacation · Total",
+              "arm_vacation__stay": "Vacation · Partial",
+              "arm_vacation__instant": "Vacation · Instant",
+              "arm_away__outputs": "Away · Outputs",
+              "arm_home__outputs": "Home · Outputs",
+              "arm_night__outputs": "Night · Outputs",
+              "arm_vacation__outputs": "Vacation · Outputs",
+              "disarm__outputs": "Disarm · Outputs"
             }
           },
           "shutters": {
@@ -185,23 +198,23 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.\nNote: if you've just added or removed Native, the defaults below have been adjusted accordingly.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use {state_backend}; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.\nNote: if you've just added or removed Native, the defaults below have been adjusted accordingly.",
             "data": {
-              "zones": "Zones Scan Interval (Native/PrimeLAN)",
-              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "zones": "Zones Scan Interval ({state_backend})",
+              "partitions": "Partitions Scan Interval ({state_backend})",
               "gsm": "GSM Scan Interval (PrimeLAN)",
               "system_faults": "System Faults Scan Interval (PrimeLAN)",
               "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
-              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "outputs": "Outputs Scan Interval ({state_backend})",
               "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
-              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "zones": "How often Home Assistant fetches zone status. Backend: {state_backend}.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: {state_backend}.",
               "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
               "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
               "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
-              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: {state_backend}.",
               "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
@@ -219,12 +232,25 @@
           },
           "alarm_panel_native": {
             "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
             "data": {
-              "arm_away": "Away",
-              "arm_home": "Home",
-              "arm_night": "Night",
-              "arm_vacation": "Vacation"
+              "arm_away__total": "Away · Total",
+              "arm_away__stay": "Away · Partial",
+              "arm_away__instant": "Away · Instant",
+              "arm_home__total": "Home · Total",
+              "arm_home__stay": "Home · Partial",
+              "arm_home__instant": "Home · Instant",
+              "arm_night__total": "Night · Total",
+              "arm_night__stay": "Night · Partial",
+              "arm_night__instant": "Night · Instant",
+              "arm_vacation__total": "Vacation · Total",
+              "arm_vacation__stay": "Vacation · Partial",
+              "arm_vacation__instant": "Vacation · Instant",
+              "arm_away__outputs": "Away · Outputs",
+              "arm_home__outputs": "Home · Outputs",
+              "arm_night__outputs": "Night · Outputs",
+              "arm_vacation__outputs": "Vacation · Outputs",
+              "disarm__outputs": "Disarm · Outputs"
             }
           },
           "shutters": {
@@ -261,23 +287,23 @@
         "sections": {
           "scan_intervals": {
             "name": "Scan intervals",
-            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use Native if configured, otherwise PrimeLAN; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
+            "description": "How often Home Assistant polls the panel (lower values = more traffic). Each entry shows the backend: Native (local protocol, fast) or PrimeLAN (Web API). Zones, partitions and outputs use {state_backend}; GSM, faults, event log and scenarios are PrimeLAN only. With both backends the PrimeLAN-only pollers start slower (60s) to reduce traffic. See the README.",
             "data": {
-              "zones": "Zones Scan Interval (Native/PrimeLAN)",
-              "partitions": "Partitions Scan Interval (Native/PrimeLAN)",
+              "zones": "Zones Scan Interval ({state_backend})",
+              "partitions": "Partitions Scan Interval ({state_backend})",
               "gsm": "GSM Scan Interval (PrimeLAN)",
               "system_faults": "System Faults Scan Interval (PrimeLAN)",
               "panel_log_events": "Panel Log Events Scan Interval (PrimeLAN)",
-              "outputs": "Outputs Scan Interval (Native/PrimeLAN)",
+              "outputs": "Outputs Scan Interval ({state_backend})",
               "scenarios": "Scenarios Scan Interval (PrimeLAN)"
             },
             "data_description": {
-              "zones": "How often Home Assistant fetches zone status. Backend: Native if configured, otherwise PrimeLAN.",
-              "partitions": "How often Home Assistant fetches partition status. Backend: Native if configured, otherwise PrimeLAN.",
+              "zones": "How often Home Assistant fetches zone status. Backend: {state_backend}.",
+              "partitions": "How often Home Assistant fetches partition status. Backend: {state_backend}.",
               "gsm": "How often Home Assistant fetches GSM status. PrimeLAN only.",
               "system_faults": "How often Home Assistant fetches system faults. PrimeLAN only.",
               "panel_log_events": "How often Home Assistant fetches new panel log events. PrimeLAN only.",
-              "outputs": "How often Home Assistant reads the outputs status. Backend: Native if configured, otherwise PrimeLAN.",
+              "outputs": "How often Home Assistant reads the outputs status. Backend: {state_backend}.",
               "scenarios": "How often Home Assistant reads which scenario is active. PrimeLAN only."
             }
           },
@@ -295,12 +321,25 @@
           },
           "alarm_panel_native": {
             "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose which partitions to arm; disarm turns every partition off. Partitions not listed for a command stay disarmed. A command with no partitions is not offered.",
+            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
             "data": {
-              "arm_away": "Away",
-              "arm_home": "Home",
-              "arm_night": "Night",
-              "arm_vacation": "Vacation"
+              "arm_away__total": "Away · Total",
+              "arm_away__stay": "Away · Partial",
+              "arm_away__instant": "Away · Instant",
+              "arm_home__total": "Home · Total",
+              "arm_home__stay": "Home · Partial",
+              "arm_home__instant": "Home · Instant",
+              "arm_night__total": "Night · Total",
+              "arm_night__stay": "Night · Partial",
+              "arm_night__instant": "Night · Instant",
+              "arm_vacation__total": "Vacation · Total",
+              "arm_vacation__stay": "Vacation · Partial",
+              "arm_vacation__instant": "Vacation · Instant",
+              "arm_away__outputs": "Away · Outputs",
+              "arm_home__outputs": "Home · Outputs",
+              "arm_night__outputs": "Night · Outputs",
+              "arm_vacation__outputs": "Vacation · Outputs",
+              "disarm__outputs": "Disarm · Outputs"
             }
           },
           "shutters": {

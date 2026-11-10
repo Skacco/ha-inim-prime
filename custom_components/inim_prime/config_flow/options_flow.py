@@ -7,7 +7,7 @@ from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
-from .models import ConfigOptions, clean_alarm_panel, clean_native_panel
+from .models import ConfigOptions, clean_alarm_panel, extract_native_panel
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import build_options_schema, shutter_section_key
@@ -26,7 +26,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 if alarm_panel:
                     data["alarm_panel"] = alarm_panel
             if OptionsKey.ALARM_PANEL_NATIVE in data:
-                native_panel = clean_native_panel(data.pop(OptionsKey.ALARM_PANEL_NATIVE))
+                native_panel = extract_native_panel(data.pop(OptionsKey.ALARM_PANEL_NATIVE))
                 if native_panel:
                     data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
             shutter_commands = _extract_shutter_commands(data)  # pops the sections
@@ -77,7 +77,13 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 partitions = partition_choices,
             )
         )
-        return self.async_show_form(step_id = "init", data_schema = schema)
+        return self.async_show_form(
+            step_id = "init",
+            data_schema = schema,
+            description_placeholders = {
+                "state_backend": "Native" if has_native else "PrimeLAN",
+            },
+        )
 
     def _partition_choices(self) -> list[tuple[int, str]]:
         """Partitions to offer in the Native alarm-panel mapping (id -> label)."""

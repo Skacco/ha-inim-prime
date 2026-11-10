@@ -387,14 +387,37 @@ def build_options_schema(
             SelectOptionDict(value = str(pid), label = label)
             for pid, label in (partitions or [])
         ]
+        native_output_options = [
+            SelectOptionDict(value = str(oid), label = label)
+            for oid, label in (output_choices or [])
+        ]
         native_fields: dict = {}
-        for key in OptionsKey.AlarmPanel.NATIVE_ARMS:
+        for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
+            command_modes = current_native.get(command, {}) or {}
+            for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
+                key = OptionsKey.native_field(command, mode)
+                marker = vol.Optional(
+                    key,
+                    description = {"suggested_value": [str(p) for p in command_modes.get(mode, [])]},
+                )
+                native_fields[marker] = SelectSelector(SelectSelectorConfig(
+                    options = partition_options,
+                    multiple = True,
+                    mode = SelectSelectorMode.DROPDOWN,
+                ))
+        # Outputs a command also activates (disarm included). The panel releases
+        # monostable outputs on its own, so this just switches them on.
+        for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
+            command_current = current_native.get(command, {}) or {}
+            key = OptionsKey.native_field(command, OptionsKey.AlarmPanel.NATIVE_OUTPUT)
             marker = vol.Optional(
                 key,
-                description = {"suggested_value": [str(p) for p in current_native.get(key, [])]},
+                description = {"suggested_value": [
+                    str(o) for o in command_current.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
+                ]},
             )
             native_fields[marker] = SelectSelector(SelectSelectorConfig(
-                options = partition_options,
+                options = native_output_options,
                 multiple = True,
                 mode = SelectSelectorMode.DROPDOWN,
             ))

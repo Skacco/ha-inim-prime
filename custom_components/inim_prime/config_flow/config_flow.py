@@ -14,7 +14,7 @@ from .const import (
     DataKey,
     OptionsKey,
 )
-from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel
+from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel, extract_native_panel
 from .options_flow import InimPrimeOptionsFlowHandler
 from .schemas import build_connection_schema, build_options_schema
 from ..const import DOMAIN
@@ -213,6 +213,11 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._options.panel_log_events_fetch_limit = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
                 self._options.alarm_panel = clean_alarm_panel(user_input.get(OptionsKey.ALARM_PANEL)) or None
 
+            if OptionsKey.ALARM_PANEL_TYPE in user_input:
+                self._options.alarm_panel_type = user_input[OptionsKey.ALARM_PANEL_TYPE]
+            self._options.alarm_panel_native = extract_native_panel(
+                user_input.get(OptionsKey.ALARM_PANEL_NATIVE)) or None
+
             assert self._data.serial_number is not None
             return self.async_create_entry(
                 title = f"INIM Prime ({self._data.serial_number})",
@@ -227,7 +232,13 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             )
         )
 
-        return self.async_show_form(step_id = "options", data_schema = schema)
+        return self.async_show_form(
+            step_id = "options",
+            data_schema = schema,
+            description_placeholders = {
+                "state_backend": "Native" if self._data.use_native else "PrimeLAN",
+            },
+        )
 
     @staticmethod
     @callback
@@ -398,6 +409,12 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 self._options.panel_log_events_fetch_limit = None
                 self._options.alarm_panel = None
 
+            # Native panel (independent of PrimeLAN): type selector + mapping.
+            if OptionsKey.ALARM_PANEL_TYPE in user_input:
+                self._options.alarm_panel_type = user_input[OptionsKey.ALARM_PANEL_TYPE]
+            self._options.alarm_panel_native = extract_native_panel(
+                user_input.get(OptionsKey.ALARM_PANEL_NATIVE)) or None
+
             assert self._data.serial_number is not None
             reconfigure_entry = self._get_reconfigure_entry()
             return self.async_update_reload_and_abort(
@@ -417,4 +434,10 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             )
         )
 
-        return self.async_show_form(step_id = "reconfigure_options", data_schema = schema)
+        return self.async_show_form(
+            step_id = "reconfigure_options",
+            data_schema = schema,
+            description_placeholders = {
+                "state_backend": "Native" if self._data.use_native else "PrimeLAN",
+            },
+        )
