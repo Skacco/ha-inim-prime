@@ -183,9 +183,9 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme* e — **solo se la centrale ha moduli tapparella** — *Tapparelle*. In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Puoi modificare **più comandi di seguito** senza uscire: le modifiche restano in memoria e si salvano tutte insieme con **💾 Salva ed esci**. **‹ Torna al menù** mantiene le modifiche (vengono scritte al primo salvataggio); chiudendo con la **X** si annulla tutto.
 
-Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*):
-- **Scenario** → la schermata dopo mostra una **tendina con i nomi degli scenari** letti dalla centrale (scegli quello da attivare per il comando).
-- **Partizioni** → la schermata dopo mostra solo **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
+Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*); la voce del metodo **attualmente impostato** è marcata con ●:
+- **Scenario** → un **menù con i nomi degli scenari** letti dalla centrale: tocchi quello da attivare (lo scenario attuale è marcato con ●), oppure *Nessuno*. C'è la voce *‹ Indietro* e nessun pulsante «Invia».
+- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**; essendo un form multi-campo si conferma con «Invia».
 
 Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri e alla fine premi **Salva ed esci**.
 

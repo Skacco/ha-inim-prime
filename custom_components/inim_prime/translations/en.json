@@ -300,6 +300,10 @@
           "alarm": "‹ Back"
         }
       },
+      "scenario_menu": {
+        "title": "Alarm · scenario",
+        "description": "Pick the panel scenario to activate for «{command}». The entry marked ● is the current one. «None» leaves the command unset."
+      },
       "cmd_detail": {
         "title": "Alarm · {command}",
         "data": {

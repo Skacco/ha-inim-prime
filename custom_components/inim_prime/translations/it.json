@@ -300,6 +300,10 @@
           "alarm": "‹ Indietro"
         }
       },
+      "scenario_menu": {
+        "title": "Allarme · scenario",
+        "description": "Scegli lo scenario della centrale da attivare per «{command}». La voce con ● è quella attualmente impostata. «Nessuno» lascia il comando non impostato."
+      },
       "cmd_detail": {
         "title": "Allarme · {command}",
         "data": {
