@@ -583,14 +583,16 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
 
     # The Shutters group exists only when the panel has shutters (its cover
     # entities create it), so link it without creating an empty one.
-    # async_get_device(identifiers=...) is deprecated from HA 2026.x: prefer the
-    # single-identifier lookup when the running HA provides it, fall back for
-    # older cores.
+    # async_get_device(identifiers=...) is deprecated from HA 2026.x in favour of
+    # async_get_device_by_identifier(identifier, config_entry_id=...). Use the new
+    # API when available, and fall back to the old one on any signature mismatch
+    # or on older cores -- never let this lookup break setup.
     shutters_identifier = (DOMAIN, f"{serial_number}_shutters")
-    _get_by_identifier = getattr(device_registry, "async_get_device_by_identifier", None)
-    if _get_by_identifier is not None:
-        shutters_group = _get_by_identifier(shutters_identifier)
-    else:
+    try:
+        shutters_group = device_registry.async_get_device_by_identifier(
+            shutters_identifier, config_entry_id = entry.entry_id
+        )
+    except (AttributeError, TypeError):
         shutters_group = device_registry.async_get_device(identifiers = {shutters_identifier})
     if shutters_group is not None:
         if shutters_group.via_device_id != panel.id:
