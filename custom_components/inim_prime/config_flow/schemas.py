@@ -391,38 +391,53 @@ def build_options_schema(
             SelectOptionDict(value = str(oid), label = label)
             for oid, label in (output_choices or [])
         ]
-        native_fields: dict = {}
-        for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
-            command_modes = current_native.get(command, {}) or {}
-            for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
-                key = OptionsKey.native_field(command, mode)
-                marker = vol.Optional(
-                    key,
-                    description = {"suggested_value": [str(p) for p in command_modes.get(mode, [])]},
-                )
-                native_fields[marker] = SelectSelector(SelectSelectorConfig(
-                    options = partition_options,
-                    multiple = True,
-                    mode = SelectSelectorMode.DROPDOWN,
-                ))
-        # Outputs a command also activates (disarm included). The panel releases
-        # monostable outputs on its own, so this just switches them on.
-        for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
-            command_current = current_native.get(command, {}) or {}
-            key = OptionsKey.native_field(command, OptionsKey.AlarmPanel.NATIVE_OUTPUT)
-            marker = vol.Optional(
-                key,
-                description = {"suggested_value": [
-                    str(o) for o in command_current.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
-                ]},
-            )
-            native_fields[marker] = SelectSelector(SelectSelectorConfig(
+        def _partition_select():
+            return SelectSelector(SelectSelectorConfig(
+                options = partition_options,
+                multiple = True,
+                mode = SelectSelectorMode.DROPDOWN,
+            ))
+
+        def _output_select():
+            return SelectSelector(SelectSelectorConfig(
                 options = native_output_options,
                 multiple = True,
                 mode = SelectSelectorMode.DROPDOWN,
             ))
-        schema[vol.Optional(OptionsKey.ALARM_PANEL_NATIVE)] = section(
-            vol.Schema(native_fields), {"collapsed": not current_native},
+
+        # One collapsible block per command (header "Fuori casa (Away)"...), each
+        # with the three modes + an Uscite field. Arm commands first, disarm last.
+        for command in OptionsKey.AlarmPanel.NATIVE_ARMS:
+            command_modes = current_native.get(command, {}) or {}
+            fields: dict = {}
+            for mode in OptionsKey.AlarmPanel.NATIVE_MODES:
+                marker = vol.Optional(
+                    mode,
+                    description = {"suggested_value": [str(p) for p in command_modes.get(mode, [])]},
+                )
+                fields[marker] = _partition_select()
+            out_marker = vol.Optional(
+                OptionsKey.AlarmPanel.NATIVE_OUTPUT,
+                description = {"suggested_value": [
+                    str(o) for o in command_modes.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
+                ]},
+            )
+            fields[out_marker] = _output_select()
+            schema[vol.Optional(command)] = section(
+                vol.Schema(fields), {"collapsed": not command_modes},
+            )
+
+        # Disarm has no arming modes, only the outputs it may switch on.
+        disarm_current = current_native.get(OptionsKey.AlarmPanel.DISARM, {}) or {}
+        disarm_marker = vol.Optional(
+            OptionsKey.AlarmPanel.NATIVE_OUTPUT,
+            description = {"suggested_value": [
+                str(o) for o in disarm_current.get(OptionsKey.AlarmPanel.NATIVE_OUTPUT, [])
+            ]},
+        )
+        schema[vol.Optional(OptionsKey.AlarmPanel.DISARM)] = section(
+            vol.Schema({disarm_marker: _output_select()}),
+            {"collapsed": not disarm_current},
         )
 
     if has_primelan:

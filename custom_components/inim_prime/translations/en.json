@@ -105,27 +105,47 @@
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
           },
-          "alarm_panel_native": {
-            "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
+          "arm_away": {
+            "name": "Away",
+            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
-              "arm_away__total": "Away · Total",
-              "arm_away__stay": "Away · Partial",
-              "arm_away__instant": "Away · Instant",
-              "arm_home__total": "Home · Total",
-              "arm_home__stay": "Home · Partial",
-              "arm_home__instant": "Home · Instant",
-              "arm_night__total": "Night · Total",
-              "arm_night__stay": "Night · Partial",
-              "arm_night__instant": "Night · Instant",
-              "arm_vacation__total": "Vacation · Total",
-              "arm_vacation__stay": "Vacation · Partial",
-              "arm_vacation__instant": "Vacation · Instant",
-              "arm_away__outputs": "Away · Outputs",
-              "arm_home__outputs": "Home · Outputs",
-              "arm_night__outputs": "Night · Outputs",
-              "arm_vacation__outputs": "Vacation · Outputs",
-              "disarm__outputs": "Disarm · Outputs"
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_home": {
+            "name": "Home (Stay)",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_night": {
+            "name": "Night",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacation",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "disarm": {
+            "name": "Disarm",
+            "data": {
+              "outputs": "Outputs"
             }
           },
           "shutters": {
@@ -230,27 +250,47 @@
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
           },
-          "alarm_panel_native": {
-            "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
+          "arm_away": {
+            "name": "Away",
+            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
-              "arm_away__total": "Away · Total",
-              "arm_away__stay": "Away · Partial",
-              "arm_away__instant": "Away · Instant",
-              "arm_home__total": "Home · Total",
-              "arm_home__stay": "Home · Partial",
-              "arm_home__instant": "Home · Instant",
-              "arm_night__total": "Night · Total",
-              "arm_night__stay": "Night · Partial",
-              "arm_night__instant": "Night · Instant",
-              "arm_vacation__total": "Vacation · Total",
-              "arm_vacation__stay": "Vacation · Partial",
-              "arm_vacation__instant": "Vacation · Instant",
-              "arm_away__outputs": "Away · Outputs",
-              "arm_home__outputs": "Home · Outputs",
-              "arm_night__outputs": "Night · Outputs",
-              "arm_vacation__outputs": "Vacation · Outputs",
-              "disarm__outputs": "Disarm · Outputs"
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_home": {
+            "name": "Home (Stay)",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_night": {
+            "name": "Night",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacation",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "disarm": {
+            "name": "Disarm",
+            "data": {
+              "outputs": "Outputs"
             }
           },
           "shutters": {
@@ -319,27 +359,47 @@
               "arm_custom_bypass": "Arm custom bypass scenario"
             }
           },
-          "alarm_panel_native": {
-            "name": "Alarm panel (Native, partition-based)",
-            "description": "Used when the panel type is \"Partitions (Native)\", or when you only use Native. For each command choose, per mode (Total / Partial / Instant), which partitions to arm — you can mix modes within one command, like the panel's scenarios. Partitions not listed stay disarmed; disarm turns every partition off. A command with no partitions is not offered. The \"Outputs\" field also switches one or more outputs on for that command (disarm included) — like INIM scenarios; the panel self-releases monostable outputs.",
+          "arm_away": {
+            "name": "Away",
+            "description": "Partition-based panel (Native). For each command pick, per mode, which partitions to arm — you can mix modes within one command. Partitions not listed stay disarmed. Under \"Outputs\" you can also switch on one or more outputs (disarm included); the panel self-releases monostable outputs.",
             "data": {
-              "arm_away__total": "Away · Total",
-              "arm_away__stay": "Away · Partial",
-              "arm_away__instant": "Away · Instant",
-              "arm_home__total": "Home · Total",
-              "arm_home__stay": "Home · Partial",
-              "arm_home__instant": "Home · Instant",
-              "arm_night__total": "Night · Total",
-              "arm_night__stay": "Night · Partial",
-              "arm_night__instant": "Night · Instant",
-              "arm_vacation__total": "Vacation · Total",
-              "arm_vacation__stay": "Vacation · Partial",
-              "arm_vacation__instant": "Vacation · Instant",
-              "arm_away__outputs": "Away · Outputs",
-              "arm_home__outputs": "Home · Outputs",
-              "arm_night__outputs": "Night · Outputs",
-              "arm_vacation__outputs": "Vacation · Outputs",
-              "disarm__outputs": "Disarm · Outputs"
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_home": {
+            "name": "Home (Stay)",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_night": {
+            "name": "Night",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacation",
+            "data": {
+              "total": "Total",
+              "stay": "Partial",
+              "instant": "Instant",
+              "outputs": "Outputs"
+            }
+          },
+          "disarm": {
+            "name": "Disarm",
+            "data": {
+              "outputs": "Outputs"
             }
           },
           "shutters": {

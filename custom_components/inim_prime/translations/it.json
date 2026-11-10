@@ -105,27 +105,47 @@
               "arm_custom_bypass": "Scenario inserimento personalizzato"
             }
           },
-          "alarm_panel_native": {
-            "name": "Pannello allarme (Native, a partizioni)",
-            "description": "Usato quando il tipo pannello è \"Partizioni (Native)\", o se usi solo il Native. Per ogni comando scegli, per ciascuna modalità (Totale / Parziale / Istantaneo), quali partizioni inserire — puoi mescolare le modalità nello stesso comando, come negli scenari della centrale. Le partizioni non elencate restano disinserite; il disinserimento le spegne tutte. Un comando senza partizioni non viene offerto. Nel campo \"Uscite\" puoi anche far attivare una o più uscite al comando (il disinserimento incluso) — come fanno gli scenari INIM; la centrale rilascia da sola le uscite monostabili.",
+          "arm_away": {
+            "name": "Fuori casa (Away)",
+            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
-              "arm_away__total": "Fuori casa · Totale",
-              "arm_away__stay": "Fuori casa · Parziale",
-              "arm_away__instant": "Fuori casa · Istantaneo",
-              "arm_home__total": "In casa · Totale",
-              "arm_home__stay": "In casa · Parziale",
-              "arm_home__instant": "In casa · Istantaneo",
-              "arm_night__total": "Notte · Totale",
-              "arm_night__stay": "Notte · Parziale",
-              "arm_night__instant": "Notte · Istantaneo",
-              "arm_vacation__total": "Vacanza · Totale",
-              "arm_vacation__stay": "Vacanza · Parziale",
-              "arm_vacation__instant": "Vacanza · Istantaneo",
-              "arm_away__outputs": "Fuori casa · Uscite",
-              "arm_home__outputs": "In casa · Uscite",
-              "arm_night__outputs": "Notte · Uscite",
-              "arm_vacation__outputs": "Vacanza · Uscite",
-              "disarm__outputs": "Disinserimento · Uscite"
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_home": {
+            "name": "In casa (Home)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_night": {
+            "name": "Notte (Night)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacanza (Vacation)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "disarm": {
+            "name": "Disinserimento (Disarm)",
+            "data": {
+              "outputs": "Uscite"
             }
           },
           "shutters": {
@@ -230,27 +250,47 @@
               "arm_custom_bypass": "Scenario inserimento personalizzato"
             }
           },
-          "alarm_panel_native": {
-            "name": "Pannello allarme (Native, a partizioni)",
-            "description": "Usato quando il tipo pannello è \"Partizioni (Native)\", o se usi solo il Native. Per ogni comando scegli, per ciascuna modalità (Totale / Parziale / Istantaneo), quali partizioni inserire — puoi mescolare le modalità nello stesso comando, come negli scenari della centrale. Le partizioni non elencate restano disinserite; il disinserimento le spegne tutte. Un comando senza partizioni non viene offerto. Nel campo \"Uscite\" puoi anche far attivare una o più uscite al comando (il disinserimento incluso) — come fanno gli scenari INIM; la centrale rilascia da sola le uscite monostabili.",
+          "arm_away": {
+            "name": "Fuori casa (Away)",
+            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
-              "arm_away__total": "Fuori casa · Totale",
-              "arm_away__stay": "Fuori casa · Parziale",
-              "arm_away__instant": "Fuori casa · Istantaneo",
-              "arm_home__total": "In casa · Totale",
-              "arm_home__stay": "In casa · Parziale",
-              "arm_home__instant": "In casa · Istantaneo",
-              "arm_night__total": "Notte · Totale",
-              "arm_night__stay": "Notte · Parziale",
-              "arm_night__instant": "Notte · Istantaneo",
-              "arm_vacation__total": "Vacanza · Totale",
-              "arm_vacation__stay": "Vacanza · Parziale",
-              "arm_vacation__instant": "Vacanza · Istantaneo",
-              "arm_away__outputs": "Fuori casa · Uscite",
-              "arm_home__outputs": "In casa · Uscite",
-              "arm_night__outputs": "Notte · Uscite",
-              "arm_vacation__outputs": "Vacanza · Uscite",
-              "disarm__outputs": "Disinserimento · Uscite"
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_home": {
+            "name": "In casa (Home)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_night": {
+            "name": "Notte (Night)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacanza (Vacation)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "disarm": {
+            "name": "Disinserimento (Disarm)",
+            "data": {
+              "outputs": "Uscite"
             }
           },
           "shutters": {
@@ -319,27 +359,47 @@
               "arm_custom_bypass": "Scenario inserimento personalizzato"
             }
           },
-          "alarm_panel_native": {
-            "name": "Pannello allarme (Native, a partizioni)",
-            "description": "Usato quando il tipo pannello è \"Partizioni (Native)\", o se usi solo il Native. Per ogni comando scegli, per ciascuna modalità (Totale / Parziale / Istantaneo), quali partizioni inserire — puoi mescolare le modalità nello stesso comando, come negli scenari della centrale. Le partizioni non elencate restano disinserite; il disinserimento le spegne tutte. Un comando senza partizioni non viene offerto. Nel campo \"Uscite\" puoi anche far attivare una o più uscite al comando (il disinserimento incluso) — come fanno gli scenari INIM; la centrale rilascia da sola le uscite monostabili.",
+          "arm_away": {
+            "name": "Fuori casa (Away)",
+            "description": "Pannello a partizioni (Native). Per ogni comando scegli, per ciascuna modalità, quali partizioni inserire — puoi mescolare le modalità nello stesso comando. Le partizioni non elencate restano disinserite. In \"Uscite\" puoi anche far attivare una o più uscite (anche al disinserimento); la centrale rilascia da sola le uscite monostabili.",
             "data": {
-              "arm_away__total": "Fuori casa · Totale",
-              "arm_away__stay": "Fuori casa · Parziale",
-              "arm_away__instant": "Fuori casa · Istantaneo",
-              "arm_home__total": "In casa · Totale",
-              "arm_home__stay": "In casa · Parziale",
-              "arm_home__instant": "In casa · Istantaneo",
-              "arm_night__total": "Notte · Totale",
-              "arm_night__stay": "Notte · Parziale",
-              "arm_night__instant": "Notte · Istantaneo",
-              "arm_vacation__total": "Vacanza · Totale",
-              "arm_vacation__stay": "Vacanza · Parziale",
-              "arm_vacation__instant": "Vacanza · Istantaneo",
-              "arm_away__outputs": "Fuori casa · Uscite",
-              "arm_home__outputs": "In casa · Uscite",
-              "arm_night__outputs": "Notte · Uscite",
-              "arm_vacation__outputs": "Vacanza · Uscite",
-              "disarm__outputs": "Disinserimento · Uscite"
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_home": {
+            "name": "In casa (Home)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_night": {
+            "name": "Notte (Night)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "arm_vacation": {
+            "name": "Vacanza (Vacation)",
+            "data": {
+              "total": "Totale",
+              "stay": "Parziale",
+              "instant": "Istantaneo",
+              "outputs": "Uscite"
+            }
+          },
+          "disarm": {
+            "name": "Disinserimento (Disarm)",
+            "data": {
+              "outputs": "Uscite"
             }
           },
           "shutters": {

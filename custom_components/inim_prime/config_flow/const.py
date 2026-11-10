@@ -56,11 +56,6 @@ class OptionsKey:
             DISARM, ARM_AWAY, ARM_HOME, ARM_NIGHT, ARM_VACATION,
         )
 
-    @staticmethod
-    def native_field(command: str, mode: str) -> str:
-        """Options-form field key for one (command, mode) pair."""
-        return f"{command}__{mode}"
-
     class PanelType:
         SCENARI: Final[str] = "scenari"
         PARTIZIONI: Final[str] = "partizioni"

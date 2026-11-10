@@ -14,7 +14,7 @@ from .const import (
     DataKey,
     OptionsKey,
 )
-from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel, extract_native_panel
+from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel, extract_native_panel_sections
 from .options_flow import InimPrimeOptionsFlowHandler
 from .schemas import build_connection_schema, build_options_schema
 from ..const import DOMAIN
@@ -215,8 +215,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
             if OptionsKey.ALARM_PANEL_TYPE in user_input:
                 self._options.alarm_panel_type = user_input[OptionsKey.ALARM_PANEL_TYPE]
-            self._options.alarm_panel_native = extract_native_panel(
-                user_input.get(OptionsKey.ALARM_PANEL_NATIVE)) or None
+            self._options.alarm_panel_native = extract_native_panel_sections(user_input) or None
 
             assert self._data.serial_number is not None
             return self.async_create_entry(
@@ -412,8 +411,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             # Native panel (independent of PrimeLAN): type selector + mapping.
             if OptionsKey.ALARM_PANEL_TYPE in user_input:
                 self._options.alarm_panel_type = user_input[OptionsKey.ALARM_PANEL_TYPE]
-            self._options.alarm_panel_native = extract_native_panel(
-                user_input.get(OptionsKey.ALARM_PANEL_NATIVE)) or None
+            self._options.alarm_panel_native = extract_native_panel_sections(user_input) or None
 
             assert self._data.serial_number is not None
             reconfigure_entry = self._get_reconfigure_entry()

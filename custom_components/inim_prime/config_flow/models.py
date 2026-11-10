@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypedDict
 
+from .const import OptionsKey
+
 from ..entry_data import (
     InimPrimeConfigData,
     NativeConfigData,
@@ -127,18 +129,23 @@ def clean_alarm_panel(raw: dict | None) -> dict[str, int]:
         return {}
     return {key: int(value) for key, value in raw.items() if value is not None and value != ""}
 
-def extract_native_panel(flat: dict | None) -> dict[str, dict[str, list[int]]]:
-    """Reshape the flat options section ('command__mode' -> ids) into the nested
-    {command: {mode: [ids]}} mapping, dropping empties."""
-    if not flat:
+def extract_native_panel_sections(data: dict | None) -> dict[str, dict[str, list[int]]]:
+    """Reshape the per-command sections of the options form into the nested
+    {command: {mode|outputs: [ids]}} mapping.
+
+    Each Native command is its own form section (keyed by the command, e.g.
+    'arm_away'), whose fields are the modes ('total'/'stay'/'instant') and
+    'outputs'. The matching keys are popped from ``data`` so they are not stored
+    as stray top-level options."""
+    if not data:
         return {}
-    nested: dict[str, dict[str, list]] = {}
-    for field, value in flat.items():
-        if "__" not in field:
-            continue
-        command, mode = field.split("__", 1)
-        nested.setdefault(command, {})[mode] = value
-    return clean_native_panel(nested)
+    raw: dict[str, dict] = {}
+    for command in OptionsKey.AlarmPanel.NATIVE_OUTPUT_COMMANDS:
+        if command in data:
+            section = data.pop(command)
+            if isinstance(section, dict):
+                raw[command] = section
+    return clean_native_panel(raw)
 
 def clean_native_panel(raw: dict | None) -> dict[str, dict[str, list[int]]]:
     """Normalise the Native-panel mapping {command: {mode: [partition_ids]}}.

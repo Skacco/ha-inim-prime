@@ -11,7 +11,7 @@ from custom_components.inim_prime.alarm_control_panel import (
 from custom_components.inim_prime.config_flow.const import OptionsKey
 from custom_components.inim_prime.config_flow.models import (
     clean_native_panel,
-    extract_native_panel,
+    extract_native_panel_sections,
 )
 from custom_components.inim_prime.entities.alarm_panel import PartitionAlarmPanel
 from custom_components.inim_prime.models.partitions import (
@@ -49,15 +49,21 @@ def _panel(parts, targets):
     return PartitionAlarmPanel(_FakeCoord(parts), targets)
 
 
-def test_extract_native_panel():
-    flat = {
-        "arm_away__total": ["1", "2"],
-        "arm_away__instant": ["3"],
-        "arm_away__stay": [],
-        "arm_home__total": [],
+def test_extract_native_panel_sections():
+    data = {
+        "arm_away": {"total": ["1", "2"], "instant": ["3"], "stay": [], "outputs": ["5", "6"]},
+        "disarm": {"outputs": ["7"]},
+        "arm_home": {"total": [], "outputs": []},   # empty -> dropped
+        "scan_intervals": {"zones": 5000},          # unrelated -> left intact
     }
-    assert extract_native_panel(flat) == {"arm_away": {"total": [1, 2], "instant": [3]}}
-    assert extract_native_panel(None) == {}
+    assert extract_native_panel_sections(data) == {
+        "arm_away": {"total": [1, 2], "instant": [3], "outputs": [5, 6]},
+        "disarm": {"outputs": [7]},
+    }
+    # command sections are popped; unrelated keys stay
+    assert "arm_away" not in data and "disarm" not in data and "arm_home" not in data
+    assert data["scan_intervals"] == {"zones": 5000}
+    assert extract_native_panel_sections(None) == {}
 
 
 def test_clean_native_panel():
@@ -95,17 +101,10 @@ def test_native_output_map_builds_per_command_outputs():
     assert _native_output_map({}) == {}
 
 
-def test_extract_native_panel_keeps_outputs():
-    flat = {
-        "arm_away__total": ["1"],
-        "arm_away__outputs": ["5", "6"],
-        "disarm__outputs": ["7"],
-        "arm_home__outputs": [],
-    }
-    assert extract_native_panel(flat) == {
-        "arm_away": {"total": [1], "outputs": [5, 6]},
-        "disarm": {"outputs": [7]},
-    }
+def test_extract_sections_ignores_non_dict_values():
+    # a stray non-dict under a command key must not crash extraction
+    data = {"arm_away": "oops", "arm_night": {"total": ["2"]}}
+    assert extract_native_panel_sections(data) == {"arm_night": {"total": [2]}}
 
 
 def test_supported_features_from_targets():

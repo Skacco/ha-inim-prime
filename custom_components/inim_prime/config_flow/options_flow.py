@@ -7,7 +7,7 @@ from homeassistant.config_entries import OptionsFlowWithReload
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
-from .models import ConfigOptions, clean_alarm_panel, extract_native_panel
+from .models import ConfigOptions, clean_alarm_panel, extract_native_panel_sections
 from ..entry_data import get_entry_options, get_entry_data
 from ..cover import discover_shutters, _SHUTTER_LABEL
 from .schemas import build_options_schema, shutter_section_key
@@ -25,10 +25,9 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 alarm_panel = clean_alarm_panel(data.pop("alarm_panel"))
                 if alarm_panel:
                     data["alarm_panel"] = alarm_panel
-            if OptionsKey.ALARM_PANEL_NATIVE in data:
-                native_panel = extract_native_panel(data.pop(OptionsKey.ALARM_PANEL_NATIVE))
-                if native_panel:
-                    data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
+            native_panel = extract_native_panel_sections(data)  # pops command sections
+            if native_panel:
+                data[OptionsKey.ALARM_PANEL_NATIVE] = native_panel
             shutter_commands = _extract_shutter_commands(data)  # pops the sections
             if shutter_commands:
                 data[OptionsKey.SHUTTER_COMMANDS] = shutter_commands
