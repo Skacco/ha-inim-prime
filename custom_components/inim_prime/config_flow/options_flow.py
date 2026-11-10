@@ -4,6 +4,9 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import OptionsFlowWithReload
+from homeassistant.helpers.selector import (
+    SelectOptionDict, SelectSelector, SelectSelectorConfig, SelectSelectorMode,
+)
 
 from .const import OptionsKey
 from ..const import SHUTTER_COMMAND_FIELDS
@@ -14,8 +17,6 @@ from .schemas import (
     build_scan_intervals_schema,
     build_general_params_schema,
     build_shutters_schema,
-    build_alarm_method_schema,
-    build_alarm_scenario_schema,
     build_alarm_partitions_schema,
 )
 
@@ -40,7 +41,8 @@ _STEP_TO_CMD = {
     "cmd_arm_night": OptionsKey.AlarmPanel.ARM_NIGHT,
     "cmd_arm_vacation": OptionsKey.AlarmPanel.ARM_VACATION,
 }
-_METHOD_FIELD = OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method"
+# Dropdown value meaning "arm via custom partitions" (scenario ids are digits).
+_PARTITIONS_CHOICE = "partizioni"
 _SCAN_INTERVAL_KEYS = frozenset(
     v for k, v in vars(OptionsKey.ScanIntervals).items()
     if not k.startswith("_") and isinstance(v, str)
@@ -59,7 +61,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     """
 
     _cmd: str | None = None
-    _method: str | None = None
+    # Commands still waiting for their partitions form (see alarm_form).
+    _queue: list | None = None
     # In-memory working copy of the options; written to the entry only on
     # "Save and exit". Loaded from the stored options on first use.
     _loaded: bool = False
@@ -120,22 +123,75 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     def _alarm_label(self, cmd: str) -> str:
         """Menu label showing the command's current (pending) configuration."""
         name = _CMD_LABELS.get(cmd, cmd)
-        if cmd in self._scenarios:
-            sid = self._scenarios[cmd]
-            scen = dict(self._scenario_choices()).get(sid, f"Scenario {sid}")
-            return f"{name} — Scenario «{scen}»"
         if self._natives.get(cmd):
             return f"{name} — Partizioni"
         return f"{name} — —"
 
     async def async_step_alarm(self, user_input: dict[str, Any] | None = None):
-        # Dynamic labels (dict menu) so each command shows its current config.
         self._load()
+        # With scenarios available (PrimeLAN) the whole panel is one form: a
+        # dropdown per command. Native-only has no scenarios, so it keeps the
+        # per-command list leading to the partitions form.
+        if self._has_primelan:
+            return await self.async_step_alarm_form()
         menu: dict[str, str] = {
             step: self._alarm_label(_STEP_TO_CMD[step]) for step in _CMD_STEPS
         }
         menu["init"] = "‹ Torna al menù"
         return self.async_show_menu(step_id="alarm", menu_options=menu)
+
+    async def async_step_alarm_form(self, user_input: dict[str, Any] | None = None):
+        """One dropdown per command: unset, a scenario by name, or (with Native)
+        "custom partitions" -- which opens that command's partitions form next."""
+        self._load()
+        if user_input is not None:
+            queue: list[str] = []
+            for cmd in _STEP_TO_CMD.values():
+                value = user_input.get(cmd)
+                if value in (None, ""):
+                    self._scenarios.pop(cmd, None)
+                    self._natives.pop(cmd, None)
+                elif value == _PARTITIONS_CHOICE:
+                    self._scenarios.pop(cmd, None)
+                    queue.append(cmd)
+                else:
+                    self._scenarios[cmd] = int(value)
+                    self._natives.pop(cmd, None)
+            self._queue = queue
+            return await self._next_detail()
+
+        options = [
+            SelectOptionDict(value=str(sid), label=name)
+            for sid, name in self._scenario_choices()
+        ]
+        if self._has_native:
+            options.append(SelectOptionDict(
+                value=_PARTITIONS_CHOICE, label="Partizioni personalizzate…",
+            ))
+        schema: dict = {}
+        for cmd in _STEP_TO_CMD.values():
+            if cmd in self._scenarios:
+                current = str(self._scenarios[cmd])
+            elif self._natives.get(cmd):
+                current = _PARTITIONS_CHOICE
+            else:
+                current = None
+            schema[vol.Optional(
+                cmd, description={"suggested_value": current},
+            )] = SelectSelector(SelectSelectorConfig(
+                options=options, mode=SelectSelectorMode.DROPDOWN,
+            ))
+        return self.async_show_form(
+            step_id="alarm_form", data_schema=vol.Schema(schema), last_step=False,
+        )
+
+    async def _next_detail(self):
+        # Partitions forms for the commands set to "custom partitions", one
+        # after the other; then back to the main menu.
+        if self._queue:
+            self._cmd = self._queue.pop(0)
+            return await self.async_step_cmd_detail()
+        return await self.async_step_init()
 
     # --- General parameters (no intervals, no alarm, no shutters) -------
     async def async_step_params(self, user_input: dict[str, Any] | None = None):
@@ -233,90 +289,41 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return await self._enter_command(OptionsKey.AlarmPanel.ARM_VACATION)
 
     async def _enter_command(self, command: str):
+        # Native-only path (from the command list).
         self._load()
         self._cmd = command
-        if self._has_native and self._has_primelan:
-            return await self.async_step_method()
-        self._method = (
-            OptionsKey.PanelType.PARTIZIONI if self._has_native
-            else OptionsKey.PanelType.SCENARI
-        )
-        return await self.async_step_cmd_detail()
-
-    async def async_step_method(self, user_input: dict[str, Any] | None = None):
-        # A menu (not a form) so it carries a "‹ Indietro" entry, and the labels
-        # mark which method is currently configured for this command.
-        self._load()
-        cmd = self._cmd
-        if cmd in self._scenarios:
-            sid = self._scenarios[cmd]
-            name = dict(self._scenario_choices()).get(sid, f"Scenario {sid}")
-            scen_label = f"● Scenario — attuale: «{name}»"
-        else:
-            scen_label = "Scenario"
-        part_label = (
-            "● Partizioni (Native) — attuale"
-            if self._natives.get(cmd) else "Partizioni (Native)"
-        )
-        return self.async_show_menu(
-            step_id="method",
-            menu_options={
-                "method_scenario": scen_label,
-                "method_partizioni": part_label,
-                "alarm": "‹ Indietro",
-            },
-            description_placeholders={"command": _CMD_LABELS.get(cmd, cmd)},
-        )
-
-    async def async_step_method_scenario(self, user_input=None):
-        self._method = OptionsKey.PanelType.SCENARI
-        return await self.async_step_cmd_detail()
-
-    async def async_step_method_partizioni(self, user_input=None):
-        self._method = OptionsKey.PanelType.PARTIZIONI
         return await self.async_step_cmd_detail()
 
     async def async_step_cmd_detail(self, user_input: dict[str, Any] | None = None):
-        # Reads and writes the in-memory maps; "Save and exit" persists them.
+        """Partitions form of one command (mode per partition + outputs).
+
+        Reads and writes the in-memory maps; "Save and exit" persists them.
+        """
         self._load()
 
         if user_input is not None:
-            if self._method == OptionsKey.PanelType.PARTIZIONI:
-                index = {label: pid for pid, label in self._partition_choices()}
-                entry = extract_command_partitions(dict(user_input), index)
-                if entry:
-                    self._natives[self._cmd] = entry
-                else:
-                    self._natives.pop(self._cmd, None)
-                self._scenarios.pop(self._cmd, None)
+            index = {label: pid for pid, label in self._partition_choices()}
+            entry = extract_command_partitions(dict(user_input), index)
+            if entry:
+                self._natives[self._cmd] = entry
             else:
-                value = user_input.get(OptionsKey.AlarmPanel.SCENARIO_FIELD)
-                if value not in (None, ""):
-                    self._scenarios[self._cmd] = int(value)
-                else:
-                    self._scenarios.pop(self._cmd, None)
                 self._natives.pop(self._cmd, None)
-            # Back to the submenu (not closing) so more commands can be edited.
+            self._scenarios.pop(self._cmd, None)
+            if self._has_primelan:
+                return await self._next_detail()
             return await self.async_step_alarm()
 
-        if self._method == OptionsKey.PanelType.PARTIZIONI:
-            _, output_choices = self._shutter_context()
-            schema = build_alarm_partitions_schema(
-                self._cmd, self._natives.get(self._cmd),
-                self._partition_choices(), output_choices,
-            )
-        else:
-            schema = build_alarm_scenario_schema(
-                self._scenarios.get(self._cmd), self._scenario_choices(),
-            )
+        _, output_choices = self._shutter_context()
+        schema = build_alarm_partitions_schema(
+            self._cmd, self._natives.get(self._cmd),
+            self._partition_choices(), output_choices,
+        )
         return self.async_show_form(
             step_id="cmd_detail",
             data_schema=vol.Schema(schema),
             description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
-            # Not the last step: submitting returns to the command list, where the
-            # real save ("Salva ed esci") lives. So HA labels the button "Avanti"
-            # (Next) instead of the misleading "Invia", and tends to show a back
-            # arrow. HA has no way to label a form button "Salva".
+            # Not the last step (the single save is on the main menu): HA shows
+            # "Avanti" instead of "Invia". HA can't label a form button "Salva".
             last_step=False,
         )
 

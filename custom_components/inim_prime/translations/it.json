@@ -243,7 +243,7 @@
       },
       "alarm": {
         "title": "Pannello allarme",
-        "description": "Scegli un comando per impostarlo: ogni voce mostra la configurazione attuale. «‹ Torna al menù» torna al menù principale, dove salvi tutto con «💾 Salva ed esci». Finché non salvi non viene scritto nulla.",
+        "description": "Scegli un comando per impostare le sue partizioni: ogni voce mostra la configurazione attuale. «‹ Torna al menù» torna al menù principale, dove salvi tutto con «💾 Salva ed esci».",
         "menu_options": {
           "cmd_disarm": "Disinserimento",
           "cmd_arm_away": "Fuori casa",
@@ -251,6 +251,17 @@
           "cmd_arm_night": "Notte",
           "cmd_arm_vacation": "Vacanza",
           "init": "‹ Indietro"
+        }
+      },
+      "alarm_form": {
+        "title": "Pannello allarme",
+        "description": "Per ogni comando scegli cosa deve fare la centrale: uno scenario (per nome) oppure «Partizioni personalizzate…», che dopo «Avanti» apre il dettaglio delle partizioni e dell'attivazione uscite di quel comando. Lascia vuoto un comando per non offrirlo nel pannello.",
+        "data": {
+          "disarm": "Disinserimento",
+          "arm_away": "Fuori casa",
+          "arm_home": "In casa",
+          "arm_night": "Notte",
+          "arm_vacation": "Vacanza"
         }
       },
       "params": {
@@ -292,23 +303,11 @@
         "title": "Tapparelle",
         "description": "Per ogni tapparella scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi tenda sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso: non c'è uno stop, ma durante la corsa puoi inviare un altro comando e la tapparella prende subito il nuovo comando. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
       },
-      "method": {
-        "title": "Allarme · metodo",
-        "description": "Scegli come eseguire «{command}»: con uno scenario della centrale oppure impostando direttamente le partizioni.",
-        "menu_options": {
-          "method_scenario": "Scenario",
-          "method_partizioni": "Partizioni (Native)",
-          "alarm": "‹ Indietro"
-        }
-      },
       "cmd_detail": {
         "title": "Allarme · {command}",
+        "description": "Imposta la modalità di ogni partizione per «{command}» e, se serve, le uscite da attivare.",
         "data": {
-          "scenario": "Scenario",
           "outputs": "Attivazione uscite"
-        },
-        "data_description": {
-          "scenario": "Scegli dalla tendina lo scenario (letto dalla centrale) da attivare per questo comando."
         }
       }
     }

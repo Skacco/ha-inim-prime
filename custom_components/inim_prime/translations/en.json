@@ -243,7 +243,7 @@
       },
       "alarm": {
         "title": "Alarm panel",
-        "description": "Pick a command to set it: each entry shows its current configuration. “‹ Back to menu” returns to the main menu, where “💾 Save and exit” saves everything. Nothing is written until you save.",
+        "description": "Pick a command to set its partitions: each entry shows its current configuration. “‹ Back to menu” returns to the main menu, where “💾 Save and exit” saves everything.",
         "menu_options": {
           "cmd_disarm": "Disarm",
           "cmd_arm_away": "Away",
@@ -251,6 +251,17 @@
           "cmd_arm_night": "Night",
           "cmd_arm_vacation": "Vacation",
           "init": "‹ Back"
+        }
+      },
+      "alarm_form": {
+        "title": "Alarm panel",
+        "description": "For each command choose what the panel should do: a scenario (by name) or “Custom partitions…”, which after “Next” opens that command's partitions and output-activation detail. Leave a command empty to not offer it in the panel.",
+        "data": {
+          "disarm": "Disarm",
+          "arm_away": "Away",
+          "arm_home": "Home",
+          "arm_night": "Night",
+          "arm_vacation": "Vacation"
         }
       },
       "params": {
@@ -292,23 +303,11 @@
         "title": "Roller shutters",
         "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi tenda sala\"). The Smart module runs the full travel from a single trigger: there is no stop, but while it is moving you can send another command and the shutter immediately takes the new one. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
       },
-      "method": {
-        "title": "Alarm · method",
-        "description": "Choose how to run “{command}”: a panel scenario, or by arming the partitions directly.",
-        "menu_options": {
-          "method_scenario": "Scenario",
-          "method_partizioni": "Partitions (Native)",
-          "alarm": "‹ Back"
-        }
-      },
       "cmd_detail": {
         "title": "Alarm · {command}",
+        "description": "Set each partition's mode for «{command}» and, if needed, the outputs to activate.",
         "data": {
-          "scenario": "Scenario",
           "outputs": "Output activation"
-        },
-        "data_description": {
-          "scenario": "Pick the scenario (read from the panel) to activate for this command from the dropdown."
         }
       }
     }

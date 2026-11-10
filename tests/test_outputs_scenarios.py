@@ -293,24 +293,22 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         result = await opts.async_init(entry.entry_id)
         # Main menu carries the single save entry.
         assert "save_exit" in result["menu_options"]
+        # PrimeLAN -> the alarm panel is one form: a scenario dropdown per command.
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
-        # The submenu shows a dynamic label per command (current config).
-        assert any("Disinserimento" in lbl for lbl in result["menu_options"].values())
-
-        # Scenario is a form with a name dropdown (PrimeLAN-only -> straight to it).
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_disarm"})
-        sel = next(v for k, v in result["data_schema"].schema.items() if str(k) == "scenario")
-        labels = {o["label"] for o in sel.config["options"]}
+        assert result["type"] == "form" and result["step_id"] == "alarm_form"
+        fields = {str(k): v for k, v in result["data_schema"].schema.items()}
+        assert set(fields) == {"disarm", "arm_away", "arm_home", "arm_night", "arm_vacation"}
+        labels = {o["label"] for o in fields["disarm"].config["options"]}
         assert {"Spento", "Totale", "Notte"} <= labels
-        # Submitting returns to the submenu (no close, nothing saved yet).
-        result = await opts.async_configure(result["flow_id"], {"scenario": "0"})
-        assert result["type"] == "menu" and result["step_id"] == "alarm"
-        assert "alarm_panel" not in entry.options  # not persisted until save
+        # PrimeLAN-only: no "custom partitions" choice.
+        assert "partizioni" not in {o["value"] for o in fields["disarm"].config["options"]}
 
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "cmd_arm_away"})
-        result = await opts.async_configure(result["flow_id"], {"scenario": "2"})
-        # Back to the main menu, then the single "Save and exit".
-        result = await opts.async_configure(result["flow_id"], {"next_step_id": "init"})
+        # Submitting returns to the main menu; nothing is saved until "Save and exit".
+        result = await opts.async_configure(
+            result["flow_id"], {"disarm": "0", "arm_away": "2"},
+        )
+        assert result["type"] == "menu" and result["step_id"] == "init"
+        assert "alarm_panel" not in entry.options
         await opts.async_configure(result["flow_id"], {"next_step_id": "save_exit"})
         await hass.async_block_till_done()
     assert entry.options["alarm_panel"] == {"disarm": 0, "arm_away": 2}
@@ -503,3 +501,53 @@ async def test_alarm_panel_keypad_arming_settles(hass: HomeAssistant):
         await coords.scenarios.async_refresh()
         await hass.async_block_till_done()
         assert hass.states.get(eid).state == "armed_vacation"
+
+
+async def test_alarm_form_mixed_scenario_and_partitions():
+    """Both integration modes: scenarios from the dropdown, and "custom
+    partitions" opens that command's partitions form before returning."""
+    from custom_components.inim_prime.config_flow.options_flow import (
+        InimPrimeOptionsFlowHandler,
+    )
+
+    class Flow(InimPrimeOptionsFlowHandler):
+        _has_native = True
+        _has_primelan = True
+
+        def __init__(self):
+            self._pending = {"alarm_panel": {"disarm": 0}, "alarm_panel_native": {}}
+            self._loaded = True
+
+        def _scenario_choices(self):
+            return [(0, "Spento"), (2, "Notte")]
+
+        def _partition_choices(self):
+            return [(1, "Casa"), (2, "Esterni")]
+
+        def _shutter_context(self):
+            return [], []
+
+        def async_show_form(self, **kw):
+            return {"type": "form", **kw}
+
+        def async_show_menu(self, **kw):
+            return {"type": "menu", **kw}
+
+    flow = Flow()
+    form = await flow.async_step_alarm()
+    assert form["step_id"] == "alarm_form"
+    sel = next(v for k, v in form["data_schema"].schema.items() if str(k) == "arm_vacation")
+    assert "partizioni" in {o["value"] for o in sel.config["options"]}
+
+    # Night by scenario, Vacation by custom partitions, Disarm cleared.
+    result = await flow.async_step_alarm_form(
+        {"arm_night": "2", "arm_vacation": "partizioni"}
+    )
+    assert result["step_id"] == "cmd_detail"          # partitions form for Vacation
+    assert flow._cmd == "arm_vacation"
+    assert flow._pending["alarm_panel"] == {"arm_night": 2}
+
+    result = await flow.async_step_cmd_detail({"Casa": "total", "Esterni": "instant"})
+    assert result["type"] == "menu" and result["step_id"] == "init"
+    assert flow._pending["alarm_panel_native"]["arm_vacation"]
+    assert "arm_vacation" not in flow._pending["alarm_panel"]

@@ -183,23 +183,20 @@ L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme*, — **solo se la centrale ha moduli tapparella** — *Tapparelle*, e **💾 Salva ed esci**. Ogni sezione modifica una copia in memoria e torna al menù; **niente viene scritto finché non premi «💾 Salva ed esci»**. La **X** in alto chiude senza salvare. Così c'è un solo salvataggio e un solo annulla: tornare indietro non salva mai nulla a metà.
 
-In *Pannello allarme* c'è un elemento per ciascun comando (Disinserimento / Fuori casa / In casa / Notte / Vacanza): **ogni voce mostra la configurazione attuale** (es. *Notte — Scenario «Notte»* o *Notte — Partizioni*). Imposti i comandi che vuoi e torni al menù con **‹ Torna al menù**; il salvataggio è quello unico del menù principale.
+In *Pannello allarme* (con scenari disponibili, cioè con PrimeLAN) c'è **una sola schermata con una tendina per comando** (Disinserimento / Fuori casa / In casa / Notte / Vacanza). Ogni tendina elenca:
+- gli **scenari della centrale per nome**;
+- **Partizioni personalizzate…** (solo se è attiva anche la modalità Native);
+- vuoto (la X nella tendina) = comando non offerto nel pannello.
 
-Scegli un comando e, **con entrambe le modalità di integrazione**, scegli il **Metodo** da un menù (*Scenario* / *Partizioni* / *‹ Indietro*); la voce del metodo **attualmente impostato** è marcata con ●:
-- **Scenario** → un form con una **tendina** che elenca i **nomi degli scenari** letti dalla centrale: scegli quello da attivare (la X nella tendina lo lascia non impostato).
-- **Partizioni** → un form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**.
-
-Entrambi sono form a tendine: si confermano con **«Avanti»** (torni all'elenco; il salvataggio vero è l'unico *Salva ed esci* del menù). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form.
-
-Vedi **solo** i campi del metodo scelto; una partizione ha **una sola modalità** per comando (stato doppio impossibile). Dopo ogni comando torni all'elenco: continua con gli altri, torna al menù e premi **💾 Salva ed esci** (unico salvataggio). Anche i form (Parametri, Intervalli, Tapparelle, Partizioni) usano **«Avanti»** e tornano al menù, dove avviene il salvataggio.
+Vedi subito cosa è impostato per tutti i comandi. Premi **«Avanti»**: per ogni comando su *Partizioni personalizzate…* si apre il suo form con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**; poi torni al menù, dove salvi con **💾 Salva ed esci**. Una partizione ha **una sola modalità** per comando (stato doppio impossibile). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form, per questo i form usano «Avanti».
 
 Esempio tipico (entrambe le modalità):
-- **Fuori casa** → Metodo *Scenario*, Scenario = `2` (mantieni l'avviso finestre aperte per l'uso quotidiano)
-- **Notte** → Metodo *Scenario*, Scenario = `3`
-- **Vacanza** → Metodo *Partizioni*, poi su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
-- **Disinserimento** → Metodo *Scenario*, Scenario = `1` (oppure *Partizioni* senza nulla = spegne tutte)
+- **Fuori casa** → scenario *Acceso giorno* (mantieni l'avviso finestre aperte per l'uso quotidiano)
+- **Notte** → scenario *Acceso notte*
+- **Vacanza** → *Partizioni personalizzate…*, poi su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
+- **Disinserimento** → scenario *Spento* (oppure *Partizioni personalizzate…* senza nulla = spegne tutte)
 
-> Con una sola modalità di integrazione il Metodo non viene chiesto: solo Native → sempre a partizioni; solo PrimeLAN → sempre a scenari.
+> Solo Native → non ci sono scenari: *Pannello allarme* mostra l'elenco dei comandi e ognuno apre direttamente il form partizioni. Solo PrimeLAN → le tendine contengono solo scenari.
 
 Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
