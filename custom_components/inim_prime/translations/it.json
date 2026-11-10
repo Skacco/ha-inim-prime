@@ -172,7 +172,7 @@
       },
       "reconfigure": {
         "title": "Riconfigura INIM Prime",
-        "description": "Scegli quali modalità di integrazione usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
+        "description": "Da qui cambi la modalità di integrazione (Native / PrimeLAN / Entrambi) e i parametri di connessione.\n\nScegli quali modalità di integrazione usare per questa centrale.\n\n• Native — zone, partizioni, inserimento/disinserimento, uscite, timer e tapparelle. Polling locale veloce.\n• PrimeLAN — aggiunge scenari, stato GSM, guasti di sistema e il registro eventi.\n• Entrambi — tutto quanto sopra (Native dove può, PrimeLAN per il resto).\n\nSolo Native copre comunque l'essenziale; PrimeLAN richiede la scheda PrimeLAN e la sua chiave API.",
         "menu_options": {
           "reconfigure_native_only": "Solo Native",
           "reconfigure_primelan_only": "Solo PrimeLAN",
@@ -345,6 +345,7 @@
     "step": {
       "init": {
         "title": "Opzioni INIM Prime",
+        "description": "Per cambiare la modalità di integrazione (Native / PrimeLAN) o i parametri di connessione usa Riconfigura (menù ⋮ sulla scheda dell'integrazione).",
         "menu_options": {
           "params": "Parametri generali",
           "scan": "Intervalli di scansione",
