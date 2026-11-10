@@ -10,9 +10,13 @@ native grows those features. Outputs come from native when it is configured
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
+import time
 from dataclasses import replace
 from types import MappingProxyType
+
+_LOGGER = logging.getLogger(__name__)
 
 from .adapters.native_adapter import NativeAdapter
 from .models.timers import UnifiedTimer
@@ -148,11 +152,16 @@ class InimPrimeGateway:
         # The Native TCP link and the PrimeLAN HTTPS session are independent, so
         # open them concurrently -- the slow PrimeLAN TLS handshake no longer
         # waits for (or adds to) the Native connect.
+        async def _timed(name: str, coro) -> None:
+            t = time.monotonic()
+            await coro
+            _LOGGER.warning("[timing] connect %s -> %.1fs", name, time.monotonic() - t)
+
         tasks = []
         if self._native is not None:
-            tasks.append(self._native.connect())
+            tasks.append(_timed("native", self._native.connect()))
         if self._primelan is not None:
-            tasks.append(self._primelan.connect())
+            tasks.append(_timed("primelan", self._primelan.connect()))
         if tasks:
             await asyncio.gather(*tasks)
 
