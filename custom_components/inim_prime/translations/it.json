@@ -289,7 +289,7 @@
       },
       "shutters": {
         "title": "Tapparelle",
-        "description": "Il titolo di ogni sezione è il nome del modulo Mod.dom letto dalla centrale (non modificabile qui). Per ogni tapparella scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi tenda sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso e non ha stop. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
+        "description": "Per ogni tapparella scegli l'uscita comando che la apre e quella che la chiude (es. \"Apri tenda sala\" / \"Chiudi tenda sala\"). Il modulo Smart esegue l'intera corsa da un singolo impulso: non c'è uno stop, ma durante la corsa puoi inviare un altro comando e la tapparella prende subito il nuovo comando. Puoi anche impostare i comandi 25/50/75% (uscite di apertura parziale) per abilitare lo slider di posizione, che si allinea al valore più vicino. Lascia vuoto per non mappare una tapparella."
       },
       "method": {
         "title": "Allarme · {command} — metodo",

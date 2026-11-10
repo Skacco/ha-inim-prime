@@ -207,7 +207,7 @@ Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una
 - **Entrambe le modalità di integrazione** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
 
 ## Tapparelle
-Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale.
+Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale. Durante la corsa puoi inviare un altro comando e la tapparella prende subito il nuovo comando (es. da "apri" a "chiudi" senza aspettare la fine).
 
 **Prerequisito sulla centrale (INIM/SmartLiving).** Prima di configurare l'integrazione devi creare, sulla centrale, delle **uscite su terminali virtuali** — una per ogni posizione che vuoi comandare — e assegnare a ciascuna il relativo **comando di regolazione della tapparella**. Servono **5 uscite per ogni tapparella**, una per comando:
 

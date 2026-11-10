@@ -289,7 +289,7 @@
       },
       "shutters": {
         "title": "Roller shutters",
-        "description": "Each section's title is the Mod.dom module name read from the panel (not editable here). For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi tenda sala\"). The Smart module runs the full travel from a single trigger and has no stop. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
+        "description": "For each shutter choose the panel command output that opens it and the one that closes it (e.g. \"Apri tenda sala\" / \"Chiudi tenda sala\"). The Smart module runs the full travel from a single trigger: there is no stop, but while it is moving you can send another command and the shutter immediately takes the new one. You can also set 25/50/75% commands (partial-open outputs) to enable the position slider, which snaps to the nearest one. Leave empty to leave a shutter unmapped."
       },
       "method": {
         "title": "Alarm · {command} — method",
