@@ -125,6 +125,8 @@ Esempio tipico (entrambe le modalità):
 - **Vacanza** → *Aree personalizzate…*, poi nella sezione sotto, su ogni area la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
 - **Disattivato** → *➜ Tutte le aree disinserite* (consigliato: è il comando più veloce) oppure lo scenario *Spento*
 
+> **Consiglio per il disinserimento.** Con entrambe le modalità attive, per **Disattivato** scegli **«➜ Tutte le aree disinserite»** invece dello scenario *Spento*: il comando passa dal protocollo Native anziché da PrimeLAN ed è sensibilmente più rapido (nelle prove circa 2 secondi contro 4,5–6). Lo scenario *Spento* serve solo se sulla centrale gli hai collegato altre azioni.
+
 > Solo Native → non ci sono scenari: *Pannello allarme* mostra l'elenco dei comandi e ognuno apre direttamente il form aree. Solo PrimeLAN → le tendine contengono solo scenari.
 
 Le aree non elencate restano disinserite. Lo **stato** mostrato in HA: un'area in allarme → *triggered*; altrimenti, se un comando a aree combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.

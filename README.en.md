@@ -125,6 +125,8 @@ Typical example (both modes):
 - **Vacation** → *Custom partitions…*, then in the section below, the mode for each partition (e.g. perimeter *Total*, indoor motion *Instant*, the others *Disarmed*) — it forces arming with a mix scenarios can't replicate
 - **Disarmed** → *➜ All partitions disarmed* (recommended: it is the fastest command) or the scenario *Off*
 
+> **Tip for disarming.** With both modes active, for **Disarmed** pick **“➜ All partitions disarmed”** rather than the scenario *Off*: the command goes through the Native protocol instead of PrimeLAN and is noticeably faster (about 2 seconds versus 4.5–6 in testing). The scenario *Off* is only needed if you tied other actions to it on the panel.
+
 > Native only → there are no scenarios: *Alarm panel* shows the list of commands and each one opens the partitions form directly. PrimeLAN only → the dropdowns contain scenarios only.
 
 Partitions not listed stay disarmed. The **state** shown in HA: a partition in alarm → *triggered*; otherwise, if a partitions command matches the current state exactly it shows that, otherwise the active scenario applies, otherwise *disarmed*/*custom bypass*.
