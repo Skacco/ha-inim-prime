@@ -36,6 +36,9 @@ class PartitionStateSensor(
 ):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedPartitionState]
+    # The values stay as they are (automations rely on them); the translation
+    # only changes how they are shown.
+    _attr_translation_key = "area_state"
     _attr_icon = "mdi:magnify"
     # Diagnostic so it groups with Alarm memory under the device's "Diagnostica"
     # section, leaving the operational entities on top.
@@ -71,6 +74,9 @@ class PartitionArmingStatusSelect(
 ):
     _attr_icon = "mdi:shield-lock"
     _attr_options = [mode.name for mode in UnifiedArmingStatus]
+    # The values stay as they are (automations rely on them); the translation
+    # only changes how they are shown.
+    _attr_translation_key = "area_arming_status"
 
     def __init__(
             self,

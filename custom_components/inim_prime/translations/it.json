@@ -516,5 +516,35 @@
         "aree": "Aree (Native)"
       }
     }
+  },
+  "entity": {
+    "select": {
+      "area_arming_status": {
+        "state": {
+          "ARM_AWAY": "Totale",
+          "ARM_STAY": "Parziale",
+          "ARM_INSTANT": "Istantaneo",
+          "DISARMED": "Disinserita"
+        }
+      }
+    },
+    "sensor": {
+      "area_state": {
+        "state": {
+          "OK": "Normale",
+          "ALARM": "Allarme",
+          "TAMPER": "Sabotaggio"
+        }
+      },
+      "zone_state": {
+        "state": {
+          "STANDBY": "Riposo",
+          "ALARM": "Allarme",
+          "TAMPER": "Sabotaggio",
+          "SHORT_CIRCUIT": "Cortocircuito",
+          "UNKNOWN": "Sconosciuto"
+        }
+      }
+    }
   }
 }

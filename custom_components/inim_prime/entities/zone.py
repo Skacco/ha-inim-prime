@@ -63,6 +63,9 @@ class ZoneStateSensor(
 ):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [state.name for state in UnifiedZoneState]
+    # The values stay as they are (automations rely on them); the translation
+    # only changes how they are shown.
+    _attr_translation_key = "zone_state"
     _attr_icon = "mdi:magnify"
     # Diagnostic so it groups with Alarm memory under the device's "Diagnostica"
     # section, leaving the operational entities (open/closed + Esclusione) on top.

@@ -516,5 +516,35 @@
         "aree": "Partitions (Native)"
       }
     }
+  },
+  "entity": {
+    "select": {
+      "area_arming_status": {
+        "state": {
+          "ARM_AWAY": "Total",
+          "ARM_STAY": "Partial",
+          "ARM_INSTANT": "Instant",
+          "DISARMED": "Disarmed"
+        }
+      }
+    },
+    "sensor": {
+      "area_state": {
+        "state": {
+          "OK": "Normal",
+          "ALARM": "Alarm",
+          "TAMPER": "Tamper"
+        }
+      },
+      "zone_state": {
+        "state": {
+          "STANDBY": "Standby",
+          "ALARM": "Alarm",
+          "TAMPER": "Tamper",
+          "SHORT_CIRCUIT": "Short circuit",
+          "UNKNOWN": "Unknown"
+        }
+      }
+    }
   }
 }

@@ -873,3 +873,30 @@ async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
     # the only change: a default for a PrimeLAN interval the entry was missing
     assert after["scan_intervals"].pop("scenarios") == 10000
     assert after == before  # PIN, webhook, shutters, alarm panel: all kept
+
+
+async def test_area_and_zone_values_are_translated(hass: HomeAssistant):
+    """Values stay ARM_AWAY/..., but every one of them has a label to show."""
+    from homeassistant.helpers.translation import async_get_translations
+
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    registry = er.async_get(hass)
+    keys = {
+        e.translation_key for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+    }
+    assert {"area_arming_status", "area_state", "zone_state"} <= keys
+    select = next(
+        e for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if e.translation_key == "area_arming_status"
+    )
+    assert hass.states.get(select.entity_id).attributes["options"] == [
+        "ARM_AWAY", "ARM_STAY", "ARM_INSTANT", "DISARMED"]
+    for language, shown in (("it", "Totale"), ("en", "Total")):
+        texts = await async_get_translations(hass, language, "entity", {DOMAIN})
+        prefix = f"component.{DOMAIN}.entity."
+        assert texts[prefix + "select.area_arming_status.state.ARM_AWAY"] == shown
+        for value in ("OK", "ALARM", "TAMPER"):
+            assert prefix + f"sensor.area_state.state.{value}" in texts
+        for value in ("STANDBY", "ALARM", "TAMPER", "SHORT_CIRCUIT", "UNKNOWN"):
+            assert prefix + f"sensor.zone_state.state.{value}" in texts
