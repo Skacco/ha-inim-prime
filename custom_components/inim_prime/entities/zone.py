@@ -18,7 +18,7 @@ def create_zone_device_info(
     # name prefixes each entity ("Zona Basculante"), so keep it singular.
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_zones")},
-        name = "Zone",
+        name = "Inim Zone",
         model = "Inim Prime Zone",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )

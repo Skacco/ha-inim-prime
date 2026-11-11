@@ -30,7 +30,7 @@ class ThermostatTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{serial_number}_thermostat_{index}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_thermostats")},
-            name = "Termostati",
+            name = "Inim Termostati",
             model = "Inim Prime Termostati",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )

@@ -191,7 +191,7 @@ class InimPrimeShutterCover(
         self._attr_unique_id = f"{serial_number}_shutter_{module}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_shutters")},
-            name = "Tapparelle",
+            name = "Inim Tapparelle",
             model = "Inim Prime Tapparelle",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )

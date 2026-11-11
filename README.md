@@ -192,9 +192,9 @@ Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiam
 > Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 
 # Dispositivi disponibili
-L'integrazione raggruppa le entità in pochi dispositivi.
+L'integrazione raggruppa le entità in pochi dispositivi. I nomi iniziano tutti con «Inim», così anche gli ID delle entità (es. `button.inim_aree_casetta_cancella_memorie`).
 
-## Centrale Inim Prime
+## Inim Centrale
 Rappresenta la centrale.
 - **Sensori:** Zone escluse, Memorie allarme zone, Memorie allarme aree, Scenario attivo.
 - **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni modalità configurata — due se usi entrambi.
@@ -202,33 +202,33 @@ Rappresenta la centrale.
 - **Pulsanti:** Annulla esclusioni zone, Cancella memorie aree, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
 
-## Zone
+## Inim Zone
 Device unico che contiene tutte le zone. Per ogni zona:
 - **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…).
 - **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memorie allarme** (diagnostica).
 
-## Aree
+## Inim Aree
 Device unico con tutte le aree. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
 - **Stato** — ALARM / READY / SABOTAGE.
 - **Cancella memorie** (pulsante).
 - **Memorie allarme** (diagnostica).
 
-## Uscite
+## Inim Uscite
 Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off.
 
-## Tapparelle
+## Inim Tapparelle
 Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale posizione).
 
-## Termostati
+## Inim Termostati
 Device unico con i sensori di temperatura dei termostati (solo modalità Native, se presenti sulla centrale).
 
-## Timer
+## Inim Timer
 Device unico con i timer della centrale: un binary sensor "attivo" e uno switch "abilitato" per ciascuno. Creato **solo se la centrale ha dei timer** (come Termostati, Tapparelle e Uscite).
 
-## GSM
+## Inim GSM
 Operatore, Potenza segnale, Credito, Tensione alimentazione.
 
 # Configurazione consigliata

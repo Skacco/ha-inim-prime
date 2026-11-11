@@ -16,7 +16,7 @@ def create_outputs_device_info(serial_number: str) -> DeviceInfo:
     # All outputs share one "Uscite" device (like Zona / Partizione / Timer).
     return DeviceInfo(
         identifiers = {(DOMAIN, f"{serial_number}_outputs")},
-        name = "Uscite",
+        name = "Inim Uscite",
         model = "Inim Prime Uscite",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
     )

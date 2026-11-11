@@ -192,7 +192,7 @@ By default the webhook accepts **LAN** requests only (the panel calls it on the 
 > **Experimental**: the exact parameter names your panel sends should be verified in the field.
 
 # Available devices
-The integration groups entities into a few devices.
+The integration groups the entities into a few devices. In Home Assistant their names all start with "Inim" (Inim Centrale, Inim Zone, Inim Aree, …), and so do the entity IDs.
 
 ## Inim Prime panel
 Represents the panel.

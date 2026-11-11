@@ -14,7 +14,7 @@ def create_gsm_device_info(
 ) -> DeviceInfo:
     return DeviceInfo(
         identifiers = {(domain, f"{serial_number}_gsm")},
-        name = "GSM",
+        name = "Inim GSM",
         model = "Inim Prime GSM",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         sw_version = sw_version,
