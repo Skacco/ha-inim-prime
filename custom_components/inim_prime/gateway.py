@@ -68,7 +68,9 @@ class InimPrimeGateway:
         # While an alarm command waits for its confirmation, routine polls
         # (zones, outputs, timers, thermostats) answer from their cache: the
         # native link serves one request at a time and would make it queue.
-        self._poll_hold_until: float = 0.0
+        self._poll_released = asyncio.Event()
+        self._poll_released.set()
+        self._poll_hold_timer: asyncio.TimerHandle | None = None
         # False (default) = show only the outputs PrimeLAN publishes to the
         # linked user (matched on terminal id), like the panel apps. True = also
         # show the panel's internal/mainboard outputs that aren't on PrimeLAN.
@@ -126,14 +128,30 @@ class InimPrimeGateway:
         })
 
     def hold_polling(self, seconds: float) -> None:
-        """Pause routine polls for at most `seconds` (see _poll_hold_until)."""
-        self._poll_hold_until = asyncio.get_running_loop().time() + seconds
+        """Pause routine polls until release_polling(), at most `seconds`."""
+        if self._poll_hold_timer is not None:
+            self._poll_hold_timer.cancel()
+        self._poll_released.clear()
+        self._poll_hold_timer = asyncio.get_running_loop().call_later(
+            seconds, self.release_polling
+        )
 
     def release_polling(self) -> None:
-        self._poll_hold_until = 0.0
+        if self._poll_hold_timer is not None:
+            self._poll_hold_timer.cancel()
+            self._poll_hold_timer = None
+        self._poll_released.set()
 
     def _polling_held(self) -> bool:
-        return asyncio.get_running_loop().time() < self._poll_hold_until
+        return not self._poll_released.is_set()
+
+    async def _wait_polling_released(self) -> None:
+        """Routine PrimeLAN polls wait here while a command is in progress.
+
+        The panel answers PrimeLAN requests slowly when several run at once
+        (measured: a command takes ~1s alone, 4-6s next to other requests).
+        """
+        await self._poll_released.wait()
 
     async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
         if self._native is None:
@@ -355,25 +373,31 @@ class InimPrimeGateway:
             return await self._primelan.update_outputs()
         raise InimPrimeFeatureNotSupportedError("Outputs require Native or PrimeLAN")
 
-    async def update_scenarios(self) -> MappingProxyType[int, UnifiedScenario]:
+    async def update_scenarios(self, force: bool = False) -> MappingProxyType[int, UnifiedScenario]:
+        """`force` is for the command in progress itself (it must not wait)."""
         if self._primelan is None:
             raise InimPrimeFeatureNotSupportedError("Scenarios require PrimeLAN")
+        if not force:
+            await self._wait_polling_released()
         return await self._primelan.update_scenarios()
 
     async def update_gsm(self) -> UnifiedGSM:
         if self._primelan is None:
             raise InimPrimeFeatureNotSupportedError("GSM status requires PrimeLAN")
+        await self._wait_polling_released()
         return await self._primelan.update_gsm()
 
     async def update_system_faults(self) -> UnifiedSystemFaults:
         if self._primelan is None:
             raise InimPrimeFeatureNotSupportedError("System faults require PrimeLAN")
+        await self._wait_polling_released()
         return await self._primelan.update_system_faults()
 
 
     async def get_log_events(self, limit: int) -> list[UnifiedLogEvent]:
         if self._primelan is None:
             raise InimPrimeFeatureNotSupportedError("Log events require PrimeLAN")
+        await self._wait_polling_released()
         return await self._primelan.get_log_events(limit)
 
     # ------------------------------------------------------------------

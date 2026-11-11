@@ -125,6 +125,10 @@ class ScenarioAlarmPanel(
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        assumed = self._assumed_scenario
+        if assumed is not None and self._read_active_scenario_id() == assumed[0]:
+            # The panel now reports the scenario we assumed: it is real.
+            self._assumed_scenario = None
         self.async_write_ha_state()
 
     @callback
@@ -156,30 +160,20 @@ class ScenarioAlarmPanel(
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
         }
 
-    async def _resync_scenario(self, seq: int) -> None:
-        """Read the scenario after a command, until it matches the assumed one.
+    async def _read_scenario_now(self) -> None:
+        """Read the scenario for this command (routine polls are on hold)."""
+        try:
+            data = await self.coordinator.gateway.update_scenarios(force=True)
+        except Exception:  # noqa: BLE001 - the next routine poll will retry
+            _LOGGER.debug("Alarm: scenario read failed", exc_info=True)
+            return
+        self.coordinator.async_set_updated_data(data)
 
-        The panel can report the new scenario a few reads after the partitions
-        have switched; the assumption is kept until then (or until it expires).
-        """
-        while True:
-            read_started = time.monotonic()
-            await self.coordinator.async_refresh()
-            _LOGGER.debug(
-                "Alarm: background scenario read took %.2fs (active: %s)",
-                time.monotonic() - read_started, self._read_active_scenario_id(),
-            )
-            assumed = self._assumed_scenario
-            if assumed is None or assumed[1] != seq or seq != self._command_seq:
-                return
-            if (
-                    self._read_active_scenario_id() == assumed[0]
-                    or time.monotonic() >= assumed[2]
-            ):
-                self._assumed_scenario = None
-                self.async_write_ha_state()
-                return
-            await asyncio.sleep(1)
+    def _assume_time(self) -> float:
+        """Long enough for a couple of routine scenario polls to confirm."""
+        interval = self.coordinator.update_interval
+        seconds = interval.total_seconds() if interval else 0.0
+        return max(self._ASSUME_TIME, seconds * 2 + 5)
 
     def _set_direction(self, command: str) -> None:
         """Remember which way an HA command is moving the panel.
@@ -320,7 +314,6 @@ class ScenarioAlarmPanel(
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
         success = False
-        scenario_read = False
         deadline = time.monotonic() + self._CONFIRM_TIMEOUT
         attempt = 0
         confirmed_by = None
@@ -352,15 +345,14 @@ class ScenarioAlarmPanel(
                 success = True
                 confirmed_by = "partitions"
                 self._assumed_scenario = (
-                    target, seq, time.monotonic() + self._ASSUME_TIME
+                    target, seq, time.monotonic() + self._assume_time()
                 )
                 break
             elif attempt >= 2:
                 # Nothing to see on the partitions (e.g. the same mode armed
                 # again): ask the scenario itself.
                 read_started = time.monotonic()
-                await self.coordinator.async_refresh()
-                scenario_read = True
+                await self._read_scenario_now()
                 _LOGGER.debug(
                     "Alarm %s: scenario read took %.2fs (active: %s)", command,
                     time.monotonic() - read_started, self._read_active_scenario_id(),
@@ -378,9 +370,6 @@ class ScenarioAlarmPanel(
         )
         if seq == self._command_seq:
             self.coordinator.gateway.release_polling()
-        if not scenario_read:
-            # Bring the scenario up to date without making the command wait.
-            self.hass.async_create_task(self._resync_scenario(seq))
 
         result = {
             "command": command,
@@ -659,6 +648,10 @@ class HybridAlarmPanel(
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        assumed = self._assumed_scenario
+        if assumed is not None and self._read_active_scenario_id() == assumed[0]:
+            # The panel now reports the scenario we assumed: it is real.
+            self._assumed_scenario = None
         self.async_write_ha_state()
 
     @callback
@@ -687,30 +680,20 @@ class HybridAlarmPanel(
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
         }
 
-    async def _resync_scenario(self, seq: int) -> None:
-        """Read the scenario after a command, until it matches the assumed one.
+    async def _read_scenario_now(self) -> None:
+        """Read the scenario for this command (routine polls are on hold)."""
+        try:
+            data = await self.coordinator.gateway.update_scenarios(force=True)
+        except Exception:  # noqa: BLE001 - the next routine poll will retry
+            _LOGGER.debug("Alarm: scenario read failed", exc_info=True)
+            return
+        self.coordinator.async_set_updated_data(data)
 
-        The panel can report the new scenario a few reads after the partitions
-        have switched; the assumption is kept until then (or until it expires).
-        """
-        while True:
-            read_started = time.monotonic()
-            await self.coordinator.async_refresh()
-            _LOGGER.debug(
-                "Alarm: background scenario read took %.2fs (active: %s)",
-                time.monotonic() - read_started, self._read_active_scenario_id(),
-            )
-            assumed = self._assumed_scenario
-            if assumed is None or assumed[1] != seq or seq != self._command_seq:
-                return
-            if (
-                    self._read_active_scenario_id() == assumed[0]
-                    or time.monotonic() >= assumed[2]
-            ):
-                self._assumed_scenario = None
-                self.async_write_ha_state()
-                return
-            await asyncio.sleep(1)
+    def _assume_time(self) -> float:
+        """Long enough for a couple of routine scenario polls to confirm."""
+        interval = self.coordinator.update_interval
+        seconds = interval.total_seconds() if interval else 0.0
+        return max(self._ASSUME_TIME, seconds * 2 + 5)
 
     def _set_direction(self, command: str) -> None:
         """Remember which way an HA command is moving the panel.
@@ -869,7 +852,6 @@ class HybridAlarmPanel(
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
         success = False
-        scenario_read = False
         deadline = time.monotonic() + self._CONFIRM_TIMEOUT
         attempt = 0
         confirmed_by = None
@@ -901,15 +883,14 @@ class HybridAlarmPanel(
                 success = True
                 confirmed_by = "partitions"
                 self._assumed_scenario = (
-                    target, seq, time.monotonic() + self._ASSUME_TIME
+                    target, seq, time.monotonic() + self._assume_time()
                 )
                 break
             elif attempt >= 2:
                 # Nothing to see on the partitions (e.g. the same mode armed
                 # again): ask the scenario itself.
                 read_started = time.monotonic()
-                await self.coordinator.async_refresh()
-                scenario_read = True
+                await self._read_scenario_now()
                 _LOGGER.debug(
                     "Alarm %s: scenario read took %.2fs (active: %s)", command,
                     time.monotonic() - read_started, self._read_active_scenario_id(),
@@ -927,9 +908,6 @@ class HybridAlarmPanel(
         )
         if seq == self._command_seq:
             self.coordinator.gateway.release_polling()
-        if not scenario_read:
-            # Bring the scenario up to date without making the command wait.
-            self.hass.async_create_task(self._resync_scenario(seq))
 
         result = {
             "command": command,
