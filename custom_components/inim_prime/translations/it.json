@@ -255,7 +255,7 @@
       },
       "alarm_form": {
         "title": "Pannello allarme",
-        "description": "Un gruppo per ogni comando del pannello di Home Assistant. Nella tendina scegli uno scenario della centrale (per nome) oppure «Partizioni personalizzate…»: in quel caso apri la sezione subito sotto e imposta la modalità di ogni partizione e le uscite da attivare. Lascia vuota la tendina per non offrire quel comando.",
+        "description": "Nella tendina scegli uno scenario della centrale oppure «Partizioni personalizzate…»: in quel caso apri la sezione subito sotto e imposta la modalità di ogni partizione e le uscite da attivare. Lascia vuota la tendina per non offrire quel comando.\n\nNB: se ci sono zone autoescludibili usa «Partizioni personalizzate…»: tramite scenario, con una di queste zone aperta, l'inserimento non avviene.",
         "data": {
           "arm_home": "In casa",
           "arm_away": "Fuori casa",
@@ -301,17 +301,30 @@
           }
         }
       },
+      "alarm_form_primelan": {
+        "title": "Pannello allarme",
+        "description": "Nella tendina scegli lo scenario della centrale da attivare per ogni comando. Lascia vuota la tendina per non offrire quel comando.\n\nNB: se una zona autoescludibile è aperta, tramite scenario l'inserimento non avviene. Con la sola modalità PrimeLAN non c'è alternativa: le partizioni richiedono la modalità Native.",
+        "data": {
+          "arm_home": "In casa",
+          "arm_away": "Fuori casa",
+          "arm_night": "Notte",
+          "arm_vacation": "Vacanza",
+          "disarm": "Disattivato"
+        }
+      },
       "params": {
         "title": "Parametri generali",
         "data": {
           "panel_log_events_fetch_limit": "Limite eventi del registro da scaricare",
           "show_hidden_outputs": "Mostra anche le uscite non disponibili via PrimeLAN (uscite interne/scheda madre, es. sirena, aux)",
-          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)"
+          "hide_unused_partitions": "Nascondi le aree inutilizzate (aree col nome predefinito, es. AREA 013)",
+          "realtime_push": "Push in tempo reale (webhook locale)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
           "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
-          "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità."
+          "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità.",
+          "realtime_push": "Opzionale. La centrale invia gli eventi (zone, inserimento, allarme…) a Home Assistant via webhook locale, così le entità si aggiornano subito. Da configurare in Prime/STUDIO («Invio pagine web»): l'URL compare in una notifica dopo il salvataggio. Spento di default."
         }
       },
       "scan": {

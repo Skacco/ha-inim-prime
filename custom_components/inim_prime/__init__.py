@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
@@ -67,6 +68,9 @@ PLATFORMS = [
 ]
 
 
+_LOGGER = logging.getLogger(__name__)
+
+
 def _build_gateway(data: InimPrimeConfigData) -> InimPrimeGateway:
     """Construct adapters for whichever backend(s) are configured on this entry.
 
@@ -127,12 +131,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # The panel can reset the native TCP link (one client at a time) or drop
     # the PrimeLAN HTTP connection. Treat a connect failure as "not ready" so
     # Home Assistant retries with backoff instead of leaving the entry failed.
-    try:
-        await inim_gateway.connect()
-    except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
-        raise ConfigEntryNotReady(
-            f"Cannot connect to INIM Prime panel yet: {err}"
-        ) from err
+    # After an options save the entry reloads and the panel may not have
+    # released the previous native connection yet: wait a moment and retry a
+    # few times before reporting the error.
+    attempts = 4
+    for attempt in range(1, attempts + 1):
+        try:
+            await inim_gateway.connect()
+            break
+        except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
+            if attempt == attempts:
+                raise ConfigEntryNotReady(
+                    f"Cannot connect to INIM Prime panel yet: {err}"
+                ) from err
+            _LOGGER.debug(
+                "Connect attempt %s/%s failed (%s), retrying", attempt, attempts, err
+            )
+            try:
+                await inim_gateway.close()
+            except Exception:  # noqa: BLE001 - best effort cleanup
+                pass
+            await asyncio.sleep(3)
 
     ###
     ### Coordinators
@@ -225,12 +244,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # Each chain stays sequential internally: the Native protocol handles one
     # command at a time, so its coordinators must not overlap each other.
     prefer_native = bool(data.get("native"))
-    # With Native preferred, the output list is loaded by connect()/initialize(),
-    # so the entities (switches/lights/covers) can be built without the slow
-    # status read -- defer it to the background (see below). With PrimeLAN the list
-    # comes from the outputs refresh itself, so it must stay blocking or the output
-    # entities wouldn't be created.
-    defer_outputs = prefer_native and outputs_coordinator is not None
+    # Outputs must be refreshed before platform setup, in every mode. The output
+    # list is populated by the outputs refresh (update_outputs), NOT by connect()
+    # -- the Native adapter's connect() only opens the link, leaving the output
+    # list empty. Deferring the refresh would build the switch/light/cover
+    # entities from an empty list (none created), and the empty-group cleanup
+    # below would then delete the Uscite / Tapparelle devices entirely.
+    defer_outputs = False
     state_coordinators = [
         c for c in (zones_coordinator, partitions_coordinator)
         if c is not None
@@ -302,6 +322,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     _link_child_devices(hass, entry)
     debug_services.async_register(hass)
+    _setup_realtime_webhook(hass, entry)
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_entities(hass, entry, inim_gateway)
@@ -638,7 +659,43 @@ async def async_remove_config_entry_device(
     return True
 
 
+def _setup_realtime_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Register the optional realtime-push webhook and surface its URL.
+
+    Off unless the user enabled "realtime push" in the options. When on, the
+    webhook receives the panel's outbound HTTP events and a persistent
+    notification shows the URL to configure in Prime/STUDIO."""
+    from homeassistant.components import persistent_notification, webhook as hass_webhook
+    from .webhook import async_register_webhook
+
+    note_id = f"inim_prime_webhook_{entry.entry_id}"
+    webhook_id = entry.options.get("webhook_id")
+    if not (entry.options.get("realtime_push") and webhook_id):
+        persistent_notification.async_dismiss(hass, note_id)
+        return
+    async_register_webhook(hass, entry)
+    try:
+        url = hass_webhook.async_generate_url(hass, webhook_id)
+    except Exception:  # noqa: BLE001 - URL is informational only
+        url = f"/api/webhook/{webhook_id}"
+    persistent_notification.async_create(
+        hass,
+        (
+            "Push in tempo reale attivo. In Prime/STUDIO (tabella «Invio pagine "
+            "web») punta gli eventi a questo URL, uno per evento:\n\n"
+            f"`{url}`\n\n"
+            "Esempi: `?ev=zone_open&id=<zona>`, `?ev=zone_close&id=<zona>`, "
+            "`?ev=arm&area=<area>`, `?ev=disarm&area=<area>`, `?ev=alarm&area=<area>`, "
+            "`?ev=output`."
+        ),
+        title="INIM Prime - push in tempo reale",
+        notification_id=note_id,
+    )
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> bool:
+    from .webhook import async_unregister_webhook
+    async_unregister_webhook(hass, entry)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:

@@ -28,6 +28,8 @@ class OptionsKey:
     ALARM_PANEL_NATIVE: Final = "alarm_panel_native"  # per-arm partition sets
     SHUTTERS: Final = "shutters"              # the options-form section
     SHUTTER_COMMANDS: Final = "shutter_commands"  # stored mapping
+    REALTIME_PUSH: Final = "realtime_push"    # opt-in local webhook push
+    WEBHOOK_ID: Final = "webhook_id"          # generated secret / bearer token
 
     class AlarmPanel:
         """Scenario id activated by each alarm panel command (PrimeLAN)."""

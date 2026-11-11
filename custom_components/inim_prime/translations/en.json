@@ -255,7 +255,7 @@
       },
       "alarm_form": {
         "title": "Alarm panel",
-        "description": "One group per Home Assistant panel command. In the dropdown pick a panel scenario (by name) or “Custom partitions…”: in that case open the section right below and set each partition's mode and the outputs to activate. Leave the dropdown empty to not offer that command.",
+        "description": "In the dropdown pick a panel scenario or “Custom partitions…”: in that case open the section right below and set each partition's mode and the outputs to activate. Leave the dropdown empty to not offer that command.\n\nNote: if there are auto-bypassable zones use “Custom partitions…”: through a scenario, with one of those zones open, arming does not happen.",
         "data": {
           "arm_home": "Home",
           "arm_away": "Away",
@@ -301,17 +301,30 @@
           }
         }
       },
+      "alarm_form_primelan": {
+        "title": "Alarm panel",
+        "description": "In the dropdown pick the panel scenario to activate for each command. Leave the dropdown empty to not offer that command.\n\nNote: if an auto-bypassable zone is open, arming through a scenario does not happen. With PrimeLAN mode alone there is no alternative: partitions require Native mode.",
+        "data": {
+          "arm_home": "Home",
+          "arm_away": "Away",
+          "arm_night": "Night",
+          "arm_vacation": "Vacation",
+          "disarm": "Disarmed"
+        }
+      },
       "params": {
         "title": "General parameters",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
-          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)"
+          "hide_unused_partitions": "Hide unused areas (areas with the default name, like AREA 013)",
+          "realtime_push": "Realtime push (local webhook)"
         },
         "data_description": {
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
           "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
-          "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities."
+          "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities.",
+          "realtime_push": "Optional. The panel sends events (zones, arming, alarm…) to Home Assistant via a local webhook, so entities update instantly. Configure it in Prime/STUDIO (outbound HTTP): the URL appears in a notification after saving. Off by default."
         }
       },
       "scan": {

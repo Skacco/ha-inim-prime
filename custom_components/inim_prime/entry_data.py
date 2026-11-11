@@ -48,6 +48,8 @@ class InimPrimeOptionsData(TypedDict):
     hide_unused_partitions: NotRequired[bool]
     shutter_commands: NotRequired[dict]
     panel_log_events_fetch_limit: NotRequired[int]
+    realtime_push: NotRequired[bool]
+    webhook_id: NotRequired[str]
 
 
 def get_entry_data(entry: ConfigEntry) -> InimPrimeConfigData:

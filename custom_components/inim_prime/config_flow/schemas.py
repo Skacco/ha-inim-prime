@@ -339,6 +339,10 @@ def build_general_params_schema(
         OptionsKey.HIDE_UNUSED_PARTITIONS,
         default = bool(current_options.hide_unused_partitions) if current_options else True,
     )] = bool
+    schema[vol.Required(
+        OptionsKey.REALTIME_PUSH,
+        default = bool(current_options.realtime_push) if current_options else False,
+    )] = bool
     if has_native and has_primelan:
         schema[vol.Required(
             OptionsKey.SHOW_HIDDEN_OUTPUTS,

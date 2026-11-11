@@ -295,7 +295,7 @@ async def test_options_flow_alarm_panel(hass: HomeAssistant):
         assert "save_exit" in result["menu_options"]
         # PrimeLAN -> the alarm panel is one form: a scenario dropdown per command.
         result = await opts.async_configure(result["flow_id"], {"next_step_id": "alarm"})
-        assert result["type"] == "form" and result["step_id"] == "alarm_form"
+        assert result["type"] == "form" and result["step_id"] == "alarm_form_primelan"
         fields = {str(k): v for k, v in result["data_schema"].schema.items()}
         assert set(fields) == {"disarm", "arm_away", "arm_home", "arm_night", "arm_vacation"}
         labels = {o["label"] for o in fields["disarm"].config["options"]}
@@ -574,3 +574,37 @@ async def test_module_labels_cached():
     assert await gw.module_labels(2) == {1: "TENDA SALA", 2: "TENDA NICOLE"}
     assert await gw.module_labels(1) == {1: "TENDA SALA"}
     assert Native.reads == 1
+
+
+async def test_webhook_routes_event_to_coordinator():
+    """A panel webhook event triggers a refresh of the matching coordinator."""
+    from unittest.mock import AsyncMock, MagicMock
+    from custom_components.inim_prime.webhook import _process
+
+    zones = MagicMock()
+    zones.async_request_refresh = AsyncMock()
+    partitions = MagicMock()
+    partitions.async_request_refresh = AsyncMock()
+
+    entry = MagicMock()
+    entry.runtime_data.coordinators.zones = zones
+    entry.runtime_data.coordinators.partitions = partitions
+
+    class Req:
+        method = "GET"
+        query = {"ev": "zone_open", "id": "5"}
+        async def read(self):  # pragma: no cover - not used on GET
+            return b""
+        async def post(self):  # pragma: no cover - not used on GET
+            return {}
+
+    await _process(entry, Req())
+    zones.async_request_refresh.assert_awaited_once()
+    partitions.async_request_refresh.assert_not_called()
+
+    # An unknown event refreshes nothing.
+    zones.async_request_refresh.reset_mock()
+    class Req2(Req):
+        query = {"ev": "nonsense"}
+    await _process(entry, Req2())
+    zones.async_request_refresh.assert_not_called()

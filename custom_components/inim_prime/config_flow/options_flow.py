@@ -25,13 +25,34 @@ from .schemas import (
 # module, used to store the mapping (so renaming the module can't lose it).
 _SECTION_KEY = re.compile(r"^(\d{1,3})\s*·")
 
-# Same wording and order as Home Assistant's alarm card.
-_CMD_LABELS = {
+# Same wording and order as Home Assistant's alarm card. These labels are
+# built in code (menus with dynamic labels and dropdown options can't use the
+# translation files), so they are picked by the Home Assistant language here.
+_CMD_LABELS_IT = {
     OptionsKey.AlarmPanel.ARM_HOME: "In casa",
     OptionsKey.AlarmPanel.ARM_AWAY: "Fuori casa",
     OptionsKey.AlarmPanel.ARM_NIGHT: "Notte",
     OptionsKey.AlarmPanel.ARM_VACATION: "Vacanza",
     OptionsKey.AlarmPanel.DISARM: "Disattivato",
+}
+_CMD_LABELS_EN = {
+    OptionsKey.AlarmPanel.ARM_HOME: "Home",
+    OptionsKey.AlarmPanel.ARM_AWAY: "Away",
+    OptionsKey.AlarmPanel.ARM_NIGHT: "Night",
+    OptionsKey.AlarmPanel.ARM_VACATION: "Vacation",
+    OptionsKey.AlarmPanel.DISARM: "Disarmed",
+}
+_TEXTS = {
+    "it": {
+        "custom_partitions": "Partizioni personalizzate…",
+        "partitions": "Partizioni",
+        "back_to_menu": "‹ Torna al menù",
+    },
+    "en": {
+        "custom_partitions": "Custom partitions…",
+        "partitions": "Partitions",
+        "back_to_menu": "‹ Back to menu",
+    },
 }
 _CMD_STEPS = (
     "cmd_arm_home", "cmd_arm_away", "cmd_arm_night", "cmd_arm_vacation", "cmd_disarm",
@@ -125,11 +146,25 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             opts.pop(OptionsKey.ALARM_PANEL_NATIVE, None)
         return self.async_create_entry(title="", data=opts)
 
+    @property
+    def _italian(self) -> bool:
+        hass = getattr(self, "hass", None)
+        if hass is None:
+            return True
+        return str(hass.config.language or "").lower().startswith("it")
+
+    def _text(self, key: str) -> str:
+        return _TEXTS["it" if self._italian else "en"][key]
+
+    def _cmd_label(self, cmd: str) -> str:
+        labels = _CMD_LABELS_IT if self._italian else _CMD_LABELS_EN
+        return labels.get(cmd, cmd)
+
     def _alarm_label(self, cmd: str) -> str:
         """Menu label showing the command's current (pending) configuration."""
-        name = _CMD_LABELS.get(cmd, cmd)
+        name = self._cmd_label(cmd)
         if self._natives.get(cmd):
-            return f"{name} — Partizioni"
+            return f"{name} — {self._text('partitions')}"
         return f"{name} — —"
 
     async def async_step_alarm(self, user_input: dict[str, Any] | None = None):
@@ -142,7 +177,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         menu: dict[str, str] = {
             step: self._alarm_label(_STEP_TO_CMD[step]) for step in _CMD_STEPS
         }
-        menu["init"] = "‹ Torna al menù"
+        menu["init"] = self._text("back_to_menu")
         return self.async_show_menu(step_id="alarm", menu_options=menu)
 
     async def async_step_alarm_form(self, user_input: dict[str, Any] | None = None):
@@ -182,7 +217,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         ]
         if self._has_native:
             options.append(SelectOptionDict(
-                value=_PARTITIONS_CHOICE, label="Partizioni personalizzate…",
+                value=_PARTITIONS_CHOICE, label=self._text("custom_partitions"),
             ))
         _, output_choices = self._shutter_context()
         partitions = self._partition_choices()
@@ -209,9 +244,18 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                     )),
                     {"collapsed": True},
                 )
+        # Two step ids only to get two translated descriptions: with Native
+        # the text explains the custom partitions, PrimeLAN-only does not.
         return self.async_show_form(
-            step_id="alarm_form", data_schema=vol.Schema(schema), last_step=False,
+            step_id="alarm_form" if self._has_native else "alarm_form_primelan",
+            data_schema=vol.Schema(schema), last_step=False,
         )
+
+    async def async_step_alarm_form_primelan(
+        self, user_input: dict[str, Any] | None = None,
+    ):
+        """PrimeLAN-only variant of the alarm form (same logic, own texts)."""
+        return await self.async_step_alarm_form(user_input)
 
     # --- General parameters (no intervals, no alarm, no shutters) -------
     async def async_step_params(self, user_input: dict[str, Any] | None = None):
@@ -221,6 +265,14 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 self._pending[OptionsKey.HIDE_UNUSED_PARTITIONS] = user_input[OptionsKey.HIDE_UNUSED_PARTITIONS]
             if OptionsKey.SHOW_HIDDEN_OUTPUTS in user_input:
                 self._pending[OptionsKey.SHOW_HIDDEN_OUTPUTS] = user_input[OptionsKey.SHOW_HIDDEN_OUTPUTS]
+            if OptionsKey.REALTIME_PUSH in user_input:
+                enabled = bool(user_input[OptionsKey.REALTIME_PUSH])
+                self._pending[OptionsKey.REALTIME_PUSH] = enabled
+                # Generate the webhook id (the URL secret) the first time push is
+                # turned on, and keep it afterwards so the URL stays stable.
+                if enabled and not self._pending.get(OptionsKey.WEBHOOK_ID):
+                    from homeassistant.components import webhook
+                    self._pending[OptionsKey.WEBHOOK_ID] = webhook.async_generate_id()
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
             return await self.async_step_init()
@@ -339,7 +391,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="cmd_detail",
             data_schema=vol.Schema(schema),
-            description_placeholders={"command": _CMD_LABELS.get(self._cmd, self._cmd)},
+            description_placeholders={"command": self._cmd_label(self._cmd)},
             # Not the last step (the single save is on the main menu): HA shows
             # "Avanti" instead of "Invia". HA can't label a form button "Salva".
             last_step=False,
@@ -365,6 +417,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             show_hidden_outputs=o.get("show_hidden_outputs"),
             hide_unused_partitions=o.get("hide_unused_partitions"),
             shutter_commands=o.get("shutter_commands"),
+            realtime_push=o.get("realtime_push"),
         )
 
     def _scenario_choices(self) -> list[tuple[int, str]]:

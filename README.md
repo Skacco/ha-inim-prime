@@ -1,5 +1,6 @@
-> **Fork gestito da [skaccox](https://github.com/skaccox).** Rispetto all'originale aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari, i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
-> Basato su [Pitscheider/ha-inim-prime](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0).
+🇮🇹 **Italiano** · 🇬🇧 [English](README.en.md)
+
+> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari, i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
@@ -132,13 +133,13 @@ Al termine clicca `Upload` per caricare la nuova configurazione.
 Devi avere HACS installato in Home Assistant. Se non ce l'hai: [https://www.hacs.xyz/docs/use/](https://www.hacs.xyz/docs/use/).
 ### Aggiungi il repository personalizzato
 Apri HACS → menu in alto a destra (tre puntini) → `Custom repositories`.
-Nel campo `Repository` incolla `https://github.com/skaccox/ha-inim-prime`, nel menu `Type` scegli `Integration`, premi `ADD`.
+Nel campo `Repository` incolla `https://github.com/Skacco/ha-inim-prime`, nel menu `Type` scegli `Integration`, premi `ADD`.
 ### Installa l'integrazione
 In HACS cerca `Inim Prime`, aprila, premi `DOWNLOAD` due volte.
 ### Riavvia Home Assistant
 Dopo il download comparirà un avviso `Restart required`: riavvia Home Assistant per completare l'installazione.
 ## Installazione manuale (sconsigliata)
-Scarica il codice sorgente dell'ultima release da [https://github.com/skaccox/ha-inim-prime](https://github.com/skaccox/ha-inim-prime), copia la cartella `inim_prime` dentro `custom_components` della tua configurazione Home Assistant e riavvia.
+Scarica il codice sorgente dell'ultima release da [https://github.com/Skacco/ha-inim-prime](https://github.com/Skacco/ha-inim-prime), copia la cartella `inim_prime` dentro `custom_components` della tua configurazione Home Assistant e riavvia.
 
 # Configurazione dell'integrazione in Home Assistant
 Vai in `Impostazioni` → `Dispositivi e servizi` → `Aggiungi integrazione`, cerca `Inim Prime`.
@@ -199,7 +200,9 @@ Esempio tipico (entrambe le modalità):
 
 Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
-**Attivazione uscite.** Un comando a partizioni può anche attivare **una o più uscite** (es. "Chiusura PI" per chiudere le persiane); la centrale rilascia da sola le uscite monostabili. Per i comandi a scenario ci pensa lo scenario stesso, quindi il campo uscite vale solo quando il comando è a partizioni.
+**Attivazione uscite.** Un comando a partizioni può anche attivare **una o più uscite** (es. "Chiusura casa" per chiudere le persiane); la centrale rilascia da sola le uscite monostabili. Per i comandi a scenario ci pensa lo scenario stesso, quindi il campo uscite vale solo quando il comando è a partizioni.
+
+**Zone autoescludibili.** Con la modalità PrimeLAN l'attivazione di uno scenario non avviene se una zona autoescludibile è aperta. Se usi zone autoescludibili, configura quel comando con *Partizioni personalizzate…* (richiede la modalità Native): con la sola PrimeLAN non c'è alternativa.
 
 ### Quale pannello viene creato
 - **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
@@ -226,6 +229,27 @@ Se spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato; se a
 
 ## Nascondi aree inutilizzate
 Nasconde le aree mai nominate nella centrale (col nome predefinito tipo `AREA 013`) e le loro entità.
+
+## Push in tempo reale (opzionale)
+Spento di default. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
+
+Come si attiva:
+1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. Compare una **notifica** con l'**URL** del webhook.
+2. In Prime/STUDIO, tabella **«Invio pagine web»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
+
+| Evento | Parametri |
+|---|---|
+| Zona aperta | `?ev=zone_open&id=<zona>` |
+| Zona chiusa | `?ev=zone_close&id=<zona>` |
+| Area inserita | `?ev=arm&area=<area>` |
+| Area disinserita | `?ev=disarm&area=<area>` |
+| Allarme | `?ev=alarm&area=<area>` |
+| Uscita | `?ev=output` |
+| Tamper / guasto | `?ev=tamper` / `?ev=fault` |
+
+Il webhook è **solo‑LAN** e l'id nell'URL fa da chiave: tienilo privato. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.
+
+> Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 
 # Dispositivi disponibili
 L'integrazione raggruppa le entità in pochi dispositivi.
