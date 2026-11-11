@@ -78,6 +78,10 @@ class ScenarioAlarmPanel(
     # How long after an arm command to keep showing "arming" while the
     # partitions still read disarmed (covers the panel's exit delay).
     _ARMING_GRACE = 45.0
+    # How long a command waits for the panel to confirm it.
+    _CONFIRM_TIMEOUT = 15.0
+    # How long a commanded scenario is taken as active before it is re-read.
+    _ASSUME_TIME = 20.0
 
     def __init__(
             self,
@@ -106,6 +110,8 @@ class ScenarioAlarmPanel(
         # Bumped by every command: a command still finishing (its last reads can
         # take seconds) must not overwrite the state of a newer one.
         self._command_seq = 0
+        # (scenario_id, command seq, expiry): see _active_scenario_id.
+        self._assumed_scenario: tuple[int, int, float] | None = None
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{self.coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
@@ -142,6 +148,34 @@ class ScenarioAlarmPanel(
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
         )
 
+    def _armed_modes(self) -> dict:
+        """Armed partitions with their arming mode ({partition_id: mode})."""
+        return {
+            p.partition_id: p.arming_status
+            for p in self._partitions
+            if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        }
+
+    async def _resync_scenario(self, seq: int) -> None:
+        """Read the scenario after a command, until it matches the assumed one.
+
+        The panel can report the new scenario a few reads after the partitions
+        have switched; the assumption is kept until then (or until it expires).
+        """
+        while True:
+            await self.coordinator.async_refresh()
+            assumed = self._assumed_scenario
+            if assumed is None or assumed[1] != seq or seq != self._command_seq:
+                return
+            if (
+                    self._read_active_scenario_id() == assumed[0]
+                    or time.monotonic() >= assumed[2]
+            ):
+                self._assumed_scenario = None
+                self.async_write_ha_state()
+                return
+            await asyncio.sleep(1)
+
     def _set_direction(self, command: str) -> None:
         """Remember which way an HA command is moving the panel.
 
@@ -161,6 +195,17 @@ class ScenarioAlarmPanel(
         return list(self.coordinator.gateway.partitions.values())
 
     def _active_scenario_id(self) -> int | None:
+        assumed = self._assumed_scenario
+        if assumed is not None:
+            # Our own command, confirmed by the partitions, until the scenario
+            # is read again (see _run / _run_scenario).
+            if assumed[1] == self._command_seq and time.monotonic() < assumed[2]:
+                return assumed[0]
+            self._assumed_scenario = None
+        return self._read_active_scenario_id()
+
+    def _read_active_scenario_id(self) -> int | None:
+        """The active scenario as last read from the panel."""
         for scenario in (self.coordinator.gateway.scenarios or {}).values():
             if scenario.active:
                 return scenario.scenario_id
@@ -246,11 +291,16 @@ class ScenarioAlarmPanel(
         self._set_direction(command)
         self._command_seq += 1
         seq = self._command_seq
+        self._assumed_scenario = None
+        before = self._armed_modes()
+        # Keep the panel link free for this command's own reads.
+        self.coordinator.gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
             if seq == self._command_seq:
+                self.coordinator.gateway.release_polling()
                 self._pending = None
                 self.async_write_ha_state()
             raise
@@ -259,29 +309,43 @@ class ScenarioAlarmPanel(
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
         success = False
-        # An arm can take several seconds to show up as the active scenario.
-        for _ in range(10 if disarm else 20):
+        scenario_read = False
+        deadline = time.monotonic() + self._CONFIRM_TIMEOUT
+        attempt = 0
+        while time.monotonic() < deadline:
             if seq != self._command_seq:
                 return  # superseded by a newer command
+            # The partitions are the quick read, and all a disarm needs.
+            await self._partitions_coordinator.async_refresh()
+            armed = self._armed_modes()
             if disarm:
-                await self._partitions_coordinator.async_refresh()
-                if not self._armed_set():
+                if not armed:
                     success = True
                     break
-            else:
+            elif armed and armed != before:
+                # The partitions moved to a new armed set right after our
+                # command: that is the scenario we asked for. Show it now; the
+                # (slow) scenario read confirms it in the background.
+                success = True
+                self._assumed_scenario = (
+                    target, seq, time.monotonic() + self._ASSUME_TIME
+                )
+                break
+            elif attempt >= 2:
+                # Nothing to see on the partitions (e.g. the same mode armed
+                # again): ask the scenario itself.
                 await self.coordinator.async_refresh()
+                scenario_read = True
                 if self._active_scenario_id() == target:
                     success = True
                     break
+            attempt += 1
             await asyncio.sleep(0.5)
-        # Only read what the loop above hasn't just read (each read can take
-        # seconds on the panel).
-        if disarm:
-            # Partitions are fresh; the scenario label can follow on its own.
-            self.hass.async_create_task(self.coordinator.async_refresh())
-        else:
-            # Scenario is fresh; the partitions give the final armed state.
-            await self._partitions_coordinator.async_refresh()
+        if seq == self._command_seq:
+            self.coordinator.gateway.release_polling()
+        if not scenario_read:
+            # Bring the scenario up to date without making the command wait.
+            self.hass.async_create_task(self._resync_scenario(seq))
 
         result = {
             "command": command,
@@ -498,6 +562,10 @@ class HybridAlarmPanel(
     # How long after an arm command to keep showing "arming" while the
     # partitions still read disarmed (covers the panel's exit delay).
     _ARMING_GRACE = 45.0
+    # How long a command waits for the panel to confirm it.
+    _CONFIRM_TIMEOUT = 15.0
+    # How long a commanded scenario is taken as active before it is re-read.
+    _ASSUME_TIME = 20.0
 
     def __init__(
             self,
@@ -541,6 +609,8 @@ class HybridAlarmPanel(
         # Bumped by every command: a command still finishing (its last reads can
         # take seconds) must not overwrite the state of a newer one.
         self._command_seq = 0
+        # (scenario_id, command seq, expiry): see _active_scenario_id.
+        self._assumed_scenario: tuple[int, int, float] | None = None
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(coordinator.serial_number)
@@ -574,6 +644,34 @@ class HybridAlarmPanel(
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
         )
 
+    def _armed_modes(self) -> dict:
+        """Armed partitions with their arming mode ({partition_id: mode})."""
+        return {
+            p.partition_id: p.arming_status
+            for p in self._partitions
+            if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        }
+
+    async def _resync_scenario(self, seq: int) -> None:
+        """Read the scenario after a command, until it matches the assumed one.
+
+        The panel can report the new scenario a few reads after the partitions
+        have switched; the assumption is kept until then (or until it expires).
+        """
+        while True:
+            await self.coordinator.async_refresh()
+            assumed = self._assumed_scenario
+            if assumed is None or assumed[1] != seq or seq != self._command_seq:
+                return
+            if (
+                    self._read_active_scenario_id() == assumed[0]
+                    or time.monotonic() >= assumed[2]
+            ):
+                self._assumed_scenario = None
+                self.async_write_ha_state()
+                return
+            await asyncio.sleep(1)
+
     def _set_direction(self, command: str) -> None:
         """Remember which way an HA command is moving the panel.
 
@@ -593,6 +691,17 @@ class HybridAlarmPanel(
         return list(self._partitions_coordinator.gateway.partitions.values())
 
     def _active_scenario_id(self) -> int | None:
+        assumed = self._assumed_scenario
+        if assumed is not None:
+            # Our own command, confirmed by the partitions, until the scenario
+            # is read again (see _run / _run_scenario).
+            if assumed[1] == self._command_seq and time.monotonic() < assumed[2]:
+                return assumed[0]
+            self._assumed_scenario = None
+        return self._read_active_scenario_id()
+
+    def _read_active_scenario_id(self) -> int | None:
+        """The active scenario as last read from the panel."""
         for scenario in (self.coordinator.gateway.scenarios or {}).values():
             if scenario.active:
                 return scenario.scenario_id
@@ -697,11 +806,16 @@ class HybridAlarmPanel(
         self._set_direction(command)
         self._command_seq += 1
         seq = self._command_seq
+        self._assumed_scenario = None
+        before = self._armed_modes()
+        # Keep the panel link free for this command's own reads.
+        self.coordinator.gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
             if seq == self._command_seq:
+                self.coordinator.gateway.release_polling()
                 self._pending = None
                 self.async_write_ha_state()
             raise
@@ -709,29 +823,43 @@ class HybridAlarmPanel(
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
         success = False
-        # An arm can take several seconds to show up as the active scenario.
-        for _ in range(10 if disarm else 20):
+        scenario_read = False
+        deadline = time.monotonic() + self._CONFIRM_TIMEOUT
+        attempt = 0
+        while time.monotonic() < deadline:
             if seq != self._command_seq:
                 return  # superseded by a newer command
+            # The partitions are the quick read, and all a disarm needs.
+            await self._partitions_coordinator.async_refresh()
+            armed = self._armed_modes()
             if disarm:
-                await self._partitions_coordinator.async_refresh()
-                if not self._current_armed():
+                if not armed:
                     success = True
                     break
-            else:
+            elif armed and armed != before:
+                # The partitions moved to a new armed set right after our
+                # command: that is the scenario we asked for. Show it now; the
+                # (slow) scenario read confirms it in the background.
+                success = True
+                self._assumed_scenario = (
+                    target, seq, time.monotonic() + self._ASSUME_TIME
+                )
+                break
+            elif attempt >= 2:
+                # Nothing to see on the partitions (e.g. the same mode armed
+                # again): ask the scenario itself.
                 await self.coordinator.async_refresh()
+                scenario_read = True
                 if self._active_scenario_id() == target:
                     success = True
                     break
+            attempt += 1
             await asyncio.sleep(0.5)
-        # Only read what the loop above hasn't just read (each read can take
-        # seconds on the panel).
-        if disarm:
-            # Partitions are fresh; the scenario label can follow on its own.
-            self.hass.async_create_task(self.coordinator.async_refresh())
-        else:
-            # Scenario is fresh; the partitions give the final armed state.
-            await self._partitions_coordinator.async_refresh()
+        if seq == self._command_seq:
+            self.coordinator.gateway.release_polling()
+        if not scenario_read:
+            # Bring the scenario up to date without making the command wait.
+            self.hass.async_create_task(self._resync_scenario(seq))
 
         result = {
             "command": command,

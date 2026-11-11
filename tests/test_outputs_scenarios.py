@@ -384,6 +384,8 @@ async def test_alarm_panel_no_custom_bypass_while_scenario_lags(hass: HomeAssist
 
 async def test_alarm_panel_reports_refused_command(hass: HomeAssistant):
     """Scenario never activates (e.g. open zones) -> event with open zones."""
+    from custom_components.inim_prime.entities import alarm_panel as _ap
+    _ap.ScenarioAlarmPanel._CONFIRM_TIMEOUT = 1.0  # don't wait the real 15s
     panel = FakePanel()
     panel.scenarios[2]["st"] = 0
     panel.scenarios[0]["st"] = 1

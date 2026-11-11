@@ -65,6 +65,10 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
+        # While an alarm command waits for its confirmation, routine polls
+        # (zones, outputs, timers, thermostats) answer from their cache: the
+        # native link serves one request at a time and would make it queue.
+        self._poll_hold_until: float = 0.0
         # False (default) = show only the outputs PrimeLAN publishes to the
         # linked user (matched on terminal id), like the panel apps. True = also
         # show the panel's internal/mainboard outputs that aren't on PrimeLAN.
@@ -121,9 +125,21 @@ class InimPrimeGateway:
             tid: t for tid, t in self._native.timers.items() if not _is_default_timer_label(t.label)
         })
 
+    def hold_polling(self, seconds: float) -> None:
+        """Pause routine polls for at most `seconds` (see _poll_hold_until)."""
+        self._poll_hold_until = asyncio.get_running_loop().time() + seconds
+
+    def release_polling(self) -> None:
+        self._poll_hold_until = 0.0
+
+    def _polling_held(self) -> bool:
+        return asyncio.get_running_loop().time() < self._poll_hold_until
+
     async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
         if self._native is None:
             raise InimPrimeFeatureNotSupportedError("Timers require the native protocol")
+        if self._polling_held() and self.timers:
+            return self.timers
         await self._native.update_timers()
         return self.timers
 
@@ -203,6 +219,8 @@ class InimPrimeGateway:
     async def update_thermostats(self) -> dict:
         if self._native is None:
             return {}
+        if self._polling_held() and self.thermostats:
+            return self.thermostats
         return await self._native.update_thermostats()
 
     async def module_labels(self, count: int) -> dict[int, str]:
@@ -307,12 +325,16 @@ class InimPrimeGateway:
     # these on their own poll schedule via _async_update_data().
     # ------------------------------------------------------------------
     async def update_zones(self) -> MappingProxyType[int, UnifiedZone]:
+        if self._polling_held() and self.zones:
+            return self.zones
         return await self._preferred.update_zones()
 
     async def update_partitions(self) -> MappingProxyType[int, UnifiedPartition]:
         return await self._preferred.update_partitions()
 
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
+        if self._polling_held() and self.outputs:
+            return self.outputs
         if self._native is not None:
             await self._native.update_outputs()
             # PrimeLAN is read once: for the list of outputs enabled for its
