@@ -175,6 +175,7 @@ class NativeAdapter:
         "_zones",
         "_partitions",
         "_outputs",
+        "_already_connected",
         "_reconnect_lock",
         "_last_reconnect_attempt",
         "_timer_labels",
@@ -183,8 +184,10 @@ class NativeAdapter:
         "_thermostats",
     )
 
-    def __init__(self, client: NativeClient) -> None:
+    def __init__(self, client: NativeClient, *, connected: bool = False) -> None:
         self._client = client
+        # True when the client was handed over already connected (setup form).
+        self._already_connected = connected
 
         self._zones: dict[int, UnifiedZone] = {}
         self._partitions: dict[int, UnifiedPartition] = {}
@@ -219,7 +222,10 @@ class NativeAdapter:
     # Lifecycle
     # ------------------------------------------------------------------
     async def connect(self) -> None:
-        await self._client.connect()
+        if self._already_connected:
+            self._already_connected = False
+        else:
+            await self._client.connect()
         await self._client.ensure_initialized()
 
     async def close(self) -> None:

@@ -10,6 +10,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 
+from .. import native_handoff
 from .connection_test import test_native_connection, test_native_connection_and_get_serial, test_primelan_connection
 from .const import (
     DataKey,
@@ -190,9 +191,15 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             # Native present -> serial number is retrieved here, never asked.
             errors, placeholders = await _run_connection_tests(self._data, get_serial = True)
             if not errors:
-                await self.async_set_unique_id(self._data.serial_number)
-                self._abort_if_unique_id_configured()
+                try:
+                    await self.async_set_unique_id(self._data.serial_number)
+                    self._abort_if_unique_id_configured()
+                except BaseException:
+                    self._drop_parked_native_client()
+                    raise
                 return self._create_entry_with_defaults()
+            # Something failed (e.g. PrimeLAN): don't leave the Native link open.
+            self._drop_parked_native_client()
 
         schema = vol.Schema(
             build_connection_schema(
@@ -216,6 +223,10 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # defaults and is tuned afterwards from the integration's Options --
     # where the panel's scenario/partition names and shutter modules are
     # already loaded, so the forms there are far more useful than at setup.
+    def _drop_parked_native_client(self) -> None:
+        if self._data.native is not None and self._data.host:
+            native_handoff.drop(self._data.host, self._data.native.port)
+
     def _create_entry_with_defaults(self):
         # Keep the previous form default of hiding unused areas.
         self._options.hide_unused_partitions = True

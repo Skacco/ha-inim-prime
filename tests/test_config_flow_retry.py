@@ -30,3 +30,34 @@ def test_retry_keeps_password_and_api_key():
     reconfigure = _defaults(build_connection_schema(flow_data = data))
     assert reconfigure["native"]["password"] is None
     assert reconfigure["primelan"]["api_key"] is None
+
+
+async def test_setup_form_client_is_handed_over_and_never_leaked():
+    """The Native client opened by the setup form is reused once, or closed."""
+    import asyncio
+    from custom_components.inim_prime import native_handoff
+
+    class Client:
+        closed = False
+
+        def disconnect(self):
+            self.closed = True
+
+    first, second = Client(), Client()
+    native_handoff.keep("192.0.2.1", 6004, first)
+    assert native_handoff.take("192.0.2.1", 6004) is first      # picked up by setup
+    assert native_handoff.take("192.0.2.1", 6004) is None       # only once
+    assert not first.closed
+
+    native_handoff.keep("192.0.2.1", 6004, second)
+    native_handoff.drop("192.0.2.1", 6004)                      # setup did not happen
+    assert second.closed and native_handoff.take("192.0.2.1", 6004) is None
+
+    third = Client()
+    native_handoff.KEEP_SECONDS, saved = 0.01, native_handoff.KEEP_SECONDS
+    try:
+        native_handoff.keep("192.0.2.1", 6004, third)
+        await asyncio.sleep(0.05)                               # nobody came: closed
+    finally:
+        native_handoff.KEEP_SECONDS = saved
+    assert third.closed

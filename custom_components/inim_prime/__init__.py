@@ -9,7 +9,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
-from . import debug_services, native_compat  # noqa: F401  (must run before native clients initialize)
+from . import debug_services, native_compat, native_handoff  # noqa: F401  (must run before native clients initialize)
 from inim.prime.native.client import Client as NativeClient
 from inim.prime.primelan.client import InimPrimeClient as PrimelanClient
 from .adapters.native_adapter import NativeAdapter
@@ -86,14 +86,23 @@ def _build_gateway(data: InimPrimeConfigData) -> InimPrimeGateway:
     primelan_conf = data.get("primelan")
 
     if native_conf:
-        native_client = NativeClient(
-            host = host,
-            password = native_conf["password"],
-            use_outer_frame = native_conf["use_outer_frame"],
-            port = native_conf["port"],
-            pin = native_conf["pin"],
-        )
-        native_adapter = NativeAdapter(native_client)
+        # Right after the setup form the client it opened is still connected
+        # and initialised: use it instead of connecting a second time.
+        native_client = native_handoff.take(host, native_conf["port"])
+        if native_client is not None and native_client.is_initialized():
+            _LOGGER.debug("Setup: reusing the Native connection opened by the setup form")
+            native_adapter = NativeAdapter(native_client, connected = True)
+        else:
+            if native_client is not None:
+                native_client.disconnect()
+            native_client = NativeClient(
+                host = host,
+                password = native_conf["password"],
+                use_outer_frame = native_conf["use_outer_frame"],
+                port = native_conf["port"],
+                pin = native_conf["pin"],
+            )
+            native_adapter = NativeAdapter(native_client)
 
 
     if primelan_conf:
@@ -314,6 +323,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     async def _run_primelan() -> None:
         for coordinator in primelan_chain:
             await _timed_first_refresh(coordinator)
+        # Output names/filter from PrimeLAN: read here, after the scenarios,
+        # so it doesn't run next to another PrimeLAN request (the panel is
+        # much slower when it serves two at once) nor hold up the Native reads.
+        started = time.monotonic()
+        try:
+            await inim_gateway.load_primelan_output_labels()
+        finally:
+            inim_gateway.defer_output_labels = False
+        _LOGGER.debug(
+            "Setup: PrimeLAN output names took %.2fs", time.monotonic() - started
+        )
+
+    inim_gateway.defer_output_labels = True
 
     reads_started = time.monotonic()
     await asyncio.gather(_run_native(), _run_primelan())

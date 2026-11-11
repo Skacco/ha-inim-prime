@@ -65,6 +65,9 @@ class InimPrimeGateway:
         # Output labels from PrimeLAN, used to name native outputs whose
         # label the native library can't read (see native_compat).
         self._primelan_output_labels: dict[int, str] | None = None
+        # During setup the labels are loaded by load_primelan_output_labels()
+        # at a chosen moment; update_outputs() must not fetch them meanwhile.
+        self.defer_output_labels: bool = False
         # While an alarm command waits for its confirmation, routine polls
         # (zones, outputs, timers, thermostats) answer from their cache: the
         # native link serves one request at a time and would make it queue.
@@ -350,6 +353,25 @@ class InimPrimeGateway:
     async def update_partitions(self) -> MappingProxyType[int, UnifiedPartition]:
         return await self._preferred.update_partitions()
 
+    async def load_primelan_output_labels(self) -> None:
+        """Read once from PrimeLAN the outputs it publishes (filter + names)."""
+        if (
+                self._native is None
+                or self._primelan is None
+                or self._primelan_output_labels is not None
+        ):
+            return
+        try:
+            await self._primelan.update_outputs()
+            # Keyed by terminal id (same key native uses), so the two
+            # backends line up: PrimeLAN numbers outputs by its own id,
+            # native by terminal id, and only the terminal matches.
+            self._primelan_output_labels = dict(
+                self._primelan.output_terminal_labels
+            )
+        except Exception:  # noqa: BLE001 - labels are cosmetic, retry next time
+            pass
+
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
         if self._polling_held() and self.outputs:
             return self.outputs
@@ -357,17 +379,8 @@ class InimPrimeGateway:
             await self._native.update_outputs()
             # PrimeLAN is read once: for the list of outputs enabled for its
             # user (filter) and as a fallback for names.
-            if self._primelan is not None and self._primelan_output_labels is None:
-                try:
-                    await self._primelan.update_outputs()
-                    # Keyed by terminal id (same key native uses), so the two
-                    # backends line up: PrimeLAN numbers outputs by its own id,
-                    # native by terminal id, and only the terminal matches.
-                    self._primelan_output_labels = dict(
-                        self._primelan.output_terminal_labels
-                    )
-                except Exception:  # noqa: BLE001 - labels are cosmetic, retry next time
-                    pass
+            if not self.defer_output_labels:
+                await self.load_primelan_output_labels()
             return self.outputs
         if self._primelan is not None:
             return await self._primelan.update_outputs()
