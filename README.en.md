@@ -88,6 +88,9 @@ At the end you will see the devices created by the integration, which you can re
 # Reconfiguration
 To change host, HTTPS, API key, port/password/PIN or to change the integration mode: open the integration, click the three dots on the device (default name `INIM Prime (serial_number)`) and press `Reconfigure`.
 
+## After changes on the panel
+When you change the panel configuration (add/rename **zones, outputs, partitions, scenarios, roller shutters**, etc.) the new entities do **not** appear on their own: after you `Upload` from Prime/STUDIO, in HA open the integration → ⋮ menu → **Reload** (or restart Home Assistant). On reload the integration re-reads the panel and creates/updates the entities.
+
 # Options
 Click the gear icon next to the panel. You can configure:
 

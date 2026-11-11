@@ -88,6 +88,9 @@ Al termine vedrai i dispositivi creati dall'integrazione, che puoi rinominare e 
 # Riconfigurazione
 Per cambiare host, HTTPS, chiave API, porta/password/PIN o cambiare modalità di integrazione: apri l'integrazione, clicca i tre puntini del dispositivo (nome di default `INIM Prime (numero_di_serie)`) e premi `Riconfigura`.
 
+## Dopo modifiche sulla centrale
+Quando cambi la configurazione della centrale (aggiungi/rinomini **zone, uscite, partizioni, scenari, tapparelle**, ecc.) le nuove entità **non** compaiono da sole: dopo aver fatto `Upload` da Prime/STUDIO, in HA apri l'integrazione → menù ⋮ → **Ricarica** (oppure riavvia Home Assistant). Al ricaricamento l'integrazione rilegge la centrale e crea/aggiorna le entità.
+
 # Opzioni
 Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
 
