@@ -127,6 +127,9 @@ class ScenarioAlarmPanel(
         if self._armed_snapshot is not None and armed != self._armed_snapshot:
             self._settle_until = time.monotonic() + self._SETTLE_TIME
             self.hass.async_create_task(self.coordinator.async_request_refresh())
+        if armed:
+            # Partitions are armed: the arm window has done its job.
+            self._arming_until = 0.0
         self._armed_snapshot = armed
         self.async_write_ha_state()
 
@@ -134,6 +137,19 @@ class ScenarioAlarmPanel(
         return frozenset(
             p.partition_id for p in self._partitions
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        )
+
+    def _set_direction(self, command: str) -> None:
+        """Remember which way an HA command is moving the panel.
+
+        During an arm the state reads "arming" until the partitions report
+        armed (they lag the scenario); a disarm cancels that window. Set
+        together with _pending, before the request, so no update that lands
+        while the request is in flight sees a stale direction.
+        """
+        self._arming_until = (
+            0.0 if command == "disarm"
+            else time.monotonic() + self._ARMING_GRACE
         )
 
     # ------------------------------------------------------------------
@@ -155,11 +171,12 @@ class ScenarioAlarmPanel(
     def alarm_state(self) -> AlarmControlPanelState | None:
         if self._pending is not None:
             command, deadline = self._pending
-            reached = self._active_scenario_id() == self._commands.get(command)
             if command == "disarm":
-                # Disarm is immediate on the panel; confirm on the fast partition
-                # read instead of waiting for the slower scenario poll.
-                reached = reached or not self._armed_set()
+                # A disarm is done when the partitions are off (not when the
+                # scenario flips: that can be read before the partitions).
+                reached = not self._armed_set()
+            else:
+                reached = self._active_scenario_id() == self._commands.get(command)
             if reached or time.monotonic() > deadline:
                 self._pending = None
             elif command != "disarm":
@@ -182,10 +199,15 @@ class ScenarioAlarmPanel(
         # has no command, so a short settle window debounces the scenario lag.
         arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
+        disarming = self._pending is not None and self._pending[0] == "disarm"
 
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
+                if disarming:
+                    # The panel already switched to the disarm scenario; the
+                    # partitions just haven't been re-read yet.
+                    return AlarmControlPanelState.DISARMED
                 return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
                 return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
@@ -195,6 +217,8 @@ class ScenarioAlarmPanel(
             return None
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
+        if disarming:
+            return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
         return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
@@ -217,6 +241,7 @@ class ScenarioAlarmPanel(
         # Set before sending: native partitions can change while the request
         # is still in flight.
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
+        self._set_direction(command)
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
@@ -228,12 +253,9 @@ class ScenarioAlarmPanel(
         # Disarm is immediate on the panel, so confirm it on the fast partition
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
-        # Remember the direction: during an arm the state should read "arming"
-        # until the partitions report armed (they lag the scenario); a disarm
-        # cancels that window so it shows the real state straight away.
-        self._arming_until = 0.0 if disarm else time.monotonic() + self._ARMING_GRACE
         success = False
-        for _ in range(10):
+        # An arm can take several seconds to show up as the active scenario.
+        for _ in range(10 if disarm else 20):
             if disarm:
                 await self._partitions_coordinator.async_refresh()
                 if not self._armed_set():
@@ -519,6 +541,9 @@ class HybridAlarmPanel(
         if self._armed_snapshot is not None and armed != self._armed_snapshot:
             self._settle_until = time.monotonic() + self._SETTLE_TIME
             self.hass.async_create_task(self.coordinator.async_request_refresh())
+        if armed:
+            # Partitions are armed: the arm window has done its job.
+            self._arming_until = 0.0
         self._armed_snapshot = armed
         self.async_write_ha_state()
 
@@ -526,6 +551,19 @@ class HybridAlarmPanel(
         return frozenset(
             p.partition_id for p in self._partitions
             if p.arming_status not in (None, UnifiedArmingStatus.DISARMED)
+        )
+
+    def _set_direction(self, command: str) -> None:
+        """Remember which way an HA command is moving the panel.
+
+        During an arm the state reads "arming" until the partitions report
+        armed (they lag the scenario); a disarm cancels that window. Set
+        together with _pending, before the request, so no update that lands
+        while the request is in flight sees a stale direction.
+        """
+        self._arming_until = (
+            0.0 if command == "disarm"
+            else time.monotonic() + self._ARMING_GRACE
         )
 
     # ------------------------------------------------------------------
@@ -585,6 +623,7 @@ class HybridAlarmPanel(
         # has no command, so a short settle window debounces the scenario lag.
         arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
+        disarming = self._pending is not None and self._pending[0] == "disarm"
 
         # A partition-path command whose exact mix is armed wins (e.g. vacation).
         if current:
@@ -596,6 +635,10 @@ class HybridAlarmPanel(
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
+                if disarming:
+                    # The panel already switched to the disarm scenario; the
+                    # partitions just haven't been re-read yet.
+                    return AlarmControlPanelState.DISARMED
                 return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
                 return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
@@ -603,6 +646,8 @@ class HybridAlarmPanel(
 
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
+        if disarming:
+            return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
         return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
@@ -629,6 +674,7 @@ class HybridAlarmPanel(
     async def _run_scenario(self, command: str) -> None:
         target = self._scenarios[command]
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT, "scenario")
+        self._set_direction(command)
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
@@ -639,12 +685,9 @@ class HybridAlarmPanel(
         # Disarm is immediate on the panel, so confirm it on the fast partition
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
-        # Remember the direction: during an arm the state should read "arming"
-        # until the partitions report armed (they lag the scenario); a disarm
-        # cancels that window so it shows the real state straight away.
-        self._arming_until = 0.0 if disarm else time.monotonic() + self._ARMING_GRACE
         success = False
-        for _ in range(10):
+        # An arm can take several seconds to show up as the active scenario.
+        for _ in range(10 if disarm else 20):
             if disarm:
                 await self._partitions_coordinator.async_refresh()
                 if not self._current_armed():
@@ -679,6 +722,8 @@ class HybridAlarmPanel(
     async def _apply_partitions(self, command: str) -> None:
         target = self._targets.get(command, {})
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT, "partition")
+        if command == "disarm":
+            self._arming_until = 0.0
         self.async_write_ha_state()
         statuses = {
             p.partition_id: target.get(p.partition_id, UnifiedArmingStatus.DISARMED)

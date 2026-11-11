@@ -679,3 +679,66 @@ async def test_pin_panel_requires_code_to_disarm():
     assert disarmed == []
     await p.async_alarm_disarm("4321")
     assert disarmed == ["4321"]
+
+
+async def test_alarm_panel_no_flash_while_scenario_and_partitions_disagree(hass: HomeAssistant):
+    """Scenario and partitions are read separately: no wrong state in between."""
+    import time as _time
+
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    entry = await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+    coords = entry.runtime_data.coordinators
+    ent = hass.data["alarm_control_panel"].get_entity(eid)
+    assert hass.states.get(eid).state == "disarmed"
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        # --- arming: the scenario is active, the partitions not re-read yet
+        ent._set_direction("arm_vacation")
+        panel.scenarios[0]["st"] = 0
+        panel.scenarios[1]["st"] = 1
+        await coords.scenarios.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "arming"  # not "disarmed"
+
+        # the partitions follow -> armed, and the arm window is over
+        for part in panel.partitions.values():
+            part["am"] = 1
+        await coords.partitions.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "armed_vacation"
+        assert ent._arming_until == 0.0
+
+        # --- disarming: the scenario flips first, the partitions lag
+        ent._pending = ("disarm", _time.monotonic() + 20)
+        ent._set_direction("disarm")
+        panel.scenarios[1]["st"] = 0
+        panel.scenarios[0]["st"] = 1
+        await coords.scenarios.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "disarmed"  # not arming / custom bypass
+
+        for part in panel.partitions.values():
+            part["am"] = 4
+        await coords.partitions.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "disarmed"
+        assert ent._pending is None
+
+        # --- disarming: the partitions go off first, the scenario lags
+        for part in panel.partitions.values():
+            part["am"] = 1
+        panel.scenarios[0]["st"] = 0
+        panel.scenarios[1]["st"] = 1
+        await entry_refresh(hass)
+        assert hass.states.get(eid).state == "armed_vacation"
+        ent._arming_until = _time.monotonic() + 45  # a recent arm, still in its window
+        ent._pending = ("disarm", _time.monotonic() + 20)
+        ent._set_direction("disarm")
+        for part in panel.partitions.values():
+            part["am"] = 4
+        await coords.partitions.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "disarmed"  # not "arming"
