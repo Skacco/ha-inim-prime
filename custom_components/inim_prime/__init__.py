@@ -9,6 +9,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.storage import Store
 from . import debug_services, native_compat, native_handoff  # noqa: F401  (must run before native clients initialize)
 from inim.prime.native.client import Client as NativeClient
 from inim.prime.primelan.client import InimPrimeClient as PrimelanClient
@@ -16,6 +17,7 @@ from .adapters.native_adapter import NativeAdapter
 from .adapters.primelan_adapter import PrimelanAdapter
 from .const import (
     DOMAIN,
+    STORAGE_KEY_OUTPUT_LABELS,
     INIM_PRIME_DEVICE_MANUFACTURER,
     ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
@@ -335,6 +337,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             "Setup: PrimeLAN output names took %.2fs", time.monotonic() - started
         )
 
+    # The PrimeLAN output names/filter change only when the panel is
+    # reprogrammed, and reading them takes 7-10s: start from the ones saved
+    # last time and re-read them in the background (see below).
+    labels_store = Store(
+        hass, 1, f"{DOMAIN}_{data['serial_number']}_{STORAGE_KEY_OUTPUT_LABELS}"
+    )
+    cached_labels: dict[int, str] | None = None
+    if inim_gateway.uses_primelan_output_labels:
+        stored = await labels_store.async_load()
+        if isinstance(stored, dict) and isinstance(stored.get("labels"), dict):
+            cached_labels = {int(k): v for k, v in stored["labels"].items()}
+            inim_gateway.set_primelan_output_labels(cached_labels)
+            _LOGGER.debug("Setup: using %d saved PrimeLAN output names", len(cached_labels))
+
     inim_gateway.defer_output_labels = True
 
     reads_started = time.monotonic()
@@ -406,10 +422,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
         )
         if c is not None
     ]
-    if deferred or panel_log_events_coordinator is not None:
+    refresh_labels = inim_gateway.uses_primelan_output_labels
+
+    async def _refresh_output_labels() -> None:
+        """Re-read the PrimeLAN output names; reload once if they changed."""
+        started = time.monotonic()
+        try:
+            fresh = await inim_gateway.fetch_primelan_output_labels()
+        except Exception:  # noqa: BLE001 - keep what we have, retry next start
+            _LOGGER.debug("PrimeLAN output names: background read failed", exc_info = True)
+            return
+        _LOGGER.debug(
+            "PrimeLAN output names: background read took %.2fs", time.monotonic() - started
+        )
+        if not fresh or fresh == inim_gateway.primelan_output_labels:
+            return
+        await labels_store.async_save({"labels": {str(k): v for k, v in fresh.items()}})
+        if cached_labels is not None:
+            # They were built from the saved names: rebuild with the new ones.
+            _LOGGER.info("PrimeLAN outputs changed on the panel: reloading")
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    if refresh_labels and cached_labels is None and inim_gateway.primelan_output_labels:
+        # First start: the names were just read (blocking). Save them.
+        await labels_store.async_save(
+            {"labels": {str(k): v for k, v in inim_gateway.primelan_output_labels.items()}}
+        )
+        refresh_labels = False
+
+    if deferred or panel_log_events_coordinator is not None or refresh_labels:
         async def _load_deferred() -> None:
             for coordinator in deferred:
                 await coordinator.async_refresh()
+            if refresh_labels:
+                await _refresh_output_labels()
             if panel_log_events_coordinator is not None:
                 await panel_log_events_coordinator.async_startup()
                 await panel_log_events_coordinator.async_refresh()

@@ -353,22 +353,36 @@ class InimPrimeGateway:
     async def update_partitions(self) -> MappingProxyType[int, UnifiedPartition]:
         return await self._preferred.update_partitions()
 
+    @property
+    def uses_primelan_output_labels(self) -> bool:
+        """Native outputs filtered/named from PrimeLAN (both backends)."""
+        return self._native is not None and self._primelan is not None
+
+    @property
+    def primelan_output_labels(self) -> dict[int, str] | None:
+        return self._primelan_output_labels
+
+    def set_primelan_output_labels(self, labels: dict[int, str]) -> None:
+        """Use labels read earlier (see the cache in async_setup_entry)."""
+        self._primelan_output_labels = dict(labels)
+
+    async def fetch_primelan_output_labels(self) -> dict[int, str]:
+        """Read from PrimeLAN the outputs it publishes ({terminal id: name}).
+
+        This single request takes several seconds on a real panel.
+        """
+        await self._primelan.update_outputs()
+        # Keyed by terminal id (same key native uses), so the two backends
+        # line up: PrimeLAN numbers outputs by its own id, native by terminal
+        # id, and only the terminal matches.
+        return dict(self._primelan.output_terminal_labels)
+
     async def load_primelan_output_labels(self) -> None:
         """Read once from PrimeLAN the outputs it publishes (filter + names)."""
-        if (
-                self._native is None
-                or self._primelan is None
-                or self._primelan_output_labels is not None
-        ):
+        if not self.uses_primelan_output_labels or self._primelan_output_labels is not None:
             return
         try:
-            await self._primelan.update_outputs()
-            # Keyed by terminal id (same key native uses), so the two
-            # backends line up: PrimeLAN numbers outputs by its own id,
-            # native by terminal id, and only the terminal matches.
-            self._primelan_output_labels = dict(
-                self._primelan.output_terminal_labels
-            )
+            self._primelan_output_labels = await self.fetch_primelan_output_labels()
         except Exception:  # noqa: BLE001 - labels are cosmetic, retry next time
             pass
 

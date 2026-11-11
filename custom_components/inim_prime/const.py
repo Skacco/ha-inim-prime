@@ -36,6 +36,7 @@ SCAN_INTERVAL_MIN: Final[int] = 1
 SCAN_INTERVAL_MAX: Final[int] = 300000
 
 STORAGE_KEY_LAST_PANEL_EVENT_LOGS = "last_panel_event_logs"
+STORAGE_KEY_OUTPUT_LABELS = "primelan_output_labels"
 
 INIM_PRIME_DEVICE_MANUFACTURER = "Inim"
 INIM_PRIME_MODEL_ZONE = "Prime Zone"

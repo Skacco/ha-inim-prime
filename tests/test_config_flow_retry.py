@@ -61,3 +61,32 @@ async def test_setup_form_client_is_handed_over_and_never_leaked():
     finally:
         native_handoff.KEEP_SECONDS = saved
     assert third.closed
+
+
+async def test_gateway_output_labels_can_come_from_the_saved_copy():
+    """Saved PrimeLAN output names are used as they are; no PrimeLAN read then."""
+    from custom_components.inim_prime.gateway import InimPrimeGateway
+
+    class Native:
+        outputs = {}
+
+    class Primelan:
+        reads = 0
+        output_terminal_labels = {31: "Luce Portico"}
+
+        async def update_outputs(self):
+            self.reads += 1
+
+    primelan = Primelan()
+    gateway = InimPrimeGateway(native = Native(), primelan = primelan)
+    assert gateway.uses_primelan_output_labels and gateway.primelan_output_labels is None
+
+    gateway.set_primelan_output_labels({31: "Luce Portico", 32: "Vecchia"})
+    await gateway.load_primelan_output_labels()        # already set: nothing to read
+    assert primelan.reads == 0
+
+    fresh = await gateway.fetch_primelan_output_labels()  # the background re-read
+    assert primelan.reads == 1 and fresh == {31: "Luce Portico"}
+    assert fresh != gateway.primelan_output_labels        # -> would save and reload
+
+    assert not InimPrimeGateway(primelan = primelan).uses_primelan_output_labels
