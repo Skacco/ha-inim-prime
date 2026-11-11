@@ -21,7 +21,7 @@ class _TimerEntity(CoordinatorEntity[InimPrimeTimersUpdateCoordinator]):
         self._attr_unique_id = f"{serial_number}_timer_{self.timer_id}{self._unique_suffix}"
         self._attr_device_info = DeviceInfo(
             identifiers = {(DOMAIN, f"{serial_number}_timers")},
-            name = "Inim Timer",
+            name = "Timer",
             model = "Inim Prime Timer",
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         )

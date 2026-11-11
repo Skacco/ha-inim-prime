@@ -812,7 +812,7 @@ async def test_old_default_names_are_dropped(hass: HomeAssistant):
     registry = er.async_get(hass)
     areas = devices.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partitions")})
     zones = devices.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zones")})
-    assert areas.name == "Inim Aree"
+    assert areas.name == "Aree"
     devices.async_update_device(areas.id, name_by_user="Partizioni")
     devices.async_update_device(zones.id, name_by_user="Le mie zone")
     area_entities = [

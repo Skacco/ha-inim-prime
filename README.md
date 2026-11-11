@@ -57,6 +57,8 @@ Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o 
 > **Prima di installare**, se non l'hai già fatto, prepara la centrale con Prime/STUDIO: vedi **[Configurazione della centrale Inim Prime](#configurazione-della-centrale-inim-prime)** in fondo a questa pagina.
 
 # Installazione in Home Assistant
+> **Hai già l'integrazione originale di Pitscheider?** Le due non possono stare installate insieme: usano lo stesso dominio (`inim_prime`) e la stessa cartella, quindi questa **la sostituisce**. Rimuovi dal Marketplace il repository originale, aggiungi questo, scarica e riavvia. La configurazione esistente (connessione e intervalli) viene ripresa; le zone e le aree vengono raggruppate in un unico dispositivo ciascuna e i sensori «Stato» e gli interruttori «Esclusione» delle zone vengono ricreati. Le entità già esistenti conservano i vecchi ID: per averli aggiornati usa **Ricrea ID entità** nel menù di ogni dispositivo, oppure rimuovi l'integrazione e aggiungila di nuovo.
+
 ## Dal Marketplace (consigliato)
 È il modo consigliato perché gestisce gli aggiornamenti. Il negozio delle integrazioni è ormai integrato in Home Assistant (Marketplace), quindi non serve installare altro.
 ### Aggiungi il repository personalizzato
@@ -192,7 +194,7 @@ Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiam
 > Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 
 # Dispositivi disponibili
-L'integrazione raggruppa le entità in pochi dispositivi. I nomi iniziano tutti con «Inim», così anche gli ID delle entità (es. `button.inim_aree_casetta_cancella_memorie`).
+L'integrazione raggruppa le entità in pochi dispositivi.
 
 ## Inim Centrale
 Rappresenta la centrale.
@@ -202,33 +204,33 @@ Rappresenta la centrale.
 - **Pulsanti:** Annulla esclusioni zone, Cancella memorie aree, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
 
-## Inim Zone
+## Zone
 Device unico che contiene tutte le zone. Per ogni zona:
 - **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…).
 - **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memorie allarme** (diagnostica).
 
-## Inim Aree
+## Aree
 Device unico con tutte le aree. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
 - **Stato** — ALARM / READY / SABOTAGE.
 - **Cancella memorie** (pulsante).
 - **Memorie allarme** (diagnostica).
 
-## Inim Uscite
+## Uscite
 Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off.
 
-## Inim Tapparelle
+## Tapparelle
 Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale posizione).
 
-## Inim Termostati
+## Termostati
 Device unico con i sensori di temperatura dei termostati (solo modalità Native, se presenti sulla centrale).
 
-## Inim Timer
+## Timer
 Device unico con i timer della centrale: un binary sensor "attivo" e uno switch "abilitato" per ciascuno. Creato **solo se la centrale ha dei timer** (come Termostati, Tapparelle e Uscite).
 
-## Inim GSM
+## GSM
 Operatore, Potenza segnale, Credito, Tensione alimentazione.
 
 # Configurazione consigliata

@@ -749,7 +749,7 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
         device = device_registry.async_get_or_create(
             config_entry_id = entry.entry_id,
             identifiers = {(DOMAIN, f"{serial_number}_{key}")},
-            name = f"Inim {name}",
+            name = name,
             manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
             model = f"Inim Prime {name}",
         )
