@@ -280,8 +280,14 @@ class ScenarioAlarmPanel(
                     success = True
                     break
             await asyncio.sleep(0.5)
-        await self.coordinator.async_refresh()
-        await self._partitions_coordinator.async_refresh()
+        # Only read what the loop above hasn't just read (each read can take
+        # seconds on the panel).
+        if disarm:
+            # Partitions are fresh; the scenario label can follow on its own.
+            self.hass.async_create_task(self.coordinator.async_refresh())
+        else:
+            # Scenario is fresh; the partitions give the final armed state.
+            await self._partitions_coordinator.async_refresh()
 
         result = {
             "command": command,
@@ -729,8 +735,14 @@ class HybridAlarmPanel(
                     success = True
                     break
             await asyncio.sleep(0.5)
-        await self.coordinator.async_refresh()
-        await self._partitions_coordinator.async_refresh()
+        # Only read what the loop above hasn't just read (each read can take
+        # seconds on the panel).
+        if disarm:
+            # Partitions are fresh; the scenario label can follow on its own.
+            self.hass.async_create_task(self.coordinator.async_refresh())
+        else:
+            # Scenario is fresh; the partitions give the final armed state.
+            await self._partitions_coordinator.async_refresh()
 
         result = {
             "command": command,

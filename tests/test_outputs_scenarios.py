@@ -745,7 +745,7 @@ async def test_alarm_panel_no_flash_while_scenario_and_partitions_disagree(hass:
 
 
 async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeAssistant):
-    """Arm pressed while the previous disarm is still doing its last reads."""
+    """Disarm pressed while the previous arm is still doing its last read."""
     import asyncio
 
     panel = FakePanel()
@@ -754,16 +754,14 @@ async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeA
     await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
     eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
     original = panel.request
-    hold = {"scenario_reads": False, "arm": False, "waiting": 0}
-    release_reads = asyncio.Event()
-    release_arm = asyncio.Event()
+    hold = {"next_partition_read": False, "waiting": 0}
+    release = asyncio.Event()
 
     async def slow(cmd, **params):
-        if cmd == "get_scenarios_status" and hold["scenario_reads"]:
+        if cmd == "get_partitions_status" and hold["next_partition_read"]:
+            hold["next_partition_read"] = False  # only the arm's closing read
             hold["waiting"] += 1
-            await release_reads.wait()
-        if cmd == "set_scenarios_mode" and params.get("p1") == 1 and hold["arm"]:
-            await release_arm.wait()
+            await release.wait()
         return await original(cmd, **params)
 
     async def spin(until):
@@ -777,30 +775,26 @@ async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeA
         return hass.async_create_task(hass.services.async_call(
             "alarm_control_panel", service, {"entity_id": eid}, blocking=True))
 
+    ent = hass.data["alarm_control_panel"].get_entity(eid)
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=slow):
-        await call("alarm_arm_vacation")
-        await hass.async_block_till_done()
-        assert hass.states.get(eid).state == "armed_vacation"
-
-        # disarm: partitions go off at once, its closing scenario read hangs
-        hold["scenario_reads"] = True
-        disarm = call("alarm_disarm")
-        await spin(lambda: hass.states.get(eid).state == "disarmed" and hold["waiting"])
-
-        # arm again while the disarm is still finishing
-        hold["arm"] = True
+        # arm: the scenario is confirmed, the closing partition read hangs
+        hold["next_partition_read"] = True
         arm = call("alarm_arm_vacation")
-        await spin(lambda: hass.states.get(eid).state == "arming")
+        await spin(lambda: hold["waiting"] == 1)
+        assert hass.states.get(eid).state == "arming"
 
-        # the old disarm completes: it must not reset the new arm
-        hold["scenario_reads"] = False
-        release_reads.set()
-        await disarm
-        assert hass.states.get(eid).state == "arming"  # not "disarmed"
+        # a newer command starts while the arm is still finishing
+        import time as _time
+        newer = ("disarm", _time.monotonic() + 20)
+        ent._pending = newer
+        ent._set_direction("disarm")
+        ent._command_seq += 1
+        ent._last_command = {"command": "disarm"}
 
-        release_arm.set()
+        # the old arm completes: it must not touch the newer command's state
+        release.set()
         await arm
+        assert ent._pending == newer
+        assert ent._last_command == {"command": "disarm"}
+        ent._pending = None
         await hass.async_block_till_done()
-        st = hass.states.get(eid)
-        assert st.state == "armed_vacation"
-        assert st.attributes["last_command"]["command"] == "arm_vacation"
