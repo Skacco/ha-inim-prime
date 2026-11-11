@@ -158,14 +158,12 @@ class ScenarioAlarmPanel(
                 reached = reached or not self._armed_set()
             if reached or time.monotonic() > deadline:
                 self._pending = None
-            else:
-                return (
-                    # Optimistic disarm: show "disarmed" at once instead of a
-                    # transitional "disarming". Self-corrects if the command
-                    # fails (pending clears -> real armed state returns).
-                    AlarmControlPanelState.DISARMED if command == "disarm"
-                    else AlarmControlPanelState.ARMING
-                )
+            elif command != "disarm":
+                # Arming keeps its transitional "arming" during the exit delay.
+                return AlarmControlPanelState.ARMING
+            # Disarm: no transitional and no optimistic guess — fall through to
+            # the real state (read from the partitions), which shows "armed"
+            # until they confirm "disarmed", then flips straight to "disarmed".
 
         partitions = self._partitions
         if any(p.partition_state == UnifiedPartitionState.ALARM for p in partitions):
@@ -357,14 +355,12 @@ class PartitionAlarmPanel(
             target = self._targets.get(command, {})
             if current == target or time.monotonic() > deadline:
                 self._pending = None
-            else:
-                return (
-                    # Optimistic disarm: show "disarmed" at once instead of a
-                    # transitional "disarming". Self-corrects if the command
-                    # fails (pending clears -> real armed state returns).
-                    AlarmControlPanelState.DISARMED if command == "disarm"
-                    else AlarmControlPanelState.ARMING
-                )
+            elif command != "disarm":
+                # Arming keeps its transitional "arming" during the exit delay.
+                return AlarmControlPanelState.ARMING
+            # Disarm: no transitional and no optimistic guess — fall through to
+            # the real state (read from the partitions), which shows "armed"
+            # until they confirm "disarmed", then flips straight to "disarmed".
 
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         if not known:
@@ -559,14 +555,12 @@ class HybridAlarmPanel(
                 reached = current == self._targets.get(command, {})
             if reached or time.monotonic() > deadline:
                 self._pending = None
-            else:
-                return (
-                    # Optimistic disarm: show "disarmed" at once instead of a
-                    # transitional "disarming". Self-corrects if the command
-                    # fails (pending clears -> real armed state returns).
-                    AlarmControlPanelState.DISARMED if command == "disarm"
-                    else AlarmControlPanelState.ARMING
-                )
+            elif command != "disarm":
+                # Arming keeps its transitional "arming" during the exit delay.
+                return AlarmControlPanelState.ARMING
+            # Disarm: no transitional and no optimistic guess — fall through to
+            # the real state (read from the partitions), which shows "armed"
+            # until they confirm "disarmed", then flips straight to "disarmed".
 
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         if not known:
