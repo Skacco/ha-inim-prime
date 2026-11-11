@@ -294,7 +294,7 @@
           },
           "disarm_partitions": {
             "name": "↳ Disarmed: custom partitions and outputs",
-            "description": "Used only when “Custom partitions…” is selected above.",
+            "description": "Used only when “Custom partitions…” is selected above. There is nothing to choose for the partitions here: disarming sets all of them to disarmed. You can only pick outputs to switch on.",
             "data": {
               "outputs": "Output activation"
             }

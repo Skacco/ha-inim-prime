@@ -439,6 +439,8 @@ class PartitionAlarmPanel(
     _attr_code_arm_required = False
     _attr_code_format = None
     _PENDING_TIMEOUT = 20.0
+    # How long a command waits for the panel to confirm it.
+    _CONFIRM_TIMEOUT = 15.0
 
     def __init__(
             self,
@@ -521,17 +523,31 @@ class PartitionAlarmPanel(
 
     async def _apply(self, command: str, target: dict[int, "UnifiedArmingStatus"]) -> None:
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
+        gateway = self.coordinator.gateway
+        # Keep the panel link free for this command and its own reads.
+        gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
         statuses = {
             p.partition_id: target.get(p.partition_id, UnifiedArmingStatus.DISARMED)
             for p in self._partitions
         }
+        started = time.monotonic()
+        _LOGGER.debug("Alarm %s: setting the partitions", command)
         try:
-            await self.coordinator.gateway.set_partition_arming_statuses(statuses)
+            await gateway.set_partition_arming_statuses(statuses)
         except Exception:
+            _LOGGER.debug(
+                "Alarm %s: command failed after %.2fs", command,
+                time.monotonic() - started, exc_info=True,
+            )
+            gateway.release_polling()
             self._pending = None
             self.async_write_ha_state()
             raise
+        _LOGGER.debug(
+            "Alarm %s: panel accepted the command in %.2fs", command,
+            time.monotonic() - started,
+        )
         # Fire the command's outputs (best effort: the arming already succeeded,
         # so an output error must not undo it). The panel self-releases them.
         for output_id in self._outputs.get(command, []):
@@ -539,7 +555,30 @@ class PartitionAlarmPanel(
                 await self.coordinator.gateway.set_output(output_id, True)
             except Exception:  # noqa: BLE001 - outputs are an add-on to the arm
                 _LOGGER.warning("Alarm panel: failed to activate output %s", output_id)
-        await self.coordinator.async_refresh()
+        # Read the partitions until they show the requested set: the first
+        # read can land just before the panel has applied it.
+        confirmed = False
+        attempt = 0
+        deadline = started + self._CONFIRM_TIMEOUT
+        while time.monotonic() < deadline:
+            read_started = time.monotonic()
+            await self.coordinator.async_refresh()
+            armed = self._current_armed()
+            _LOGGER.debug(
+                "Alarm %s: partitions read #%d took %.2fs (armed: %s)", command,
+                attempt + 1, time.monotonic() - read_started, sorted(armed),
+            )
+            if armed == target:
+                confirmed = True
+                break
+            attempt += 1
+            await asyncio.sleep(0.3)
+        _LOGGER.debug(
+            "Alarm %s: %s after %.2fs in total", command,
+            "confirmed by the partitions" if confirmed else "NOT confirmed",
+            time.monotonic() - started,
+        )
+        gateway.release_polling()
         self._last_command = {"command": command, "outputs": self._outputs.get(command, [])}
         self.async_write_ha_state()
 
@@ -936,23 +975,68 @@ class HybridAlarmPanel(
         if command == "disarm":
             self._arming_until = 0.0
         self._command_seq += 1
+        seq = self._command_seq
+        self._assumed_scenario = None
+        gateway = self._partitions_coordinator.gateway
+        # Keep the panel link free for this command and its own reads.
+        gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
         statuses = {
             p.partition_id: target.get(p.partition_id, UnifiedArmingStatus.DISARMED)
             for p in self._partitions
         }
+        started = time.monotonic()
+        _LOGGER.debug("Alarm %s: setting the partitions", command)
         try:
-            await self._partitions_coordinator.gateway.set_partition_arming_statuses(statuses)
+            await gateway.set_partition_arming_statuses(statuses)
         except Exception:
-            self._pending = None
-            self.async_write_ha_state()
+            _LOGGER.debug(
+                "Alarm %s: command failed after %.2fs", command,
+                time.monotonic() - started, exc_info=True,
+            )
+            if seq == self._command_seq:
+                gateway.release_polling()
+                self._pending = None
+                self.async_write_ha_state()
             raise
+        _LOGGER.debug(
+            "Alarm %s: panel accepted the command in %.2fs", command,
+            time.monotonic() - started,
+        )
         for output_id in self._outputs.get(command, []):
             try:
-                await self._partitions_coordinator.gateway.set_output(output_id, True)
+                await gateway.set_output(output_id, True)
             except Exception:  # noqa: BLE001 - outputs are an add-on to the arm
                 _LOGGER.warning("Alarm panel: failed to activate output %s", output_id)
-        await self._partitions_coordinator.async_refresh()
+        # Read the partitions until they show the requested set: the first
+        # read can land just before the panel has applied it.
+        confirmed = False
+        attempt = 0
+        deadline = started + self._CONFIRM_TIMEOUT
+        while time.monotonic() < deadline:
+            if seq != self._command_seq:
+                _LOGGER.debug("Alarm %s: superseded by a newer command", command)
+                return
+            read_started = time.monotonic()
+            await self._partitions_coordinator.async_refresh()
+            armed = self._current_armed()
+            _LOGGER.debug(
+                "Alarm %s: partitions read #%d took %.2fs (armed: %s)", command,
+                attempt + 1, time.monotonic() - read_started, sorted(armed),
+            )
+            if armed == target:
+                confirmed = True
+                break
+            attempt += 1
+            await asyncio.sleep(0.3)
+        _LOGGER.debug(
+            "Alarm %s: %s after %.2fs in total", command,
+            "confirmed by the partitions" if confirmed else "NOT confirmed",
+            time.monotonic() - started,
+        )
+        if seq != self._command_seq:
+            return
+        gateway.release_polling()
         self._last_command = {"command": command, "outputs": self._outputs.get(command, [])}
         self.async_write_ha_state()
 

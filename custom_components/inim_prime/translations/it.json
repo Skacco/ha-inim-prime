@@ -294,7 +294,7 @@
           },
           "disarm_partitions": {
             "name": "↳ Disattivato: partizioni personalizzate e uscite",
-            "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…».",
+            "description": "Usato solo se sopra hai scelto «Partizioni personalizzate…». Qui non c'è nulla da scegliere per le partizioni: al disinserimento vengono poste tutte in stato disinserito. Puoi solo indicare eventuali uscite da attivare.",
             "data": {
               "outputs": "Attivazione uscite"
             }
