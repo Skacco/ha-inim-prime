@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
@@ -138,9 +139,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # connection (one client at a time), so retry for ~30s before giving up and
     # showing the "not ready" error.
     attempts = 10
+    setup_started = time.monotonic()
     for attempt in range(1, attempts + 1):
         try:
             await inim_gateway.connect()
+            _LOGGER.debug(
+                "Setup: connected in %.2fs (attempt %s)",
+                time.monotonic() - setup_started, attempt,
+            )
             break
         except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
             if attempt == attempts:
@@ -275,9 +281,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
 
     thermostats_probe: dict = {}
 
+    async def _timed_first_refresh(coordinator) -> None:
+        started = time.monotonic()
+        await coordinator.async_config_entry_first_refresh()
+        _LOGGER.debug(
+            "Setup: first read of %s took %.2fs",
+            coordinator.name, time.monotonic() - started,
+        )
+
     async def _run_native() -> None:
         for coordinator in native_chain:
-            await coordinator.async_config_entry_first_refresh()
+            await _timed_first_refresh(coordinator)
         # Thermostats are Native-only and optional. Probe here (inside the native
         # chain, so it overlaps the PrimeLAN loads) and keep the coordinator only
         # if the panel actually returns thermostats (the status command fails
@@ -289,15 +303,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
                 entry = entry,
                 gateway = inim_gateway,
             )
+            probe_started = time.monotonic()
             await probe.async_refresh()
+            _LOGGER.debug(
+                "Setup: thermostat probe took %.2fs", time.monotonic() - probe_started
+            )
             if probe.last_update_success and inim_gateway.thermostats:
                 thermostats_probe["coordinator"] = probe
 
     async def _run_primelan() -> None:
         for coordinator in primelan_chain:
-            await coordinator.async_config_entry_first_refresh()
+            await _timed_first_refresh(coordinator)
 
+    reads_started = time.monotonic()
     await asyncio.gather(_run_native(), _run_primelan())
+    _LOGGER.debug(
+        "Setup: all first reads done in %.2fs", time.monotonic() - reads_started
+    )
     thermostats_coordinator = thermostats_probe.get("coordinator")
 
     # Typed, no hass.data[DOMAIN][entry.entry_id] bookkeeping, no manual
@@ -318,9 +340,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     )
 
 
+    platforms_started = time.monotonic()
     await hass.config_entries.async_forward_entry_setups(
         entry = entry,
         platforms = PLATFORMS,
+    )
+    _LOGGER.debug(
+        "Setup: entities created in %.2fs; ready %.2fs after start",
+        time.monotonic() - platforms_started, time.monotonic() - setup_started,
     )
 
     _link_child_devices(hass, entry)

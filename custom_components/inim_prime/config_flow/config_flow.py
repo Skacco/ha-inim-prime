@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 import voluptuous as vol
@@ -55,6 +56,7 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
     placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
 
     if flow_data.native is not None:
+        started = time.monotonic()
         try:
             if get_serial:
                 flow_data.serial_number = await test_native_connection_and_get_serial(flow_data.native, flow_data.host)
@@ -63,13 +65,16 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("INIM Prime: Native connection test to %s:%s failed", flow_data.host, flow_data.native.port, exc_info = True)
             placeholders["native_error"] = _describe_error(err)
+        _LOGGER.debug("Connection test: Native took %.2fs", time.monotonic() - started)
 
     if flow_data.primelan is not None:
+        started = time.monotonic()
         try:
             await test_primelan_connection(flow_data.primelan, flow_data.host)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("INIM Prime: PrimeLAN connection test to %s failed", flow_data.host, exc_info = True)
             placeholders["primelan_error"] = _describe_error(err)
+        _LOGGER.debug("Connection test: PrimeLAN took %.2fs", time.monotonic() - started)
 
     if placeholders["native_error"] or placeholders["primelan_error"]:
         parts = []
