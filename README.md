@@ -1,6 +1,6 @@
 🇮🇹 **Italiano** · 🇬🇧 [English](README.en.md)
 
-> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari, i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
+> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle partizioni (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
@@ -38,15 +38,14 @@ Testata sia con centrali a **firmware 4.x** sia a **firmware 5.x**.
 Il progetto è **sviluppato dalla community**, **non affiliato a INIM Electronics**, ed è pensato per **affiancare — non sostituire** il software ufficiale Inim.
 
 # Avvertenze
-Questa integrazione è fornita **così com'è** ed è in **sviluppo attivo**. Va considerata **sperimentale**.
-Non tutte le funzioni della centrale Inim Prime sono supportate, alcuni comportamenti possono essere incompleti o errati e **possono verificarsi modifiche che rompono la compatibilità in qualsiasi momento**, senza preavviso.
-Questa integrazione interagisce con un **sistema di sicurezza/allarme**.
+Questa integrazione è fornita **così com'è** e interagisce con un **sistema di sicurezza/allarme**.
 Usala **a tuo rischio** e **non affidarti ad essa come unico sistema di controllo o monitoraggio** della tua centrale.
 L'autore **non si assume alcuna responsabilità** per:
 - Malfunzionamenti o comportamenti imprevisti
 - Eventi mancati o in ritardo
 - Stati della centrale errati
 - Qualsiasi danno, perdita o problema di sicurezza derivante dall'uso dell'integrazione
+- Accessi non autorizzati
 
 Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o tramite il software ufficiale Inim.
 
@@ -55,89 +54,16 @@ Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o 
 - Si consiglia caldamente di usare questa integrazione **solo su una LAN fidata**.
 - Non esporre mai la centrale direttamente su Internet.
 
-# Configurazione della centrale Inim Prime
-## Requisiti
-- Per la modalità **PrimeLAN** serve una centrale Inim Prime con la **scheda di rete PrimeLAN**: senza quella scheda PrimeLAN non è utilizzabile (puoi acquistarla e installarla da solo o tramite un installatore). Il manuale della scheda è qui: [manuale Inim PrimeLAN](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
-- Per la modalità **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo (default `pass`).
-
-In entrambi i casi si configura la centrale con il software **Prime/STUDIO** su Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
-
-## Prepara la centrale
-### Connessione alla centrale
-Apri Prime/STUDIO:
-
-<img width="900" alt="img00" src="https://github.com/user-attachments/assets/9a2017b5-a9d2-4dc2-91ef-f195e755ffc7" />
-
-Clicca su `Open panel connected`, poi seleziona `Prime LAN`:
-
-<img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
-
-Inserisci IP e password della centrale (default `pass`) e clicca `Next`.
-Verificata la comunicazione, vedrai la centrale rilevata, la versione firmware e il **numero di serie**.
-È **FORTEMENTE CONSIGLIATO** copiare correttamente il numero di serie e conservarlo: servirà dopo nella configurazione di Home Assistant.
-Poi clicca `Open the panel`.
-
-### Fai un backup della configurazione
-La prima cosa da fare, se non l'hai già fatto, è copiare la configurazione della centrale.
-Scarica la configurazione attuale cliccando sull'icona `Download` in alto a sinistra:
-
-<img width="634" height="113" alt="img02" src="https://github.com/user-attachments/assets/14a5bdee-61f4-4811-a8a0-f3a0932b18a2" />
-
-Al termine clicca `Save`, scegli un nome e `OK`.
-In caso di problemi potrai ripristinare aprendo (`Open`) la configurazione salvata e premendo l'icona `Upload`.
-
-### Controlla le impostazioni di rete
-Dopo il backup, clicca `Control panel parameters` nel pannello di sinistra:
-
-<img width="265" height="603" alt="img03" src="https://github.com/user-attachments/assets/6f3d5703-8dd9-416a-8562-cd8c72a93674" />
-
-Poi `IP connection parameters`:
-
-<img width="693" height="83" alt="img04" src="https://github.com/user-attachments/assets/283bb9bc-3dec-4172-b275-bf16d8bb2944" />
-
-Controlla se è attivo `Obtain an IP address automatically`.
-Se è attivo, la centrale usa parametri ottenuti dal DHCP: in Home Assistant serve un IP statico (o almeno un hostname). Se vuoi tenere il DHCP, riserva un IP statico per la centrale sul tuo server DHCP (di solito il router). Se preferisci disabilitare il DHCP, imposta i parametri e annota l'indirizzo IP, che userai nella configurazione dell'integrazione.
-Dopo le modifiche, carica la configurazione aggiornata con `Upload`:
-
-<img width="557" height="99" alt="img05" src="https://github.com/user-attachments/assets/cbf3c2b3-b2b0-44d0-8ddf-d0ca6fd3612c" />
-
-### Aggiorna il firmware
-Consigliato aggiornare il firmware della centrale, cliccando qui (in alto a destra):
-
-<img width="112" height="102" alt="img06" src="https://github.com/user-attachments/assets/79168438-cfd7-42e8-93f4-d3dfaf3d19d9" />
-
-### Configura PrimeLAN (solo per la modalità PrimeLAN)
-A centrale aggiornata, clicca `PrimeLAN settings` nel pannello di sinistra:
-
-<img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
-
-Prima di operare, carica la configurazione attuale con l'icona di download in alto a sinistra (può volerci un po'):
-
-<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
-
-Poi clicca `Web API` in alto a destra:
-
-<img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
-
-Attiva `API HTTP/HTTPS enable`, poi `Generates` per creare una nuova API Key.
-La API Key ti servirà nella configurazione di Home Assistant. Dà accesso a gran parte delle funzioni della centrale: se pensi sia compromessa, rigenerala (ricordandoti di ricaricare la configurazione dopo).
-Seleziona quale `Code` userà la Web API per le operazioni. Consigliato creare un codice dedicato solo a questo scopo.
-Consigliato attivare `Only Allow connections via HTTPS` per cifrare le comunicazioni (il protocollo è datato, ma su LAN va bene).
-L'opzione `Not allow disalarm` è a tua scelta: se attiva, alcune operazioni falliranno e al momento l'integrazione non supporta bene questo caso.
-Al termine clicca `Upload` per caricare la nuova configurazione.
+> **Prima di installare**, se non l'hai già fatto, prepara la centrale con Prime/STUDIO: vedi **[Configurazione della centrale Inim Prime](#configurazione-della-centrale-inim-prime)** in fondo a questa pagina.
 
 # Installazione in Home Assistant
-## Tramite HACS (consigliato)
-È il modo consigliato perché gestisce gli aggiornamenti.
-### Requisiti
-Devi avere HACS installato in Home Assistant. Se non ce l'hai: [https://www.hacs.xyz/docs/use/](https://www.hacs.xyz/docs/use/).
+## Dal Marketplace (consigliato)
+È il modo consigliato perché gestisce gli aggiornamenti. Il negozio delle integrazioni è ormai integrato in Home Assistant (Marketplace), quindi non serve installare altro.
 ### Aggiungi il repository personalizzato
-Apri HACS → menu in alto a destra (tre puntini) → `Custom repositories`.
-Nel campo `Repository` incolla `https://github.com/Skacco/ha-inim-prime`, nel menu `Type` scegli `Integration`, premi `ADD`.
+Apri il **Marketplace** → menu in alto a destra (tre puntini) → `Repository personalizzati`.
+Nel campo `Repository` incolla `https://github.com/Skacco/ha-inim-prime`, come categoria scegli `Integration`, premi `ADD`.
 ### Installa l'integrazione
-In HACS cerca `Inim Prime`, aprila, premi `DOWNLOAD` due volte.
-### Riavvia Home Assistant
-Dopo il download comparirà un avviso `Restart required`: riavvia Home Assistant per completare l'installazione.
+Cerca `Inim Prime`, aprila e premi `DOWNLOAD`. Alla **prima installazione non serve riavviare**: puoi aggiungere subito l'integrazione (vedi sotto). Il riavvio viene richiesto solo per gli **aggiornamenti** successivi.
 ## Installazione manuale (sconsigliata)
 Scarica il codice sorgente dell'ultima release da [https://github.com/Skacco/ha-inim-prime](https://github.com/Skacco/ha-inim-prime), copia la cartella `inim_prime` dentro `custom_components` della tua configurazione Home Assistant e riavvia.
 
@@ -208,6 +134,15 @@ Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una
 - **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
 - **Solo PrimeLAN** → mappatura **a scenari** (si sceglie lo scenario per comando da una tendina con i nomi; senza scenario di disinserimento il pannello non viene creato).
 - **Entrambe le modalità di integrazione** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
+
+### Pannello allarme con PIN (facoltativo, per un tablet a parete)
+Se tieni un tablet sempre acceso in una stanza ad accesso libero, puoi aggiungere un **secondo pannello protetto da PIN**, lasciando quello originale senza PIN per l'uso da telefono.
+
+Attivalo da Opzioni → *Parametri generali* → **Pannello allarme aggiuntivo con PIN** + il campo **PIN**. L'integrazione crea una seconda entità `alarm_control_panel.…_pin` che:
+- riflette lo **stesso stato** e usa gli **stessi comandi** del pannello normale;
+- chiede il **PIN solo per disinserire** (l'inserimento resta libero); con PIN errato non succede nulla.
+
+Sul **tablet** metti in dashboard la card «Pannello allarme» puntata sull'entità **con PIN**; sul **telefono** usi quella originale. Il PIN è un blocco locale della card, non il codice della centrale.
 
 ## Tapparelle
 Il modulo tapparella Smart esegue l'intera corsa da un singolo impulso e **non ha stop**: non si pilotano direttamente i relè motore (il modulo si riprende il relè e la discesa non funziona). Si comanda invece tramite le **uscite** della centrale. Durante la corsa puoi inviare un altro comando e la tapparella prende subito il nuovo comando (es. da "apri" a "chiudi" senza aspettare la fine).
@@ -351,6 +286,73 @@ card_mod:
     }
 ```
 `rows` fissa l'altezza del box (in una vista a sezioni, 1 riga ≈ 56px: 8 righe ≈ una card media); l'`overflow-y: auto` sul contenuto fa scorrere la tabella senza spostare il resto. Aumenta o diminuisci `rows` per cambiare l'altezza.
+
+# Configurazione della centrale Inim Prime
+## Requisiti
+- Per la modalità **PrimeLAN** serve una centrale Inim Prime con la **scheda di rete PrimeLAN**: senza quella scheda PrimeLAN non è utilizzabile (puoi acquistarla e installarla da solo o tramite un installatore). Il manuale della scheda è qui: [manuale Inim PrimeLAN](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
+- Per la modalità **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo (default `pass`).
+
+In entrambi i casi si configura la centrale con il software **Prime/STUDIO** su Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
+
+## Prepara la centrale
+### Connessione alla centrale
+Apri Prime/STUDIO e clicca su `Open panel connected`, poi seleziona `Prime LAN`:
+
+<img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
+
+Inserisci IP e password della centrale (default `pass`) e clicca `Next`.
+Verificata la comunicazione, vedrai la centrale rilevata, la versione firmware e il **numero di serie**.
+È **FORTEMENTE CONSIGLIATO** copiare correttamente il numero di serie e conservarlo: servirà dopo nella configurazione di Home Assistant.
+Poi clicca `Open the panel`.
+
+### Fai un backup della configurazione
+La prima cosa da fare, se non l'hai già fatto, è copiare la configurazione della centrale.
+Scarica la configurazione attuale cliccando sull'icona `Download` in alto a sinistra:
+
+<img width="634" height="113" alt="img02" src="https://github.com/user-attachments/assets/14a5bdee-61f4-4811-a8a0-f3a0932b18a2" />
+
+Al termine clicca `Save`, scegli un nome e `OK`.
+In caso di problemi potrai ripristinare aprendo (`Open`) la configurazione salvata e premendo l'icona `Upload`.
+
+### Controlla le impostazioni di rete
+Dopo il backup, clicca `Control panel parameters` nel pannello di sinistra:
+
+<img width="265" height="603" alt="img03" src="https://github.com/user-attachments/assets/6f3d5703-8dd9-416a-8562-cd8c72a93674" />
+
+Poi `IP connection parameters`:
+
+<img width="693" height="83" alt="img04" src="https://github.com/user-attachments/assets/283bb9bc-3dec-4172-b275-bf16d8bb2944" />
+
+Controlla se è attivo `Obtain an IP address automatically`.
+Se è attivo, la centrale usa parametri ottenuti dal DHCP: in Home Assistant serve un IP statico (o almeno un hostname). Se vuoi tenere il DHCP, riserva un IP statico per la centrale sul tuo server DHCP (di solito il router). Se preferisci disabilitare il DHCP, imposta i parametri e annota l'indirizzo IP, che userai nella configurazione dell'integrazione.
+Dopo le modifiche, carica la configurazione aggiornata con `Upload`:
+
+<img width="557" height="99" alt="img05" src="https://github.com/user-attachments/assets/cbf3c2b3-b2b0-44d0-8ddf-d0ca6fd3612c" />
+
+### Aggiorna il firmware
+Consigliato aggiornare il firmware della centrale, cliccando qui (in alto a destra):
+
+<img width="112" height="102" alt="img06" src="https://github.com/user-attachments/assets/79168438-cfd7-42e8-93f4-d3dfaf3d19d9" />
+
+### Configura PrimeLAN (solo per la modalità PrimeLAN)
+A centrale aggiornata, clicca `PrimeLAN settings` nel pannello di sinistra:
+
+<img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
+
+Prima di operare, carica la configurazione attuale con l'icona di download in alto a sinistra (può volerci un po'):
+
+<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
+
+Poi clicca `Web API` in alto a destra:
+
+<img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
+
+Attiva `API HTTP/HTTPS enable`, poi `Generates` per creare una nuova API Key.
+La API Key ti servirà nella configurazione di Home Assistant. Dà accesso a gran parte delle funzioni della centrale: se pensi sia compromessa, rigenerala (ricordandoti di ricaricare la configurazione dopo).
+Seleziona quale `Code` userà la Web API per le operazioni. Consigliato creare un codice dedicato solo a questo scopo.
+Consigliato attivare `Only Allow connections via HTTPS` per cifrare le comunicazioni (il protocollo è datato, ma su LAN va bene).
+L'opzione `Not allow disalarm` è a tua scelta: se attiva, alcune operazioni falliranno e al momento l'integrazione non supporta bene questo caso.
+Al termine clicca `Upload` per caricare la nuova configurazione.
 
 # Informazioni sulla libreria API
 L'integrazione comunica con la centrale tramite una libreria Python creata da Pitscheider, disponibile qui:

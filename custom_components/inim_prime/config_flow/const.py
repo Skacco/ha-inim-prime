@@ -30,6 +30,8 @@ class OptionsKey:
     SHUTTER_COMMANDS: Final = "shutter_commands"  # stored mapping
     REALTIME_PUSH: Final = "realtime_push"    # opt-in local webhook push
     WEBHOOK_ID: Final = "webhook_id"          # generated secret / bearer token
+    ALARM_PIN_PANEL: Final = "alarm_pin_panel"  # extra PIN-protected alarm entity
+    ALARM_PIN: Final = "alarm_pin"            # PIN required to disarm that entity
 
     class AlarmPanel:
         """Scenario id activated by each alarm panel command (PrimeLAN)."""

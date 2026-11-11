@@ -3,6 +3,9 @@ from .entities.alarm_panel import (
     ScenarioAlarmPanel,
     PartitionAlarmPanel,
     HybridAlarmPanel,
+    ScenarioAlarmPanelPin,
+    PartitionAlarmPanelPin,
+    HybridAlarmPanelPin,
 )
 from .models.partitions import UnifiedArmingStatus
 from .runtime_data import InimPrimeConfigEntry
@@ -54,6 +57,11 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     has_native = bool(entry.data.get("native"))
     has_primelan = bool(entry.data.get("primelan"))
 
+    # Optional extra panel protected by a PIN (code required to disarm only),
+    # created alongside the normal one for a wall tablet in a free-access room.
+    pin = str(options.get(OptionsKey.ALARM_PIN) or "").strip()
+    want_pin = bool(options.get(OptionsKey.ALARM_PIN_PANEL)) and pin != ""
+
     # Which panel to build:
     #   - both backends: one hybrid panel routing per command (a command with a
     #     scenario uses it; without one it arms its partitions directly);
@@ -62,15 +70,17 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     if has_native and has_primelan:
         if coordinators.scenarios is None or coordinators.partitions is None:
             return
-        async_add_entities([
-            HybridAlarmPanel(
-                coordinators.scenarios,
-                coordinators.partitions,
-                dict(options.get(OptionsKey.ALARM_PANEL) or {}),
-                _native_arm_map(options),
-                _native_output_map(options),
-            )
-        ])
+        args = (
+            coordinators.scenarios,
+            coordinators.partitions,
+            dict(options.get(OptionsKey.ALARM_PANEL) or {}),
+            _native_arm_map(options),
+            _native_output_map(options),
+        )
+        entities = [HybridAlarmPanel(*args)]
+        if want_pin:
+            entities.append(HybridAlarmPanelPin(*args, pin=pin))
+        async_add_entities(entities)
         return
 
     if has_native:
@@ -78,13 +88,15 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
         # the states with a partition set; disarm and state always work.
         if coordinators.partitions is None:
             return
-        async_add_entities([
-            PartitionAlarmPanel(
-                coordinators.partitions,
-                _native_arm_map(options),
-                _native_output_map(options),
-            )
-        ])
+        args = (
+            coordinators.partitions,
+            _native_arm_map(options),
+            _native_output_map(options),
+        )
+        entities = [PartitionAlarmPanel(*args)]
+        if want_pin:
+            entities.append(PartitionAlarmPanelPin(*args, pin=pin))
+        async_add_entities(entities)
         return
 
     # Scenario panel (PrimeLAN only): needs scenarios + at least a disarm scenario.
@@ -92,6 +104,8 @@ async def async_setup_entry(hass, entry: InimPrimeConfigEntry, async_add_entitie
     if coordinators.scenarios is None or coordinators.partitions is None or "disarm" not in commands:
         return
 
-    async_add_entities([
-        ScenarioAlarmPanel(coordinators.scenarios, coordinators.partitions, commands)
-    ])
+    args = (coordinators.scenarios, coordinators.partitions, commands)
+    entities = [ScenarioAlarmPanel(*args)]
+    if want_pin:
+        entities.append(ScenarioAlarmPanelPin(*args, pin=pin))
+    async_add_entities(entities)

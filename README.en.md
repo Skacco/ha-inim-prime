@@ -1,6 +1,6 @@
 🇮🇹 [Italiano](README.md) · 🇬🇧 **English**
 
-> **Project maintained by [Skacco](https://github.com/Skacco).** Built on the work of [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), author of the original integration and of the panel communication libraries. This project adds: the **Native mode** (local TCP protocol, fast), **outputs** (switches/lights), **scenarios** (buttons + active scenario sensor), a scenario-driven **alarm panel**, **timers**, **thermostats** (temperature sensors), **roller shutters** (driven by virtual outputs), **realtime push** (local webhook, optional), device grouping and the **Italian interface**.
+> **Project maintained by [Skacco](https://github.com/Skacco).** Built on the work of [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), author of the original integration and of the panel communication libraries. This project adds: the **Native mode** (local TCP protocol, fast), **outputs** (switches/lights), **scenarios** (buttons + active scenario sensor), an **alarm panel** driven by scenarios or partitions (with an optional second **PIN**-protected panel), **timers**, **thermostats** (temperature sensors), **roller shutters** (driven by virtual outputs), **realtime push** (local webhook, optional), device grouping and the **Italian interface**.
 
 # Introduction
 This custom integration lets Home Assistant communicate with **Inim Prime alarm panels**.
@@ -38,15 +38,14 @@ Tested with panels on both **firmware 4.x** and **firmware 5.x**.
 The project is **community developed**, **not affiliated with INIM Electronics**, and is meant to **complement — not replace** the official Inim software.
 
 # Disclaimer
-This integration is provided **as is** and is under **active development**. Consider it **experimental**.
-Not every Inim Prime panel feature is supported, some behaviours may be incomplete or wrong, and **breaking changes can happen at any time**, without notice.
-This integration interacts with a **security/alarm system**.
+This integration is provided **as is** and interacts with a **security/alarm system**.
 Use it **at your own risk** and **do not rely on it as the only way to control or monitor** your panel.
 The author **accepts no responsibility** for:
 - Malfunctions or unexpected behaviour
 - Missed or delayed events
 - Wrong panel states
 - Any damage, loss or security issue arising from the use of the integration
+- Unauthorized access
 
 Always verify critical operations directly on the Inim Prime panel or through the official Inim software.
 
@@ -55,89 +54,16 @@ Always verify critical operations directly on the Inim Prime panel or through th
 - It is strongly recommended to use this integration **only on a trusted LAN**.
 - Never expose the panel directly to the Internet.
 
-# Inim Prime panel setup
-## Requirements
-- The **PrimeLAN** mode needs an Inim Prime panel with the **PrimeLAN network board**: without that board PrimeLAN cannot be used (you can buy and install it yourself or through an installer). The board manual is here: [Inim PrimeLAN manual](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
-- The **Native** mode needs the panel's local protocol port to be reachable (TCP, default **6004**) and the protocol password (default `pass`).
-
-In both cases the panel is configured with the **Prime/STUDIO** software on Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
-
-## Prepare the panel
-### Connecting to the panel
-Open Prime/STUDIO:
-
-<img width="900" alt="img00" src="https://github.com/user-attachments/assets/9a2017b5-a9d2-4dc2-91ef-f195e755ffc7" />
-
-Click `Open panel connected`, then select `Prime LAN`:
-
-<img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
-
-Enter the panel's IP and password (default `pass`) and click `Next`.
-Once communication is verified, you will see the detected panel, the firmware version and the **serial number**.
-It is **STRONGLY RECOMMENDED** to copy the serial number correctly and keep it: you will need it later in the Home Assistant setup.
-Then click `Open the panel`.
-
-### Back up the configuration
-The first thing to do, if you haven't already, is to copy the panel configuration.
-Download the current configuration by clicking the `Download` icon at the top left:
-
-<img width="634" height="113" alt="img02" src="https://github.com/user-attachments/assets/14a5bdee-61f4-4811-a8a0-f3a0932b18a2" />
-
-When it finishes click `Save`, choose a name and `OK`.
-If something goes wrong you can restore it by opening (`Open`) the saved configuration and pressing the `Upload` icon.
-
-### Check the network settings
-After the backup, click `Control panel parameters` in the left panel:
-
-<img width="265" height="603" alt="img03" src="https://github.com/user-attachments/assets/6f3d5703-8dd9-416a-8562-cd8c72a93674" />
-
-Then `IP connection parameters`:
-
-<img width="693" height="83" alt="img04" src="https://github.com/user-attachments/assets/283bb9bc-3dec-4172-b275-bf16d8bb2944" />
-
-Check whether `Obtain an IP address automatically` is enabled.
-If it is, the panel uses parameters obtained from DHCP: Home Assistant needs a static IP (or at least a hostname). If you want to keep DHCP, reserve a static IP for the panel on your DHCP server (usually the router). If you prefer to disable DHCP, set the parameters and note down the IP address, which you will use in the integration setup.
-After the changes, upload the updated configuration with `Upload`:
-
-<img width="557" height="99" alt="img05" src="https://github.com/user-attachments/assets/cbf3c2b3-b2b0-44d0-8ddf-d0ca6fd3612c" />
-
-### Update the firmware
-Updating the panel firmware is recommended, by clicking here (top right):
-
-<img width="112" height="102" alt="img06" src="https://github.com/user-attachments/assets/79168438-cfd7-42e8-93f4-d3dfaf3d19d9" />
-
-### Configure PrimeLAN (PrimeLAN mode only)
-With the panel updated, click `PrimeLAN settings` in the left panel:
-
-<img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
-
-Before working on it, load the current configuration with the download icon at the top left (it can take a while):
-
-<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
-
-Then click `Web API` at the top right:
-
-<img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
-
-Enable `API HTTP/HTTPS enable`, then `Generates` to create a new API Key.
-You will need the API Key in the Home Assistant setup. It gives access to most of the panel's functions: if you think it has been compromised, regenerate it (remembering to upload the configuration afterwards).
-Select which `Code` the Web API will use for its operations. A code dedicated to this purpose only is recommended.
-Enabling `Only Allow connections via HTTPS` is recommended, to encrypt communications (the protocol is dated, but on a LAN it is fine).
-The `Not allow disalarm` option is up to you: when enabled, some operations will fail, and at the moment the integration does not handle this case well.
-When done, click `Upload` to load the new configuration.
+> **Before installing**, if you haven't already, set up the panel with Prime/STUDIO: see **[Inim Prime panel setup](#inim-prime-panel-setup)** at the bottom of this page.
 
 # Installation in Home Assistant
-## Through HACS (recommended)
-This is the recommended way because it handles updates.
-### Requirements
-You need HACS installed in Home Assistant. If you don't have it: [https://www.hacs.xyz/docs/use/](https://www.hacs.xyz/docs/use/).
+## From the Marketplace (recommended)
+This is the recommended way because it handles updates. The integrations store is now built into Home Assistant (Marketplace), so there is nothing else to install.
 ### Add the custom repository
-Open HACS → top-right menu (three dots) → `Custom repositories`.
-In the `Repository` field paste `https://github.com/Skacco/ha-inim-prime`, in the `Type` menu choose `Integration`, press `ADD`.
+Open the **Marketplace** → top-right menu (three dots) → `Custom repositories`.
+In the `Repository` field paste `https://github.com/Skacco/ha-inim-prime`, choose `Integration` as the category, press `ADD`.
 ### Install the integration
-In HACS search for `Inim Prime`, open it, press `DOWNLOAD` twice.
-### Restart Home Assistant
-After the download a `Restart required` notice appears: restart Home Assistant to complete the installation.
+Search for `Inim Prime`, open it and press `DOWNLOAD`. On the **first install no restart is needed**: you can add the integration right away (see below). A restart is only required for later **updates**.
 ## Manual installation (not recommended)
 Download the source code of the latest release from [https://github.com/Skacco/ha-inim-prime](https://github.com/Skacco/ha-inim-prime), copy the `inim_prime` folder into `custom_components` of your Home Assistant configuration and restart.
 
@@ -208,6 +134,15 @@ Partitions not listed stay disarmed. The **state** shown in HA: a partition in a
 - **Native only** → **partition** blocks (no Scenario field).
 - **PrimeLAN only** → **scenario** mapping (you pick the scenario per command from a dropdown with the names; without a disarm scenario the panel is not created).
 - **Both integration modes** → **one single hybrid panel**: for each command you choose scenario or partitions with the rule above.
+
+### Alarm panel with PIN (optional, for a wall tablet)
+If you keep an always-on tablet in a free-access room, you can add a **second PIN-protected panel**, leaving the original one without a PIN for phone use.
+
+Enable it in Options → *General parameters* → **Extra alarm panel with PIN** + the **PIN** field. The integration creates a second `alarm_control_panel.…_pin` entity that:
+- reflects the **same state** and uses the **same commands** as the normal panel;
+- asks for the **PIN only to disarm** (arming stays free); a wrong PIN does nothing.
+
+On the **tablet** put the Alarm Panel card pointed at the **PIN** entity; on the **phone** use the original one. The PIN is a local card lock, not the panel's own code.
 
 ## Roller shutters
 The Smart shutter module runs the whole travel from a single pulse and has **no stop**: the motor relays are not driven directly (the module takes the relay back and the down travel doesn't work). It is driven through the panel's **outputs** instead. During the travel you can send another command and the shutter immediately takes the new one (e.g. from "open" to "close" without waiting for the end).
@@ -351,6 +286,73 @@ card_mod:
     }
 ```
 `rows` sets the box height (in a sections view, 1 row ≈ 56px: 8 rows ≈ a medium card); `overflow-y: auto` on the content scrolls the table without moving the rest. Increase or decrease `rows` to change the height.
+
+# Inim Prime panel setup
+## Requirements
+- The **PrimeLAN** mode needs an Inim Prime panel with the **PrimeLAN network board**: without that board PrimeLAN cannot be used (you can buy and install it yourself or through an installer). The board manual is here: [Inim PrimeLAN manual](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
+- The **Native** mode needs the panel's local protocol port to be reachable (TCP, default **6004**) and the protocol password (default `pass`).
+
+In both cases the panel is configured with the **Prime/STUDIO** software on Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
+
+## Prepare the panel
+### Connecting to the panel
+Open Prime/STUDIO and click `Open panel connected`, then select `Prime LAN`:
+
+<img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
+
+Enter the panel's IP and password (default `pass`) and click `Next`.
+Once communication is verified, you will see the detected panel, the firmware version and the **serial number**.
+It is **STRONGLY RECOMMENDED** to copy the serial number correctly and keep it: you will need it later in the Home Assistant setup.
+Then click `Open the panel`.
+
+### Back up the configuration
+The first thing to do, if you haven't already, is to copy the panel configuration.
+Download the current configuration by clicking the `Download` icon at the top left:
+
+<img width="634" height="113" alt="img02" src="https://github.com/user-attachments/assets/14a5bdee-61f4-4811-a8a0-f3a0932b18a2" />
+
+When it finishes click `Save`, choose a name and `OK`.
+If something goes wrong you can restore it by opening (`Open`) the saved configuration and pressing the `Upload` icon.
+
+### Check the network settings
+After the backup, click `Control panel parameters` in the left panel:
+
+<img width="265" height="603" alt="img03" src="https://github.com/user-attachments/assets/6f3d5703-8dd9-416a-8562-cd8c72a93674" />
+
+Then `IP connection parameters`:
+
+<img width="693" height="83" alt="img04" src="https://github.com/user-attachments/assets/283bb9bc-3dec-4172-b275-bf16d8bb2944" />
+
+Check whether `Obtain an IP address automatically` is enabled.
+If it is, the panel uses parameters obtained from DHCP: Home Assistant needs a static IP (or at least a hostname). If you want to keep DHCP, reserve a static IP for the panel on your DHCP server (usually the router). If you prefer to disable DHCP, set the parameters and note down the IP address, which you will use in the integration setup.
+After the changes, upload the updated configuration with `Upload`:
+
+<img width="557" height="99" alt="img05" src="https://github.com/user-attachments/assets/cbf3c2b3-b2b0-44d0-8ddf-d0ca6fd3612c" />
+
+### Update the firmware
+Updating the panel firmware is recommended, by clicking here (top right):
+
+<img width="112" height="102" alt="img06" src="https://github.com/user-attachments/assets/79168438-cfd7-42e8-93f4-d3dfaf3d19d9" />
+
+### Configure PrimeLAN (PrimeLAN mode only)
+With the panel updated, click `PrimeLAN settings` in the left panel:
+
+<img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
+
+Before working on it, load the current configuration with the download icon at the top left (it can take a while):
+
+<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
+
+Then click `Web API` at the top right:
+
+<img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
+
+Enable `API HTTP/HTTPS enable`, then `Generates` to create a new API Key.
+You will need the API Key in the Home Assistant setup. It gives access to most of the panel's functions: if you think it has been compromised, regenerate it (remembering to upload the configuration afterwards).
+Select which `Code` the Web API will use for its operations. A code dedicated to this purpose only is recommended.
+Enabling `Only Allow connections via HTTPS` is recommended, to encrypt communications (the protocol is dated, but on a LAN it is fine).
+The `Not allow disalarm` option is up to you: when enabled, some operations will fail, and at the moment the integration does not handle this case well.
+When done, click `Upload` to load the new configuration.
 
 # About the API library
 The integration talks to the panel through a Python library created by Pitscheider, available here:

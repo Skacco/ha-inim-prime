@@ -50,6 +50,8 @@ class InimPrimeOptionsData(TypedDict):
     panel_log_events_fetch_limit: NotRequired[int]
     realtime_push: NotRequired[bool]
     webhook_id: NotRequired[str]
+    alarm_pin_panel: NotRequired[bool]
+    alarm_pin: NotRequired[str]
 
 
 def get_entry_data(entry: ConfigEntry) -> InimPrimeConfigData:

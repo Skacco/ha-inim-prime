@@ -11,7 +11,9 @@ from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelEntity,
     AlarmControlPanelEntityFeature,
     AlarmControlPanelState,
+    CodeFormat,
 )
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -664,3 +666,43 @@ class HybridAlarmPanel(
 
     async def async_alarm_arm_vacation(self, code: str | None = None) -> None:
         await self._execute("arm_vacation")
+
+
+# ----------------------------------------------------------------------
+# Optional second panel, protected by a PIN (code required to DISARM only).
+# Same state and commands as the main panel; arming stays code-free. Meant
+# for a wall tablet in a free-access room, while the main panel (no PIN)
+# stays handy on a phone.
+# ----------------------------------------------------------------------
+class _PinDisarmMixin:
+    """Mixin: require a PIN to disarm. Arming is left code-free."""
+
+    def _make_pin_panel(self, pin: str) -> None:
+        self._pin = str(pin)
+        self._attr_code_format = CodeFormat.NUMBER
+        self._attr_code_arm_required = False  # PIN only for disarm
+        self._attr_name = "Allarme (PIN)"
+        self._attr_unique_id = f"{self._attr_unique_id}_pin"
+
+    async def async_alarm_disarm(self, code: str | None = None) -> None:
+        if self._pin and code != self._pin:
+            raise ServiceValidationError("PIN errato")
+        await super().async_alarm_disarm(code)
+
+
+class ScenarioAlarmPanelPin(_PinDisarmMixin, ScenarioAlarmPanel):
+    def __init__(self, *args, pin: str) -> None:
+        super().__init__(*args)
+        self._make_pin_panel(pin)
+
+
+class PartitionAlarmPanelPin(_PinDisarmMixin, PartitionAlarmPanel):
+    def __init__(self, *args, pin: str) -> None:
+        super().__init__(*args)
+        self._make_pin_panel(pin)
+
+
+class HybridAlarmPanelPin(_PinDisarmMixin, HybridAlarmPanel):
+    def __init__(self, *args, pin: str) -> None:
+        super().__init__(*args)
+        self._make_pin_panel(pin)

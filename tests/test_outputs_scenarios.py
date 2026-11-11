@@ -651,3 +651,31 @@ def test_webhook_url_line_shown_in_options():
     flow._pending = {OptionsKey.REALTIME_PUSH: True, OptionsKey.WEBHOOK_ID: "secret123"}
     line = flow._webhook_url_line()
     assert "secret123" in line and "/api/webhook/" in line
+
+
+async def test_pin_panel_requires_code_to_disarm():
+    """The PIN panel rejects a wrong code on disarm and forwards the right one;
+    arming stays code-free (code_arm_required False), and the unique_id differs."""
+    import pytest
+    from homeassistant.exceptions import ServiceValidationError
+    from custom_components.inim_prime.entities.alarm_panel import _PinDisarmMixin
+
+    disarmed: list = []
+
+    class Base:
+        async def async_alarm_disarm(self, code=None):
+            disarmed.append(code)
+
+    class Panel(_PinDisarmMixin, Base):
+        def __init__(self):
+            self._attr_unique_id = "SN_alarm_panel"
+            self._make_pin_panel("4321")
+
+    p = Panel()
+    assert p._attr_unique_id == "SN_alarm_panel_pin"
+    assert p._attr_code_arm_required is False
+    with pytest.raises(ServiceValidationError):
+        await p.async_alarm_disarm("0000")
+    assert disarmed == []
+    await p.async_alarm_disarm("4321")
+    assert disarmed == ["4321"]

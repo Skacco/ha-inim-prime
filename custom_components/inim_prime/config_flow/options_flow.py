@@ -275,6 +275,10 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                     self._pending[OptionsKey.WEBHOOK_ID] = webhook.async_generate_id()
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
+            if OptionsKey.ALARM_PIN_PANEL in user_input:
+                self._pending[OptionsKey.ALARM_PIN_PANEL] = user_input[OptionsKey.ALARM_PIN_PANEL]
+            # The PIN field is optional; an empty submit clears it.
+            self._pending[OptionsKey.ALARM_PIN] = (user_input.get(OptionsKey.ALARM_PIN) or "").strip()
             return await self.async_step_init()
 
         schema = vol.Schema(
@@ -445,6 +449,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             hide_unused_partitions=o.get("hide_unused_partitions"),
             shutter_commands=o.get("shutter_commands"),
             realtime_push=o.get("realtime_push"),
+            alarm_pin_panel=o.get("alarm_pin_panel"),
+            alarm_pin=o.get("alarm_pin"),
         )
 
     def _scenario_choices(self) -> list[tuple[int, str]]:
