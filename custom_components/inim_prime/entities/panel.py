@@ -23,7 +23,7 @@ def create_panel_device_info(
 ) -> DeviceInfo:
     return DeviceInfo(
         identifiers = {(domain, serial_number)},
-        name = "Inim Centrale",
+        name = "Centrale Inim",
         model = "Centrale Inim Prime",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         serial_number = serial_number,

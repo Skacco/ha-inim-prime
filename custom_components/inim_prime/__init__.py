@@ -131,7 +131,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     device_registry.async_get_or_create(
         config_entry_id = entry.entry_id,
         identifiers = {(DOMAIN, data["serial_number"])},
-        name = "Inim Centrale",
+        name = "Centrale Inim",
         model = "Centrale Inim Prime",
         manufacturer = INIM_PRIME_DEVICE_MANUFACTURER,
         serial_number = data["serial_number"],

@@ -196,7 +196,7 @@ Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiam
 # Dispositivi disponibili
 L'integrazione raggruppa le entità in pochi dispositivi.
 
-## Inim Centrale
+## Centrale Inim
 Rappresenta la centrale.
 - **Sensori:** Zone escluse, Memorie allarme zone, Memorie allarme aree, Scenario attivo.
 - **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni modalità configurata — due se usi entrambi.
