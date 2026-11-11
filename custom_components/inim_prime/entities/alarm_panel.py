@@ -176,7 +176,10 @@ class ScenarioAlarmPanel(
 
         settling = time.monotonic() < self._settle_until
         transition = (
-            AlarmControlPanelState.DISARMING if all_disarmed
+            # Optimistic disarm: when the partitions are already off but the
+            # scenario poll hasn't caught up, show "disarmed" straight away
+            # instead of a transitional "disarming".
+            AlarmControlPanelState.DISARMED if all_disarmed
             else AlarmControlPanelState.ARMING
         )
 
@@ -571,7 +574,10 @@ class HybridAlarmPanel(
         all_disarmed = not current
         settling = time.monotonic() < self._settle_until
         transition = (
-            AlarmControlPanelState.DISARMING if all_disarmed
+            # Optimistic disarm: when the partitions are already off but the
+            # scenario poll hasn't caught up, show "disarmed" straight away
+            # instead of a transitional "disarming".
+            AlarmControlPanelState.DISARMED if all_disarmed
             else AlarmControlPanelState.ARMING
         )
 
