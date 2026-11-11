@@ -17,7 +17,18 @@ from .const import (
 from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel, extract_hybrid_sections
 from .options_flow import InimPrimeOptionsFlowHandler
 from .schemas import build_connection_schema, build_options_schema
-from ..const import DOMAIN
+from ..const import (
+    DOMAIN,
+    ZONES_SCAN_INTERVAL_NATIVE_DEFAULT,
+    ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    PARTITIONS_SCAN_INTERVAL_NATIVE_DEFAULT,
+    PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT,
+)
 from ..entry_data import get_entry_data, get_entry_options
 
 _LOGGER = logging.getLogger(__name__)
@@ -200,9 +211,39 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # where the panel's scenario/partition names and shutter modules are
     # already loaded, so the forms there are far more useful than at setup.
     def _create_entry_with_defaults(self):
-        # Keep the previous form default of hiding unused areas; the rest
-        # fall back to their runtime defaults when the option is absent.
+        # Keep the previous form default of hiding unused areas.
         self._options.hide_unused_partitions = True
+        # Connection-only setup skips the scan-interval form, but the integration
+        # needs those intervals present to build its coordinators (zones and
+        # partitions always; the PrimeLAN-only pollers when PrimeLAN is used).
+        # Seed sensible defaults here; the user tunes them later in Options.
+        native = self._data.use_native
+        primelan = self._data.use_primelan
+        self._options.zones_scan_interval = (
+            ZONES_SCAN_INTERVAL_NATIVE_DEFAULT if native
+            else ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT
+        )
+        self._options.partitions_scan_interval = (
+            PARTITIONS_SCAN_INTERVAL_NATIVE_DEFAULT if native
+            else PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+        )
+        if primelan:
+            # With both backends the live data comes from Native, so the
+            # PrimeLAN-only diagnostics poll slower by default.
+            diag_default = (
+                PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if native
+                else SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+            )
+            self._options.gsm_scan_interval = (
+                PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if native
+                else GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT
+            )
+            self._options.system_faults_scan_interval = diag_default
+            self._options.panel_log_events_scan_interval = (
+                PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT if native
+                else PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+            )
+            self._options.scenarios_scan_interval = SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT
         assert self._data.serial_number is not None
         return self.async_create_entry(
             title = f"INIM Prime ({self._data.serial_number})",

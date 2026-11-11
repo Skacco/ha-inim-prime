@@ -608,3 +608,28 @@ async def test_webhook_routes_event_to_coordinator():
         query = {"ev": "nonsense"}
     await _process(entry, Req2())
     zones.async_request_refresh.assert_not_called()
+
+
+def test_connection_only_setup_seeds_scan_intervals():
+    """Connection-only first setup must produce options the integration can
+    load: scan_intervals present for zones/partitions (regression: it used to
+    assert-fail because the defaults were never seeded)."""
+    from custom_components.inim_prime.config_flow.config_flow import InimPrimeConfigFlow
+    from custom_components.inim_prime.config_flow.models import ConfigData
+
+    captured = {}
+
+    for native, primelan in ((True, False), (True, True), (False, True)):
+        flow = InimPrimeConfigFlow()
+        flow._data = ConfigData(serial_number="SN123", host="1.2.3.4", use_native=native, use_primelan=primelan)
+        flow.async_create_entry = lambda **kw: captured.update(kw) or kw  # type: ignore
+
+        flow._create_entry_with_defaults()
+        opts = captured["options"]
+        assert "scan_intervals" in opts
+        assert opts["scan_intervals"]["zones"] > 0
+        assert opts["scan_intervals"]["partitions"] > 0
+        if primelan:
+            assert opts["scan_intervals"]["system_faults"] > 0
+            assert opts["scan_intervals"]["gsm"] > 0
+            assert opts["scan_intervals"]["panel_log_events"] > 0
