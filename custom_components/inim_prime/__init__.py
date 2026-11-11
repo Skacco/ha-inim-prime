@@ -134,7 +134,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # After an options save the entry reloads and the panel may not have
     # released the previous native connection yet: wait a moment and retry a
     # few times before reporting the error.
-    attempts = 4
+    # On a reload the panel can take a while to free the previous Native
+    # connection (one client at a time), so retry for ~30s before giving up and
+    # showing the "not ready" error.
+    attempts = 10
     for attempt in range(1, attempts + 1):
         try:
             await inim_gateway.connect()
