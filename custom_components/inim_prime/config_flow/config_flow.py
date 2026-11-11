@@ -27,6 +27,7 @@ from ..const import (
     SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
+    PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT,
     PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT,
 )
 from ..entry_data import get_entry_data, get_entry_options
@@ -244,6 +245,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 else PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
             )
             self._options.scenarios_scan_interval = SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+            self._options.panel_log_events_fetch_limit = PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
         assert self._data.serial_number is not None
         return self.async_create_entry(
             title = f"INIM Prime ({self._data.serial_number})",

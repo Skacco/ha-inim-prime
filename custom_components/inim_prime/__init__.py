@@ -324,6 +324,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     )
 
     _link_child_devices(hass, entry)
+    _drop_old_default_names(hass, entry)
     debug_services.async_register(hass)
     _setup_realtime_webhook(hass, entry)
     _remove_stale_output_entities(hass, entry, inim_gateway)
@@ -584,6 +585,28 @@ def _remove_stale_output_entities(hass: HomeAssistant, entry: InimPrimeConfigEnt
         suffix = entity.unique_id[len(prefix):]
         if suffix.isdigit() and (int(suffix) not in outputs or int(suffix) in shutter_terminals):
             entity_registry.async_remove(entity.entity_id)
+
+
+# Names earlier versions gave by default. Home Assistant keeps them as custom
+# names (even across a delete + reinstall, from its deleted-entries store), so
+# they would hide the current ones.
+_OLD_DEVICE_NAMES = ("Partizioni", "Partizione")
+_OLD_ENTITY_NAME_SUFFIXES = (" Arming Status", " Reset Memory", " Alarm Memory", " State")
+
+
+def _drop_old_default_names(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """Remove custom names that are just an old default of this integration.
+
+    Any other custom name is the user's choice and is left alone.
+    """
+    device_registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        if device.name_by_user in _OLD_DEVICE_NAMES:
+            device_registry.async_update_device(device.id, name_by_user = None)
+    entity_registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        if entity.name and entity.name.endswith(_OLD_ENTITY_NAME_SUFFIXES):
+            entity_registry.async_update_entity(entity.entity_id, name = None)
 
 
 def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:

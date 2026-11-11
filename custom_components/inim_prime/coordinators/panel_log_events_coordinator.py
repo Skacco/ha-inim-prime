@@ -12,6 +12,7 @@ from .base_coordinator import InimPrimeBaseCoordinator
 from ..const import (
     DOMAIN,
     STORAGE_KEY_LAST_PANEL_EVENT_LOGS,
+    PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT,
     PANEL_LOG_EVENTS_FETCH_LIMIT_TRIGGER,
     PANEL_LOG_EVENTS_FETCH_LIMIT_MAX,
 )
@@ -60,8 +61,11 @@ class InimPrimePanelLogEventsCoordinator(InimPrimeBaseCoordinator):
 
     @property
     def panel_log_events_fetch_limit(self):
-        # The options form stores numbers as float (40.0).
-        return int(self.entry_options["panel_log_events_fetch_limit"])
+        # The options form stores numbers as float (40.0). A connection-only
+        # setup may not have stored it at all: fall back to the default.
+        return int(self.entry_options.get(
+            "panel_log_events_fetch_limit", PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT
+        ))
 
     async def _async_update_data(self):
         try:

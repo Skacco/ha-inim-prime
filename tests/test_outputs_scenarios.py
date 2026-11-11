@@ -800,3 +800,41 @@ async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeA
         assert ent._last_command == {"command": "disarm"}
         ent._pending = None
         await hass.async_block_till_done()
+
+
+async def test_old_default_names_are_dropped(hass: HomeAssistant):
+    """Custom names that are an old default must not hide the current ones."""
+    from homeassistant.helpers import device_registry as dr
+
+    panel = FakePanel()
+    entry = await _setup(hass, panel)
+    devices = dr.async_get(hass)
+    registry = er.async_get(hass)
+    areas = devices.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_partitions")})
+    zones = devices.async_get_device(identifiers={(DOMAIN, f"{SERIAL}_zones")})
+    assert areas.name == "Aree"
+    devices.async_update_device(areas.id, name_by_user="Partizioni")
+    devices.async_update_device(zones.id, name_by_user="Le mie zone")
+    area_entities = [
+        e for e in er.async_entries_for_config_entry(registry, entry.entry_id)
+        if "_partition_" in e.unique_id
+    ]
+    old, mine = area_entities[0], area_entities[1]
+    registry.async_update_entity(old.entity_id, name="Casa Arming Status")
+    registry.async_update_entity(mine.entity_id, name="Il mio nome")
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert devices.async_get(areas.id).name_by_user is None
+    assert devices.async_get(zones.id).name_by_user == "Le mie zone"
+    assert registry.async_get(old.entity_id).name is None
+    assert registry.async_get(mine.entity_id).name == "Il mio nome"
+    # fresh setups get the log-event limit default even without the options form
+    coordinator = entry.runtime_data.coordinators.panel_log_events
+    coordinator.entry_options = {
+        k: v for k, v in coordinator.entry_options.items()
+        if k != "panel_log_events_fetch_limit"
+    }
+    assert coordinator.panel_log_events_fetch_limit == 30
