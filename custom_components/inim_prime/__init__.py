@@ -663,12 +663,10 @@ def _setup_realtime_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     """Register the optional realtime-push webhook.
 
     Off unless the user enabled "realtime push" in the options. The webhook URL
-    is shown in the Options screen (General parameters), not in a notification."""
-    from homeassistant.components import persistent_notification
+    stays visible in the Options screen (General parameters); a one-time
+    notification with it is shown by the options flow on first activation."""
     from .webhook import async_register_webhook
 
-    # Clean up the notification earlier betas created; the URL now lives in Options.
-    persistent_notification.async_dismiss(hass, f"inim_prime_webhook_{entry.entry_id}")
     async_register_webhook(hass, entry)
 
 

@@ -74,7 +74,11 @@ def async_register_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> 
             webhook_id,
             _make_handler(entry),
             allowed_methods=["POST", "GET"],
-            local_only=True,
+            # Not local_only: behind a reverse proxy HA often sees even LAN
+            # requests as "remote" and would reject them. The webhook only
+            # triggers a refresh (no commands, no data exposed) and is guarded
+            # by the secret id in the URL, so accepting it is safe.
+            local_only=False,
         )
     except ValueError:
         # Already registered (e.g. a reload raced the unregister); harmless.
@@ -109,6 +113,7 @@ async def _process(entry: InimPrimeConfigEntry, request: web.Request) -> None:
     if not names:
         _LOGGER.debug("INIM webhook: ignoring unknown event %r", ev)
         return
+    _LOGGER.debug("INIM webhook: event %r -> refresh %s", ev, names)
     coordinators = entry.runtime_data.coordinators
     for name in names:
         coordinator = getattr(coordinators, name, None)

@@ -144,7 +144,34 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             opts.pop(OptionsKey.ALARM_PANEL, None)
         if not opts.get(OptionsKey.ALARM_PANEL_NATIVE):
             opts.pop(OptionsKey.ALARM_PANEL_NATIVE, None)
+        if getattr(self, "_notify_webhook_url", False) and opts.get(OptionsKey.WEBHOOK_ID):
+            self._notify_first_webhook_url(opts[OptionsKey.WEBHOOK_ID])
         return self.async_create_entry(title="", data=opts)
+
+    def _notify_first_webhook_url(self, webhook_id: str) -> None:
+        """One-time notification with the push URL, shown on first activation.
+        The URL also stays visible in Options (General parameters)."""
+        from homeassistant.components import persistent_notification
+        from homeassistant.components import webhook as hass_webhook
+        try:
+            url = hass_webhook.async_generate_url(
+                self.hass, webhook_id, allow_external=False, allow_ip=True
+            )
+        except Exception:  # noqa: BLE001 - URL is informational only
+            url = f"http://<IP-HA>:8123/api/webhook/{webhook_id}"
+        persistent_notification.async_create(
+            self.hass,
+            (
+                "Push in tempo reale attivato. L'URL è anche nelle Opzioni "
+                "(Parametri generali). In Prime/STUDIO → Configurazione PrimeLAN "
+                "→ Web API → «Gestione Api Http in uscita» punta gli eventi a "
+                f"questo URL locale, uno per evento:\n\n`{url}`\n\n"
+                "Esempi: `?ev=zone_open&id=<zona>`, `?ev=arm&area=<area>`, "
+                "`?ev=alarm&area=<area>`, `?ev=output`."
+            ),
+            title="INIM Prime - push in tempo reale",
+            notification_id=f"inim_prime_webhook_{self.config_entry.entry_id}",
+        )
 
     @property
     def _italian(self) -> bool:
@@ -273,6 +300,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 if enabled and not self._pending.get(OptionsKey.WEBHOOK_ID):
                     from homeassistant.components import webhook
                     self._pending[OptionsKey.WEBHOOK_ID] = webhook.async_generate_id()
+                    # First activation: also surface the URL once in a notification.
+                    self._notify_webhook_url = True
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
             if OptionsKey.ALARM_PIN_PANEL in user_input:

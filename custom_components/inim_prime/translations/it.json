@@ -327,7 +327,7 @@
           "panel_log_events_fetch_limit": "Numero di eventi del registro scaricati a ogni scansione quando vengono rilevati nuovi log. È consigliato il valore predefinito.\nL'integrazione ne scaricherà automaticamente di più se necessario.",
           "show_hidden_outputs": "Spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato. Acceso mostra anche le uscite interne/scheda madre.",
           "hide_unused_partitions": "Le aree mai nominate nella centrale mantengono il nome predefinito. Abilita per nasconderle con le loro entità.",
-          "realtime_push": "Opzionale, richiede la modalità PrimeLAN. La centrale invia gli eventi (zone, inserimento, allarme…) a Home Assistant via webhook locale, così le entità si aggiornano subito. Da configurare in Prime/STUDIO → Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita». Dopo il salvataggio l'URL compare in una notifica.",
+          "realtime_push": "Opzionale, richiede la modalità PrimeLAN. La centrale invia gli eventi (zone, inserimento, allarme…) a Home Assistant via webhook locale, così le entità si aggiornano subito. Da configurare in Prime/STUDIO → Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita». Dopo il salvataggio l'URL compare qui sotto, nei Parametri generali.",
           "alarm_pin_panel": "Crea una seconda entità allarme che richiede un PIN per **disinserire** (l'inserimento resta libero). Comoda per un tablet a parete in una stanza ad accesso libero, lasciando quella originale senza PIN per il telefono.",
           "alarm_pin": "Codice numerico richiesto per disinserire dal pannello con PIN. È un blocco locale della card, non il codice della centrale."
         }

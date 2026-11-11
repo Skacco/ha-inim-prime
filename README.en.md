@@ -169,7 +169,7 @@ Hides the areas never named on the panel (with the default name like `AREA 013`)
 It relies on the panel's **outbound HTTP API** ("Gestione Api Http in uscita"), part of the **PrimeLAN** Web API, so it is only available with PrimeLAN mode enabled. When on, the panel sends **events** to Home Assistant via a **local webhook**, so zones, partitions, outputs and faults update **instantly** without waiting for the poll (handy especially if you raise the scan intervals to ease the panel's load). The poll stays on as a reconciliation backstop.
 
 How to enable it:
-1. Options → *General parameters* → **Realtime push (local webhook)** → save. A **notification** appears with the webhook **local URL** (use HA's local IP, not a public domain: the webhook is LAN‑only).
+1. Options → *General parameters* → **Realtime push (local webhook)** → save. The webhook **local URL** appears there, in General parameters (use HA's **local IP**: the panel is on the LAN).
 2. In Prime/STUDIO → **PrimeLAN settings → Web API → outbound HTTP API**, create **one entry per event** (there is no wildcard), method **GET**, no authentication, pointing at the webhook URL plus parameters:
 
 | Event | Parameters |
@@ -182,7 +182,7 @@ How to enable it:
 | Output | `?ev=output` |
 | Tamper / fault | `?ev=tamper` / `?ev=fault` |
 
-The webhook is **LAN‑only** and the id in the URL is the key: keep it private. On each event the integration refreshes the affected entity right away.
+The **secret id** in the URL is the key: keep it private. The webhook only triggers a *refresh* (no commands), so it accepts the request even when HA, behind a reverse proxy, sees it as non-local. On each event the integration refreshes the affected entity right away.
 
 > **Experimental**: the exact parameter names your panel sends should be verified in the field.
 

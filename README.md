@@ -169,7 +169,7 @@ Nasconde le aree mai nominate nella centrale (col nome predefinito tipo `AREA 01
 Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, che fa parte della Web API **PrimeLAN**: quindi è disponibile solo con la modalità PrimeLAN attiva. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
 
 Come si attiva:
-1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. Compare una **notifica** con l'**URL locale** del webhook (usa l'IP locale di HA, non un dominio pubblico: il webhook è solo‑LAN).
+1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. L'**URL locale** del webhook compare lì, nei Parametri generali (usa l'**IP locale** di HA: la centrale è in LAN).
 2. In Prime/STUDIO → **Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
 
 | Evento | Parametri |
@@ -182,7 +182,7 @@ Come si attiva:
 | Uscita | `?ev=output` |
 | Tamper / guasto | `?ev=tamper` / `?ev=fault` |
 
-Il webhook è **solo‑LAN** e l'id nell'URL fa da chiave: tienilo privato. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.
+L'**id segreto** nell'URL fa da chiave: tienilo privato. Il webhook esegue solo un *refresh* (nessun comando), quindi accetta la richiesta anche se HA, dietro reverse proxy, la vede come non‑locale. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.
 
 > Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 
