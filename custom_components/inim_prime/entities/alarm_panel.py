@@ -163,7 +163,12 @@ class ScenarioAlarmPanel(
         have switched; the assumption is kept until then (or until it expires).
         """
         while True:
+            read_started = time.monotonic()
             await self.coordinator.async_refresh()
+            _LOGGER.debug(
+                "Alarm: background scenario read took %.2fs (active: %s)",
+                time.monotonic() - read_started, self._read_active_scenario_id(),
+            )
             assumed = self._assumed_scenario
             if assumed is None or assumed[1] != seq or seq != self._command_seq:
                 return
@@ -296,9 +301,15 @@ class ScenarioAlarmPanel(
         # Keep the panel link free for this command's own reads.
         self.coordinator.gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
+        started = time.monotonic()
+        _LOGGER.debug("Alarm %s: sending scenario %s", command, target)
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
+            _LOGGER.debug(
+                "Alarm %s: command failed after %.2fs", command,
+                time.monotonic() - started, exc_info=True,
+            )
             if seq == self._command_seq:
                 self.coordinator.gateway.release_polling()
                 self._pending = None
@@ -312,21 +323,34 @@ class ScenarioAlarmPanel(
         scenario_read = False
         deadline = time.monotonic() + self._CONFIRM_TIMEOUT
         attempt = 0
+        confirmed_by = None
+        _LOGGER.debug(
+            "Alarm %s: panel accepted the command in %.2fs", command,
+            time.monotonic() - started,
+        )
         while time.monotonic() < deadline:
             if seq != self._command_seq:
+                _LOGGER.debug("Alarm %s: superseded by a newer command", command)
                 return  # superseded by a newer command
             # The partitions are the quick read, and all a disarm needs.
+            read_started = time.monotonic()
             await self._partitions_coordinator.async_refresh()
             armed = self._armed_modes()
+            _LOGGER.debug(
+                "Alarm %s: partitions read #%d took %.2fs (armed: %s)", command,
+                attempt + 1, time.monotonic() - read_started, sorted(armed),
+            )
             if disarm:
                 if not armed:
                     success = True
+                    confirmed_by = "partitions"
                     break
             elif armed and armed != before:
                 # The partitions moved to a new armed set right after our
                 # command: that is the scenario we asked for. Show it now; the
                 # (slow) scenario read confirms it in the background.
                 success = True
+                confirmed_by = "partitions"
                 self._assumed_scenario = (
                     target, seq, time.monotonic() + self._ASSUME_TIME
                 )
@@ -334,13 +358,24 @@ class ScenarioAlarmPanel(
             elif attempt >= 2:
                 # Nothing to see on the partitions (e.g. the same mode armed
                 # again): ask the scenario itself.
+                read_started = time.monotonic()
                 await self.coordinator.async_refresh()
                 scenario_read = True
+                _LOGGER.debug(
+                    "Alarm %s: scenario read took %.2fs (active: %s)", command,
+                    time.monotonic() - read_started, self._read_active_scenario_id(),
+                )
                 if self._active_scenario_id() == target:
                     success = True
+                    confirmed_by = "scenario"
                     break
             attempt += 1
             await asyncio.sleep(0.5)
+        _LOGGER.debug(
+            "Alarm %s: %s after %.2fs in total", command,
+            f"confirmed by the {confirmed_by}" if success else "NOT confirmed",
+            time.monotonic() - started,
+        )
         if seq == self._command_seq:
             self.coordinator.gateway.release_polling()
         if not scenario_read:
@@ -659,7 +694,12 @@ class HybridAlarmPanel(
         have switched; the assumption is kept until then (or until it expires).
         """
         while True:
+            read_started = time.monotonic()
             await self.coordinator.async_refresh()
+            _LOGGER.debug(
+                "Alarm: background scenario read took %.2fs (active: %s)",
+                time.monotonic() - read_started, self._read_active_scenario_id(),
+            )
             assumed = self._assumed_scenario
             if assumed is None or assumed[1] != seq or seq != self._command_seq:
                 return
@@ -811,9 +851,15 @@ class HybridAlarmPanel(
         # Keep the panel link free for this command's own reads.
         self.coordinator.gateway.hold_polling(self._CONFIRM_TIMEOUT)
         self.async_write_ha_state()
+        started = time.monotonic()
+        _LOGGER.debug("Alarm %s: sending scenario %s", command, target)
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
+            _LOGGER.debug(
+                "Alarm %s: command failed after %.2fs", command,
+                time.monotonic() - started, exc_info=True,
+            )
             if seq == self._command_seq:
                 self.coordinator.gateway.release_polling()
                 self._pending = None
@@ -826,21 +872,34 @@ class HybridAlarmPanel(
         scenario_read = False
         deadline = time.monotonic() + self._CONFIRM_TIMEOUT
         attempt = 0
+        confirmed_by = None
+        _LOGGER.debug(
+            "Alarm %s: panel accepted the command in %.2fs", command,
+            time.monotonic() - started,
+        )
         while time.monotonic() < deadline:
             if seq != self._command_seq:
+                _LOGGER.debug("Alarm %s: superseded by a newer command", command)
                 return  # superseded by a newer command
             # The partitions are the quick read, and all a disarm needs.
+            read_started = time.monotonic()
             await self._partitions_coordinator.async_refresh()
             armed = self._armed_modes()
+            _LOGGER.debug(
+                "Alarm %s: partitions read #%d took %.2fs (armed: %s)", command,
+                attempt + 1, time.monotonic() - read_started, sorted(armed),
+            )
             if disarm:
                 if not armed:
                     success = True
+                    confirmed_by = "partitions"
                     break
             elif armed and armed != before:
                 # The partitions moved to a new armed set right after our
                 # command: that is the scenario we asked for. Show it now; the
                 # (slow) scenario read confirms it in the background.
                 success = True
+                confirmed_by = "partitions"
                 self._assumed_scenario = (
                     target, seq, time.monotonic() + self._ASSUME_TIME
                 )
@@ -848,13 +907,24 @@ class HybridAlarmPanel(
             elif attempt >= 2:
                 # Nothing to see on the partitions (e.g. the same mode armed
                 # again): ask the scenario itself.
+                read_started = time.monotonic()
                 await self.coordinator.async_refresh()
                 scenario_read = True
+                _LOGGER.debug(
+                    "Alarm %s: scenario read took %.2fs (active: %s)", command,
+                    time.monotonic() - read_started, self._read_active_scenario_id(),
+                )
                 if self._active_scenario_id() == target:
                     success = True
+                    confirmed_by = "scenario"
                     break
             attempt += 1
             await asyncio.sleep(0.5)
+        _LOGGER.debug(
+            "Alarm %s: %s after %.2fs in total", command,
+            f"confirmed by the {confirmed_by}" if success else "NOT confirmed",
+            time.monotonic() - started,
+        )
         if seq == self._command_seq:
             self.coordinator.gateway.release_polling()
         if not scenario_read:
