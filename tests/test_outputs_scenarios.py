@@ -718,7 +718,7 @@ async def test_alarm_panel_no_flash_while_scenario_and_partitions_disagree(hass:
         panel.scenarios[0]["st"] = 1
         await coords.scenarios.async_refresh()
         await hass.async_block_till_done()
-        assert hass.states.get(eid).state == "disarmed"  # not arming / custom bypass
+        assert hass.states.get(eid).state == "disarming"  # not arming / custom bypass
 
         for part in panel.partitions.values():
             part["am"] = 4

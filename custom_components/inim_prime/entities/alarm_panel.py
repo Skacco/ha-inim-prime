@@ -187,12 +187,13 @@ class ScenarioAlarmPanel(
                 )
             if reached or time.monotonic() > deadline:
                 self._pending = None
-            elif command != "disarm":
-                # Arming keeps its transitional "arming" during the exit delay.
-                return AlarmControlPanelState.ARMING
-            # Disarm: no transitional and no optimistic guess — fall through to
-            # the real state (read from the partitions), which shows "armed"
-            # until they confirm "disarmed", then flips straight to "disarmed".
+            else:
+                # Immediate feedback while the panel works on the command (it
+                # can take several seconds to be confirmed).
+                return (
+                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    else AlarmControlPanelState.ARMING
+                )
 
         partitions = self._partitions
         if any(p.partition_state == UnifiedPartitionState.ALARM for p in partitions):
@@ -207,15 +208,10 @@ class ScenarioAlarmPanel(
         # has no command, so a short settle window debounces the scenario lag.
         arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
-        disarming = self._pending is not None and self._pending[0] == "disarm"
 
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
-                if disarming:
-                    # The panel already switched to the disarm scenario; the
-                    # partitions just haven't been re-read yet.
-                    return AlarmControlPanelState.DISARMED
                 return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
                 return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
@@ -225,8 +221,6 @@ class ScenarioAlarmPanel(
             return None
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
-        if disarming:
-            return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
         return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
@@ -409,12 +403,13 @@ class PartitionAlarmPanel(
             target = self._targets.get(command, {})
             if current == target or time.monotonic() > deadline:
                 self._pending = None
-            elif command != "disarm":
-                # Arming keeps its transitional "arming" during the exit delay.
-                return AlarmControlPanelState.ARMING
-            # Disarm: no transitional and no optimistic guess — fall through to
-            # the real state (read from the partitions), which shows "armed"
-            # until they confirm "disarmed", then flips straight to "disarmed".
+            else:
+                # Immediate feedback while the panel works on the command (it
+                # can take several seconds to be confirmed).
+                return (
+                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    else AlarmControlPanelState.ARMING
+                )
 
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         if not known:
@@ -637,12 +632,13 @@ class HybridAlarmPanel(
                 reached = current == self._targets.get(command, {})
             if reached or time.monotonic() > deadline:
                 self._pending = None
-            elif command != "disarm":
-                # Arming keeps its transitional "arming" during the exit delay.
-                return AlarmControlPanelState.ARMING
-            # Disarm: no transitional and no optimistic guess — fall through to
-            # the real state (read from the partitions), which shows "armed"
-            # until they confirm "disarmed", then flips straight to "disarmed".
+            else:
+                # Immediate feedback while the panel works on the command (it
+                # can take several seconds to be confirmed).
+                return (
+                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    else AlarmControlPanelState.ARMING
+                )
 
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         if not known:
@@ -654,7 +650,6 @@ class HybridAlarmPanel(
         # has no command, so a short settle window debounces the scenario lag.
         arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
-        disarming = self._pending is not None and self._pending[0] == "disarm"
 
         # A partition-path command whose exact mix is armed wins (e.g. vacation).
         if current:
@@ -666,10 +661,6 @@ class HybridAlarmPanel(
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
-                if disarming:
-                    # The panel already switched to the disarm scenario; the
-                    # partitions just haven't been re-read yet.
-                    return AlarmControlPanelState.DISARMED
                 return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
                 return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
@@ -677,8 +668,6 @@ class HybridAlarmPanel(
 
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
-        if disarming:
-            return AlarmControlPanelState.ARMED_CUSTOM_BYPASS
         return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
