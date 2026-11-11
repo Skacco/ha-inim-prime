@@ -531,7 +531,7 @@
     "sensor": {
       "area_state": {
         "state": {
-          "OK": "Normale",
+          "OK": "Riposo",
           "ALARM": "Allarme",
           "TAMPER": "Sabotaggio"
         }
@@ -541,7 +541,7 @@
           "STANDBY": "Riposo",
           "ALARM": "Allarme",
           "TAMPER": "Sabotaggio",
-          "SHORT_CIRCUIT": "Cortocircuito",
+          "SHORT_CIRCUIT": "Corto",
           "UNKNOWN": "Sconosciuto"
         }
       }
