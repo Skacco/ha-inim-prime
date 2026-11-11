@@ -66,7 +66,7 @@ In both cases the panel is configured with the **Prime/STUDIO** software on Wind
 ### Connecting to the panel
 Open Prime/STUDIO:
 
-<img width="2560" height="1382" alt="img00" src="https://github.com/user-attachments/assets/9a2017b5-a9d2-4dc2-91ef-f195e755ffc7" />
+<img width="900" alt="img00" src="https://github.com/user-attachments/assets/9a2017b5-a9d2-4dc2-91ef-f195e755ffc7" />
 
 Click `Open panel connected`, then select `Prime LAN`:
 
