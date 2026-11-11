@@ -230,12 +230,12 @@ Se spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato; se a
 ## Nascondi aree inutilizzate
 Nasconde le aree mai nominate nella centrale (col nome predefinito tipo `AREA 013`) e le loro entità.
 
-## Push in tempo reale (opzionale)
-Spento di default. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
+## Push in tempo reale (opzionale, richiede PrimeLAN)
+Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, che fa parte della Web API **PrimeLAN**: quindi è disponibile solo con la modalità PrimeLAN attiva. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
 
 Come si attiva:
-1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. Compare una **notifica** con l'**URL** del webhook.
-2. In Prime/STUDIO, tabella **«Invio pagine web»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
+1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. Compare una **notifica** con l'**URL locale** del webhook (usa l'IP locale di HA, non un dominio pubblico: il webhook è solo‑LAN).
+2. In Prime/STUDIO → **Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
 
 | Evento | Parametri |
 |---|---|

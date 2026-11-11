@@ -660,37 +660,16 @@ async def async_remove_config_entry_device(
 
 
 def _setup_realtime_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Register the optional realtime-push webhook and surface its URL.
+    """Register the optional realtime-push webhook.
 
-    Off unless the user enabled "realtime push" in the options. When on, the
-    webhook receives the panel's outbound HTTP events and a persistent
-    notification shows the URL to configure in Prime/STUDIO."""
-    from homeassistant.components import persistent_notification, webhook as hass_webhook
+    Off unless the user enabled "realtime push" in the options. The webhook URL
+    is shown in the Options screen (General parameters), not in a notification."""
+    from homeassistant.components import persistent_notification
     from .webhook import async_register_webhook
 
-    note_id = f"inim_prime_webhook_{entry.entry_id}"
-    webhook_id = entry.options.get("webhook_id")
-    if not (entry.options.get("realtime_push") and webhook_id):
-        persistent_notification.async_dismiss(hass, note_id)
-        return
+    # Clean up the notification earlier betas created; the URL now lives in Options.
+    persistent_notification.async_dismiss(hass, f"inim_prime_webhook_{entry.entry_id}")
     async_register_webhook(hass, entry)
-    try:
-        url = hass_webhook.async_generate_url(hass, webhook_id)
-    except Exception:  # noqa: BLE001 - URL is informational only
-        url = f"/api/webhook/{webhook_id}"
-    persistent_notification.async_create(
-        hass,
-        (
-            "Push in tempo reale attivo. In Prime/STUDIO (tabella «Invio pagine "
-            "web») punta gli eventi a questo URL, uno per evento:\n\n"
-            f"`{url}`\n\n"
-            "Esempi: `?ev=zone_open&id=<zona>`, `?ev=zone_close&id=<zona>`, "
-            "`?ev=arm&area=<area>`, `?ev=disarm&area=<area>`, `?ev=alarm&area=<area>`, "
-            "`?ev=output`."
-        ),
-        title="INIM Prime - push in tempo reale",
-        notification_id=note_id,
-    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> bool:

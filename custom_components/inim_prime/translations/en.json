@@ -314,6 +314,7 @@
       },
       "params": {
         "title": "General parameters",
+        "description": "{webhook_url}",
         "data": {
           "panel_log_events_fetch_limit": "Panel Log Events Fetch Limit",
           "show_hidden_outputs": "Also show outputs not available via PrimeLAN (internal/mainboard outputs, e.g. siren, aux)",
@@ -324,7 +325,7 @@
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
           "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
           "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities.",
-          "realtime_push": "Optional. The panel sends events (zones, arming, alarm…) to Home Assistant via a local webhook, so entities update instantly. Configure it in Prime/STUDIO (outbound HTTP): the URL appears in a notification after saving. Off by default."
+          "realtime_push": "Optional, requires PrimeLAN mode. The panel sends events (zones, arming, alarm…) to Home Assistant via a local webhook, so entities update instantly. Configure it in Prime/STUDIO → PrimeLAN settings → Web API → outbound HTTP API. The URL appears in a notification after saving."
         }
       },
       "scan": {

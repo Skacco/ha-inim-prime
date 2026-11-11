@@ -633,3 +633,21 @@ def test_connection_only_setup_seeds_scan_intervals():
             assert opts["scan_intervals"]["system_faults"] > 0
             assert opts["scan_intervals"]["gsm"] > 0
             assert opts["scan_intervals"]["panel_log_events"] > 0
+
+
+def test_webhook_url_line_shown_in_options():
+    """The push URL line is empty when off and present (fallback form) when on."""
+    from custom_components.inim_prime.config_flow.options_flow import (
+        InimPrimeOptionsFlowHandler,
+    )
+    from custom_components.inim_prime.config_flow.const import OptionsKey
+
+    flow = InimPrimeOptionsFlowHandler()
+    flow.hass = None  # forces the fallback URL branch (no real hass)
+
+    flow._pending = {}
+    assert flow._webhook_url_line() == ""
+
+    flow._pending = {OptionsKey.REALTIME_PUSH: True, OptionsKey.WEBHOOK_ID: "secret123"}
+    line = flow._webhook_url_line()
+    assert "secret123" in line and "/api/webhook/" in line

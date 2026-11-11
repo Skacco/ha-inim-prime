@@ -286,7 +286,34 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         )
         # Not the last step: submitting returns to the menu (the single save is
         # there), so HA shows "Avanti" and a back arrow back to the menu.
-        return self.async_show_form(step_id="params", data_schema=schema, last_step=False)
+        return self.async_show_form(
+            step_id="params",
+            data_schema=schema,
+            last_step=False,
+            description_placeholders={"webhook_url": self._webhook_url_line()},
+        )
+
+    def _webhook_url_line(self) -> str:
+        """Markdown line with the realtime-push webhook URL, or empty.
+
+        Shown in the General parameters form so the URL is always re-viewable
+        (no notification). Empty when push is off or not configured yet."""
+        if not (self._pending.get(OptionsKey.REALTIME_PUSH)
+                and self._pending.get(OptionsKey.WEBHOOK_ID)):
+            return ""
+        from homeassistant.components import webhook as hass_webhook
+        wid = self._pending[OptionsKey.WEBHOOK_ID]
+        try:
+            # LAN URL: the panel is local and the webhook is local_only.
+            url = hass_webhook.async_generate_url(
+                self.hass, wid, allow_external=False, allow_ip=True
+            )
+        except Exception:  # noqa: BLE001 - URL is informational only
+            url = f"http://<IP-HA>:8123/api/webhook/{wid}"
+        return (
+            "\n\n**URL push in tempo reale** (Prime/STUDIO → Configurazione "
+            f"PrimeLAN → Web API → «Gestione Api Http in uscita»):\n\n`{url}`"
+        )
 
     # --- Scan intervals (flat: its own page, no accordion) --------------
     async def async_step_scan(self, user_input: dict[str, Any] | None = None):

@@ -230,12 +230,12 @@ When off it shows only the outputs PrimeLAN publishes to the connected user; whe
 ## Hide unused areas
 Hides the areas never named on the panel (with the default name like `AREA 013`) and their entities.
 
-## Realtime push (optional)
-Off by default. When on, the panel sends **events** to Home Assistant via a **local webhook**, so zones, partitions, outputs and faults update **instantly** without waiting for the poll (handy especially if you raise the scan intervals to ease the panel's load). The poll stays on as a reconciliation backstop.
+## Realtime push (optional, requires PrimeLAN)
+It relies on the panel's **outbound HTTP API** ("Gestione Api Http in uscita"), part of the **PrimeLAN** Web API, so it is only available with PrimeLAN mode enabled. When on, the panel sends **events** to Home Assistant via a **local webhook**, so zones, partitions, outputs and faults update **instantly** without waiting for the poll (handy especially if you raise the scan intervals to ease the panel's load). The poll stays on as a reconciliation backstop.
 
 How to enable it:
-1. Options → *General parameters* → **Realtime push (local webhook)** → save. A **notification** appears with the webhook **URL**.
-2. In Prime/STUDIO, the **outbound HTTP** table ("Invio pagine web"), create **one entry per event** (there is no wildcard), method **GET**, no authentication, pointing at the webhook URL plus parameters:
+1. Options → *General parameters* → **Realtime push (local webhook)** → save. A **notification** appears with the webhook **local URL** (use HA's local IP, not a public domain: the webhook is LAN‑only).
+2. In Prime/STUDIO → **PrimeLAN settings → Web API → outbound HTTP API**, create **one entry per event** (there is no wildcard), method **GET**, no authentication, pointing at the webhook URL plus parameters:
 
 | Event | Parameters |
 |---|---|
