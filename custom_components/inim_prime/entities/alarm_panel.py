@@ -151,7 +151,12 @@ class ScenarioAlarmPanel(
     def alarm_state(self) -> AlarmControlPanelState | None:
         if self._pending is not None:
             command, deadline = self._pending
-            if self._active_scenario_id() == self._commands.get(command) or time.monotonic() > deadline:
+            reached = self._active_scenario_id() == self._commands.get(command)
+            if command == "disarm":
+                # Disarm is immediate on the panel; confirm on the fast partition
+                # read instead of waiting for the slower scenario poll.
+                reached = reached or not self._armed_set()
+            if reached or time.monotonic() > deadline:
                 self._pending = None
             else:
                 return (
@@ -214,13 +219,23 @@ class ScenarioAlarmPanel(
             self.async_write_ha_state()
             raise
         # The panel needs a moment to switch scenario: poll it briefly.
+        # Disarm is immediate on the panel, so confirm it on the fast partition
+        # read rather than waiting for the (slower) scenario poll.
+        disarm = command == "disarm"
         success = False
         for _ in range(10):
-            await self.coordinator.async_refresh()
-            if self._active_scenario_id() == target:
-                success = True
-                break
-            await asyncio.sleep(1)
+            if disarm:
+                await self._partitions_coordinator.async_refresh()
+                if not self._armed_set():
+                    success = True
+                    break
+            else:
+                await self.coordinator.async_refresh()
+                if self._active_scenario_id() == target:
+                    success = True
+                    break
+            await asyncio.sleep(0.5)
+        await self.coordinator.async_refresh()
         await self._partitions_coordinator.async_refresh()
 
         open_zones = [] if success else self._open_zones()
@@ -526,7 +541,10 @@ class HybridAlarmPanel(
         current = self._current_armed()
         if self._pending is not None:
             command, deadline, path = self._pending
-            if path == "scenario":
+            if command == "disarm":
+                # Disarm is immediate on the panel; confirm on the partition read.
+                reached = not current
+            elif path == "scenario":
                 reached = self._active_scenario_id() == self._scenarios.get(command)
             else:
                 reached = current == self._targets.get(command, {})
@@ -598,13 +616,23 @@ class HybridAlarmPanel(
             self._pending = None
             self.async_write_ha_state()
             raise
+        # Disarm is immediate on the panel, so confirm it on the fast partition
+        # read rather than waiting for the (slower) scenario poll.
+        disarm = command == "disarm"
         success = False
         for _ in range(10):
-            await self.coordinator.async_refresh()
-            if self._active_scenario_id() == target:
-                success = True
-                break
-            await asyncio.sleep(1)
+            if disarm:
+                await self._partitions_coordinator.async_refresh()
+                if not self._current_armed():
+                    success = True
+                    break
+            else:
+                await self.coordinator.async_refresh()
+                if self._active_scenario_id() == target:
+                    success = True
+                    break
+            await asyncio.sleep(0.5)
+        await self.coordinator.async_refresh()
         await self._partitions_coordinator.async_refresh()
 
         open_zones = [] if success else self._open_zones()
