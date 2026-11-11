@@ -798,7 +798,37 @@ async def async_migrate_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) 
     if entry.version == 2 and entry.minor_version < 1:
         _migrate_partizioni_to_aree(hass, entry)
 
+    if entry.version == 2 and entry.minor_version < 2:
+        _migrate_areas_device_name(hass, entry)
+
     return True
+
+
+def _migrate_areas_device_name(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """2.1 -> 2.2: drop custom names that are just an old default.
+
+    A device still named "Partizioni" by the user field would hide the new
+    "Aree", and area entities named like the old English defaults would hide
+    the Italian names. Any other custom name is the user's choice and is kept.
+    """
+    registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+        if device.name_by_user in ("Partizioni", "Partizione"):
+            registry.async_update_device(device.id, name_by_user = None)
+    # Same for area entities still carrying an old English default as their
+    # custom name ("Casetta Arming Status"): it hides the current Italian one.
+    entities = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(entities, entry.entry_id):
+        if (
+                entity.name
+                and "_partition_" in entity.unique_id
+                and entity.name.endswith(_OLD_AREA_NAME_SUFFIXES)
+        ):
+            entities.async_update_entity(entity.entity_id, name = None)
+    hass.config_entries.async_update_entry(entry, version = 2, minor_version = 2)
+
+
+_OLD_AREA_NAME_SUFFIXES = (" Arming Status", " Reset Memory", " Alarm Memory", " State")
 
 
 def _aree_entity_id(entity_id: str) -> str:
