@@ -11,8 +11,8 @@ Puoi usare due modalità di integrazione, **singolarmente o insieme**. La scelta
 ### Native — protocollo locale (TCP)
 Comunica **direttamente con la centrale** sulla porta del protocollo locale (TCP, default **6004**), con cifratura AES. È il canale **veloce e completamente locale**: non passa dal cloud né dalla Web API.
 Espone:
-- **zone** (stato aperto/chiuso, memoria allarme, esclusione)
-- **aree** (stato, inserimento/disinserimento, memoria allarme)
+- **zone** (stato aperto/chiuso, memorie allarme, esclusione)
+- **aree** (stato, inserimento/disinserimento, memorie allarme)
 - **uscite** (interruttori)
 - **timer**
 - **termostati** (sensori di temperatura)
@@ -194,10 +194,10 @@ L'integrazione raggruppa le entità in pochi dispositivi.
 
 ## Centrale Inim Prime
 Rappresenta la centrale.
-- **Sensori:** Zone escluse, Memoria allarme zone, Memoria allarme aree, Scenario attivo.
+- **Sensori:** Zone escluse, Memorie allarme zone, Memorie allarme aree, Scenario attivo.
 - **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni modalità configurata — due se usi entrambi.
 - **Registro eventi** (event entity): traccia i log della centrale. Non è in tempo reale (vedi sezione sulla card del registro).
-- **Pulsanti:** Annulla esclusioni zone, Azzera memorie aree, e i pulsanti degli **scenari**.
+- **Pulsanti:** Annulla esclusioni zone, Cancella memorie aree, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
 
 ## Zone
@@ -205,14 +205,14 @@ Device unico che contiene tutte le zone. Per ogni zona:
 - **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…).
 - **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
-- **Memoria allarme** (diagnostica).
+- **Memorie allarme** (diagnostica).
 
 ## Aree
 Device unico con tutte le aree. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
 - **Stato** — ALARM / READY / SABOTAGE.
-- **Azzera memoria** (pulsante).
-- **Memoria allarme** (diagnostica).
+- **Cancella memorie** (pulsante).
+- **Memorie allarme** (diagnostica).
 
 ## Uscite
 Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off.

@@ -119,7 +119,7 @@ class ResetPartitionMemoryButton(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} Azzera memoria"
+        self._attr_name = f"{partition.label} Cancella memorie"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_reset_memory"
 
         self._attr_device_info = create_partition_device_info(
@@ -151,7 +151,7 @@ class PartitionAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.partition_id = partition.partition_id
-        self._attr_name = f"{partition.label} Memoria allarme"
+        self._attr_name = f"{partition.label} Memorie allarme"
         self._attr_unique_id = f"{self.coordinator.serial_number}_partition_{self.partition_id}_alarm_memory"
 
         self._attr_device_info = create_partition_device_info(

@@ -108,7 +108,7 @@ class ZoneAlarmMemoryBinarySensor(
         super().__init__(coordinator)
 
         self.zone_id = zone.zone_id
-        self._attr_name = f"{zone.label} Memoria allarme"
+        self._attr_name = f"{zone.label} Memorie allarme"
         self._attr_unique_id = f"{self.coordinator.serial_number}_zone_{self.zone_id}_alarm_memory"
 
         self._attr_device_info = create_zone_device_info(
