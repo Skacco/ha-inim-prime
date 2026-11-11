@@ -169,7 +169,7 @@ Hides the areas never named on the panel (with the default name like `AREA 013`)
 It relies on the panel's **outbound HTTP API** ("Gestione Api Http in uscita"), part of the **PrimeLAN** Web API, so it is only available with PrimeLAN mode enabled. When on, the panel sends **events** to Home Assistant via a **local webhook**, so zones, partitions, outputs and faults update **instantly** without waiting for the poll (handy especially if you raise the scan intervals to ease the panel's load). The poll stays on as a reconciliation backstop.
 
 How to enable it:
-1. Options → *General parameters* → **Realtime push (local webhook)** → save. The webhook **local URL** appears there, in General parameters (use HA's **local IP**: the panel is on the LAN).
+1. Options → *General parameters* → **Realtime push (local webhook)** → save. The webhook **local URL** appears **at the top** of General parameters (use HA's **local IP**: the panel is on the LAN).
 2. In Prime/STUDIO → **PrimeLAN settings → Web API → outbound HTTP API**, create **one entry per event** (there is no wildcard), method **GET**, no authentication, pointing at the webhook URL plus parameters:
 
 | Event | Parameters |
@@ -339,11 +339,7 @@ With the panel updated, click `PrimeLAN settings` in the left panel:
 
 <img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
 
-Before working on it, load the current configuration with the download icon at the top left (it can take a while):
-
-<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
-
-Then click `Web API` at the top right:
+Before working on it, load the current configuration with the download icon at the top left (it can take a while), then click `Web API` at the top right:
 
 <img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
 

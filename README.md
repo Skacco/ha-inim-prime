@@ -169,7 +169,7 @@ Nasconde le aree mai nominate nella centrale (col nome predefinito tipo `AREA 01
 Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, che fa parte della Web API **PrimeLAN**: quindi è disponibile solo con la modalità PrimeLAN attiva. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
 
 Come si attiva:
-1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. L'**URL locale** del webhook compare lì, nei Parametri generali (usa l'**IP locale** di HA: la centrale è in LAN).
+1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. L'**URL locale** del webhook compare **in cima** ai Parametri generali (usa l'**IP locale** di HA: la centrale è in LAN).
 2. In Prime/STUDIO → **Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
 
 | Evento | Parametri |
@@ -339,11 +339,7 @@ A centrale aggiornata, clicca `PrimeLAN settings` nel pannello di sinistra:
 
 <img width="298" height="603" alt="img07" src="https://github.com/user-attachments/assets/1d949b2c-cdca-49a8-b6c6-d9b8feb2ed98" />
 
-Prima di operare, carica la configurazione attuale con l'icona di download in alto a sinistra (può volerci un po'):
-
-<img width="940" height="1019" alt="img08" src="https://github.com/user-attachments/assets/2bf70476-4c85-4044-9e19-081b6c6b6223" />
-
-Poi clicca `Web API` in alto a destra:
+Prima di operare, carica la configurazione attuale con l'icona di download in alto a sinistra (può volerci un po'), poi clicca `Web API` in alto a destra:
 
 <img width="915" height="964" alt="img09" src="https://github.com/user-attachments/assets/c6742134-35d5-4fe2-b3bb-e82b51f3140d" />
 

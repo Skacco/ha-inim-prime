@@ -328,7 +328,7 @@
           "panel_log_events_fetch_limit": "Number of log events fetched per scan when new logs are detected. Default is recommended.\nThe integration will automatically fetch more if needed.",
           "show_hidden_outputs": "Off shows only the outputs PrimeLAN publishes to the linked user. On also shows the panel internal/mainboard outputs.",
           "hide_unused_partitions": "Areas never named in the panel keep the default name. Enable to hide them and their entities.",
-          "realtime_push": "Optional, requires PrimeLAN mode. The panel sends events (zones, arming, alarm…) to Home Assistant via a local webhook, so entities update instantly. Configure it in Prime/STUDIO → PrimeLAN settings → Web API → outbound HTTP API. After saving, the URL appears here below, in General parameters.",
+          "realtime_push": "Optional, requires PrimeLAN mode. The panel sends events (zones, arming, alarm…) to Home Assistant via a local webhook, so entities update instantly. Configure it in Prime/STUDIO → PrimeLAN settings → Web API → outbound HTTP API. After saving, the URL appears at the top of this screen.",
           "alarm_pin_panel": "Create a second alarm entity that requires a PIN to **disarm** (arming stays free). Handy for a wall tablet in a free-access room, leaving the original one without a PIN for your phone.",
           "alarm_pin": "Numeric code required to disarm from the PIN panel. It is a local card lock, not the panel's own code.",
           "webhook_allow_remote": "The webhook normally accepts LAN requests only. If Home Assistant is behind a reverse proxy and sees even local requests as «remote» (the webhook gets rejected), enable this. It is safe: the webhook only triggers a refresh and is guarded by the secret id in the URL."
