@@ -160,7 +160,10 @@ class ScenarioAlarmPanel(
                 self._pending = None
             else:
                 return (
-                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    # Optimistic disarm: show "disarmed" at once instead of a
+                    # transitional "disarming". Self-corrects if the command
+                    # fails (pending clears -> real armed state returns).
+                    AlarmControlPanelState.DISARMED if command == "disarm"
                     else AlarmControlPanelState.ARMING
                 )
 
@@ -353,7 +356,10 @@ class PartitionAlarmPanel(
                 self._pending = None
             else:
                 return (
-                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    # Optimistic disarm: show "disarmed" at once instead of a
+                    # transitional "disarming". Self-corrects if the command
+                    # fails (pending clears -> real armed state returns).
+                    AlarmControlPanelState.DISARMED if command == "disarm"
                     else AlarmControlPanelState.ARMING
                 )
 
@@ -552,7 +558,10 @@ class HybridAlarmPanel(
                 self._pending = None
             else:
                 return (
-                    AlarmControlPanelState.DISARMING if command == "disarm"
+                    # Optimistic disarm: show "disarmed" at once instead of a
+                    # transitional "disarming". Self-corrects if the command
+                    # fails (pending clears -> real armed state returns).
+                    AlarmControlPanelState.DISARMED if command == "disarm"
                     else AlarmControlPanelState.ARMING
                 )
 
