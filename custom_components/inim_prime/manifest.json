@@ -2,8 +2,8 @@
   "domain": "inim_prime",
   "name": "Inim Prime",
   "version": "1.1.3",
-  "documentation": "https://github.com/Skacco/ha-inim-prime",
-  "issue_tracker": "https://github.com/Skacco/ha-inim-prime/issues",
+  "documentation": "https://github.com/Skacco/inim-prime",
+  "issue_tracker": "https://github.com/Skacco/inim-prime/issues",
   "requirements": [
     "inim-prime-primelan@git+https://github.com/Pitscheider/inim-prime-primelan.git@319421e980ad334e25003b135a7076e2d1a71c3f",
     "inim-prime-native@git+https://github.com/Pitscheider/inim-prime-native.git@d841840dfd69ddf467ec19e96fd2347a5e4fccdb"

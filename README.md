@@ -63,11 +63,11 @@ Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o 
 È il modo consigliato perché gestisce gli aggiornamenti. Il negozio delle integrazioni è ormai integrato in Home Assistant (Marketplace), quindi non serve installare altro.
 ### Aggiungi il repository personalizzato
 Apri il **Marketplace** → menu in alto a destra (tre puntini) → `Repository personalizzati`.
-Nel campo `Repository` incolla `https://github.com/Skacco/ha-inim-prime`, come categoria scegli `Integration`, premi `ADD`.
+Nel campo `Repository` incolla `https://github.com/Skacco/inim-prime`, come categoria scegli `Integration`, premi `ADD`.
 ### Installa l'integrazione
 Cerca `Inim Prime`, aprila e premi `DOWNLOAD`. Alla **prima installazione non serve riavviare**: puoi aggiungere subito l'integrazione (vedi sotto). Il riavvio viene richiesto solo per gli **aggiornamenti** successivi.
 ## Installazione manuale (sconsigliata)
-Scarica il codice sorgente dell'ultima release da [https://github.com/Skacco/ha-inim-prime](https://github.com/Skacco/ha-inim-prime), copia la cartella `inim_prime` dentro `custom_components` della tua configurazione Home Assistant e riavvia.
+Scarica il codice sorgente dell'ultima release da [https://github.com/Skacco/inim-prime](https://github.com/Skacco/inim-prime), copia la cartella `inim_prime` dentro `custom_components` della tua configurazione Home Assistant e riavvia.
 
 # Configurazione dell'integrazione in Home Assistant
 Vai in `Impostazioni` → `Dispositivi e servizi` → `Aggiungi integrazione`, cerca `Inim Prime`.
