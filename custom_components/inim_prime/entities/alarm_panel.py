@@ -176,30 +176,26 @@ class ScenarioAlarmPanel(
         known = [p.arming_status for p in partitions if p.arming_status is not None]
         all_disarmed = all(status == UnifiedArmingStatus.DISARMED for status in known)
 
+        # Direction of a change isn't in the state (an arm's exit delay looks
+        # like a just-finished disarm: scenario armed, partitions off), so for
+        # an HA command it comes from _arming_until. An external (keypad) change
+        # has no command, so a short settle window debounces the scenario lag.
+        arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
-        transition = (
-            # Direction isn't in the state (an arm's exit delay looks like a
-            # just-finished disarm: scenario armed, partitions off), so it comes
-            # from the last command via _arming_until: during an arm's exit
-            # window show "arming"; otherwise a cleared panel is "disarmed".
-            AlarmControlPanelState.DISARMED
-            if all_disarmed and time.monotonic() >= self._arming_until
-            else AlarmControlPanelState.ARMING
-        )
 
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
-                return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+                return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
-                return transition if settling else AlarmControlPanelState.DISARMED
+                return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
             return mapped
 
         if not known:
             return None
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
-        return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+        return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -583,16 +579,12 @@ class HybridAlarmPanel(
         if not known:
             return None
         all_disarmed = not current
+        # Direction of a change isn't in the state (an arm's exit delay looks
+        # like a just-finished disarm: scenario armed, partitions off), so for
+        # an HA command it comes from _arming_until. An external (keypad) change
+        # has no command, so a short settle window debounces the scenario lag.
+        arming = time.monotonic() < self._arming_until
         settling = time.monotonic() < self._settle_until
-        transition = (
-            # Direction isn't in the state (an arm's exit delay looks like a
-            # just-finished disarm: scenario armed, partitions off), so it comes
-            # from the last command via _arming_until: during an arm's exit
-            # window show "arming"; otherwise a cleared panel is "disarmed".
-            AlarmControlPanelState.DISARMED
-            if all_disarmed and time.monotonic() >= self._arming_until
-            else AlarmControlPanelState.ARMING
-        )
 
         # A partition-path command whose exact mix is armed wins (e.g. vacation).
         if current:
@@ -604,14 +596,14 @@ class HybridAlarmPanel(
         mapped = self._scenario_to_state.get(self._active_scenario_id())
         if mapped is not None:
             if mapped == AlarmControlPanelState.DISARMED and not all_disarmed:
-                return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+                return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
             if mapped != AlarmControlPanelState.DISARMED and all_disarmed:
-                return transition if settling else AlarmControlPanelState.DISARMED
+                return AlarmControlPanelState.ARMING if arming else AlarmControlPanelState.DISARMED
             return mapped
 
         if all_disarmed:
             return AlarmControlPanelState.DISARMED
-        return transition if settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
+        return AlarmControlPanelState.ARMING if arming or settling else AlarmControlPanelState.ARMED_CUSTOM_BYPASS
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
