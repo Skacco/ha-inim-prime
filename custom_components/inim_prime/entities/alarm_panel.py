@@ -75,6 +75,9 @@ class ScenarioAlarmPanel(
     # When partitions change on their own (keypad, app, timers) the scenario
     # is read again; until then, mismatches are shown as arming/disarming.
     _SETTLE_TIME = 5.0
+    # How long after an arm command to keep showing "arming" while the
+    # partitions still read disarmed (covers the panel's exit delay).
+    _ARMING_GRACE = 45.0
 
     def __init__(
             self,
@@ -99,6 +102,7 @@ class ScenarioAlarmPanel(
         self._pending: tuple[str, float] | None = None  # (command, deadline)
         self._armed_snapshot: frozenset[int] | None = None
         self._settle_until: float = 0.0
+        self._arming_until: float = 0.0
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{self.coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
@@ -174,10 +178,12 @@ class ScenarioAlarmPanel(
 
         settling = time.monotonic() < self._settle_until
         transition = (
-            # Optimistic disarm: when the partitions are already off but the
-            # scenario poll hasn't caught up, show "disarmed" straight away
-            # instead of a transitional "disarming".
-            AlarmControlPanelState.DISARMED if all_disarmed
+            # Direction isn't in the state (an arm's exit delay looks like a
+            # just-finished disarm: scenario armed, partitions off), so it comes
+            # from the last command via _arming_until: during an arm's exit
+            # window show "arming"; otherwise a cleared panel is "disarmed".
+            AlarmControlPanelState.DISARMED
+            if all_disarmed and time.monotonic() >= self._arming_until
             else AlarmControlPanelState.ARMING
         )
 
@@ -226,6 +232,10 @@ class ScenarioAlarmPanel(
         # Disarm is immediate on the panel, so confirm it on the fast partition
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
+        # Remember the direction: during an arm the state should read "arming"
+        # until the partitions report armed (they lag the scenario); a disarm
+        # cancels that window so it shows the real state straight away.
+        self._arming_until = 0.0 if disarm else time.monotonic() + self._ARMING_GRACE
         success = False
         for _ in range(10):
             if disarm:
@@ -243,6 +253,9 @@ class ScenarioAlarmPanel(
         await self._partitions_coordinator.async_refresh()
 
         open_zones = [] if success else self._open_zones()
+        if not success and not disarm:
+            # The arm didn't take (e.g. open zone): stop showing "arming".
+            self._arming_until = 0.0
         self._pending = None
         self._last_command = {
             "command": command,
@@ -446,6 +459,9 @@ class HybridAlarmPanel(
     _attr_code_format = None
     _PENDING_TIMEOUT = 20.0
     _SETTLE_TIME = 5.0
+    # How long after an arm command to keep showing "arming" while the
+    # partitions still read disarmed (covers the panel's exit delay).
+    _ARMING_GRACE = 45.0
 
     def __init__(
             self,
@@ -485,6 +501,7 @@ class HybridAlarmPanel(
         self._pending: tuple[str, float, str] | None = None  # (command, deadline, path)
         self._armed_snapshot: frozenset[int] | None = None
         self._settle_until: float = 0.0
+        self._arming_until: float = 0.0
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(coordinator.serial_number)
@@ -568,10 +585,12 @@ class HybridAlarmPanel(
         all_disarmed = not current
         settling = time.monotonic() < self._settle_until
         transition = (
-            # Optimistic disarm: when the partitions are already off but the
-            # scenario poll hasn't caught up, show "disarmed" straight away
-            # instead of a transitional "disarming".
-            AlarmControlPanelState.DISARMED if all_disarmed
+            # Direction isn't in the state (an arm's exit delay looks like a
+            # just-finished disarm: scenario armed, partitions off), so it comes
+            # from the last command via _arming_until: during an arm's exit
+            # window show "arming"; otherwise a cleared panel is "disarmed".
+            AlarmControlPanelState.DISARMED
+            if all_disarmed and time.monotonic() >= self._arming_until
             else AlarmControlPanelState.ARMING
         )
 
@@ -628,6 +647,10 @@ class HybridAlarmPanel(
         # Disarm is immediate on the panel, so confirm it on the fast partition
         # read rather than waiting for the (slower) scenario poll.
         disarm = command == "disarm"
+        # Remember the direction: during an arm the state should read "arming"
+        # until the partitions report armed (they lag the scenario); a disarm
+        # cancels that window so it shows the real state straight away.
+        self._arming_until = 0.0 if disarm else time.monotonic() + self._ARMING_GRACE
         success = False
         for _ in range(10):
             if disarm:
@@ -645,6 +668,9 @@ class HybridAlarmPanel(
         await self._partitions_coordinator.async_refresh()
 
         open_zones = [] if success else self._open_zones()
+        if not success and not disarm:
+            # The arm didn't take (e.g. open zone): stop showing "arming".
+            self._arming_until = 0.0
         self._pending = None
         self._last_command = {
             "command": command,
