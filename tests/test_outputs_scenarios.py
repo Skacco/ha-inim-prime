@@ -838,3 +838,38 @@ async def test_old_default_names_are_dropped(hass: HomeAssistant):
         if k != "panel_log_events_fetch_limit"
     }
     assert coordinator.panel_log_events_fetch_limit == 30
+
+
+async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
+    """Reconfigure only changes the connection: no options form, nothing lost."""
+    panel = FakePanel()
+    entry = await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
+    extra = {"realtime_push": True, "webhook_id": "abc", "alarm_pin_panel": True,
+             "alarm_pin": "1234", "shutter_commands": {"1": {"open": 5, "close": 6}}}
+    hass.config_entries.async_update_entry(entry, options={**entry.options, **extra})
+    await hass.async_block_till_done()
+    before = dict(entry.options)
+
+    async def tests_ok(*_args, **_kwargs):
+        return {}, {"native_error": "", "primelan_error": "", "status": ""}
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request), \
+         patch("custom_components.inim_prime.config_flow.config_flow._run_connection_tests", tests_ok):
+        result = await entry.start_reconfigure_flow(hass)
+        assert result["step_id"] == "reconfigure"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "reconfigure_primelan_only"})
+        assert result["step_id"] == "reconfigure_connection"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"host": "192.0.2.20", "primelan": {"api_key": "new-key", "use_https": False}},
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] == "abort" and result["reason"] == "reconfigure_successful"
+    assert entry.data["host"] == "192.0.2.20"
+    assert entry.data["primelan"]["api_key"] == "new-key"
+    after = dict(entry.options)
+    # the only change: a default for a PrimeLAN interval the entry was missing
+    assert after["scan_intervals"].pop("scenarios") == 10000
+    assert after == before  # PIN, webhook, shutters, alarm panel: all kept

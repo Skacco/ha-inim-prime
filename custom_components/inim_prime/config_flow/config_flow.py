@@ -383,7 +383,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             # connection itself is verified here.
             errors, placeholders = await _run_connection_tests(self._data, get_serial = False)
             if not errors:
-                return await self.async_step_reconfigure_options()
+                return self._finish_reconfigure()
 
         schema = vol.Schema(
             build_connection_schema(
@@ -398,66 +398,54 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             description_placeholders = placeholders,
         )
 
-    async def async_step_reconfigure_options(self, user_input: dict[str, Any] | None = None):
+    def _finish_reconfigure(self):
+        """Save the new connection and reload; every other option is kept.
 
-        if user_input is not None:
-            scan_intervals = user_input["scan_intervals"]
-
-            self._options.zones_scan_interval = scan_intervals[OptionsKey.ScanIntervals.ZONES]
-            self._options.partitions_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PARTITIONS]
-            self._options.outputs_scan_interval = scan_intervals[OptionsKey.ScanIntervals.OUTPUTS]
-            self._options.show_hidden_outputs = user_input.get(OptionsKey.SHOW_HIDDEN_OUTPUTS)
-            self._options.hide_unused_partitions = user_input.get(OptionsKey.HIDE_UNUSED_PARTITIONS)
-
-            if self._data.use_primelan:
-                self._options.scenarios_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SCENARIOS]
-                self._options.gsm_scan_interval = scan_intervals[OptionsKey.ScanIntervals.GSM]
-                self._options.system_faults_scan_interval = scan_intervals[OptionsKey.ScanIntervals.SYSTEM_FAULTS]
-                self._options.panel_log_events_scan_interval = scan_intervals[OptionsKey.ScanIntervals.PANEL_LOG_EVENTS]
-                self._options.panel_log_events_fetch_limit = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
-                if not self._data.use_native:
-                    self._options.alarm_panel = clean_alarm_panel(user_input.get(OptionsKey.ALARM_PANEL)) or None
-            else:
-                # Backend switched away from PrimeLAN: drop its
-                # PrimeLAN-only options rather than leaving stale values
-                # from the entry this flow was pre-filled from.
-                self._options.scenarios_scan_interval = None
-                self._options.gsm_scan_interval = None
-                self._options.system_faults_scan_interval = None
-                self._options.panel_log_events_scan_interval = None
-                self._options.panel_log_events_fetch_limit = None
-                self._options.alarm_panel = None
-
-            # Per-command blocks (Native present): split into scenario + partition
-            # maps. With both backends a command with a scenario is scenario-driven.
-            scenario_map, native_map = extract_hybrid_sections(user_input)
-            self._options.alarm_panel_native = native_map or None
-            if self._data.use_native and self._data.use_primelan:
-                self._options.alarm_panel = scenario_map or None
-
-            assert self._data.serial_number is not None
-            reconfigure_entry = self._get_reconfigure_entry()
-            return self.async_update_reload_and_abort(
-                reconfigure_entry,
-                title = f"INIM Prime ({self._data.serial_number})",
-                data = self._data.to_entry_data(),
-                options = self._options.to_options_dict(),
+        Reconfigure is about the connection and the integration mode only (the
+        rest is tuned from Options), so the stored options are left as they are
+        and just adjusted to the mode: defaults for what a newly enabled backend
+        needs, and no leftovers from a backend that is no longer used.
+        """
+        entry = self._get_reconfigure_entry()
+        native = self._data.use_native
+        primelan = self._data.use_primelan
+        options = dict(entry.options)
+        intervals = dict(options.get("scan_intervals") or {})
+        intervals.setdefault("zones", (
+            ZONES_SCAN_INTERVAL_NATIVE_DEFAULT if native
+            else ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT
+        ))
+        intervals.setdefault("partitions", (
+            PARTITIONS_SCAN_INTERVAL_NATIVE_DEFAULT if native
+            else PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT
+        ))
+        if primelan:
+            both = PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT
+            intervals.setdefault("gsm", both if native else GSM_SCAN_INTERVAL_PRIMELAN_DEFAULT)
+            intervals.setdefault(
+                "system_faults", both if native else SYSTEM_FAULTS_SCAN_INTERVAL_PRIMELAN_DEFAULT
             )
-
-        schema = vol.Schema(
-            build_options_schema(
-                has_native = self._data.use_native,
-                has_primelan = self._data.use_primelan,
-                current_options = self._options,
-                migrating_from_native = self._migrating_from_native,
-                migrating_from_primelan = self._migrating_from_primelan,
+            intervals.setdefault(
+                "panel_log_events",
+                both if native else PANEL_LOG_EVENTS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
             )
+            intervals.setdefault("scenarios", SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT)
+            options.setdefault("panel_log_events_fetch_limit", PANEL_LOG_EVENTS_FETCH_LIMIT_DEFAULT)
+        else:
+            for key in ("gsm", "system_faults", "panel_log_events", "scenarios"):
+                intervals.pop(key, None)
+            for key in ("panel_log_events_fetch_limit", "alarm_panel", "realtime_push",
+                        "webhook_allow_remote"):
+                options.pop(key, None)
+        if not native:
+            options.pop("alarm_panel_native", None)
+        options["scan_intervals"] = intervals
+
+        assert self._data.serial_number is not None
+        return self.async_update_reload_and_abort(
+            entry,
+            title = f"INIM Prime ({self._data.serial_number})",
+            data = self._data.to_entry_data(),
+            options = options,
         )
 
-        return self.async_show_form(
-            step_id = "reconfigure_options",
-            data_schema = schema,
-            description_placeholders = {
-                "state_backend": "Native" if self._data.use_native else "PrimeLAN",
-            },
-        )
