@@ -102,7 +102,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     from self._data means resubmitting or coming back doesn't lose data).
     """
     VERSION = 2
-    MINOR_VERSION = 2
+    MINOR_VERSION = 0
 
     def __init__(self):
         self._options: ConfigOptions = ConfigOptions()

@@ -516,11 +516,5 @@
         "aree": "Aree (Native)"
       }
     }
-  },
-  "issues": {
-    "entity_ids_renamed_aree": {
-      "title": "ID delle entità rinominati: «partizioni» è diventato «aree»",
-      "description": "Inim chiama «aree» quelle che l'integrazione chiamava «partizioni». Con questo aggiornamento gli ID delle entità sono stati rinominati di conseguenza (per esempio `select.partizioni_casetta_arming_status` è ora `select.aree_casetta_arming_status`). Lo storico è conservato.\n\nSe hai dashboard, automazioni o script che usano i vecchi ID, aggiornali con i nuovi."
-    }
   }
 }

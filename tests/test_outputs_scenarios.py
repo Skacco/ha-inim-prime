@@ -2,7 +2,6 @@
 from unittest.mock import patch
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -801,61 +800,3 @@ async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeA
         assert ent._last_command == {"command": "disarm"}
         ent._pending = None
         await hass.async_block_till_done()
-
-
-async def test_migration_renames_partizioni_to_aree(hass: HomeAssistant):
-    """2.0 -> 2.1: Italian entity ids and the stored choice use "aree"."""
-    panel = FakePanel()
-    entry = MockConfigEntry(
-        domain=DOMAIN, version=2, minor_version=0, unique_id=SERIAL,
-        data={"serial_number": SERIAL, "host": "192.0.2.10",
-              "primelan": {"api_key": "k", "use_https": False}},
-        options={"scan_intervals": {"zones": 5000, "partitions": 10000, "gsm": 30000,
-                                    "system_faults": 15000, "panel_log_events": 15000},
-                 "panel_log_events_fetch_limit": 40,
-                 "alarm_panel_type": "partizioni"},
-    )
-    entry.add_to_hass(hass)
-    registry = er.async_get(hass)
-    old = registry.async_get_or_create(
-        "select", DOMAIN, f"{SERIAL}_partition_1_arming_status",
-        config_entry=entry, suggested_object_id="partizioni_casa_arming_status",
-    )
-    taken = registry.async_get_or_create(
-        "sensor", DOMAIN, f"{SERIAL}_x", config_entry=entry,
-        suggested_object_id="partizioni_casa_stato",
-    )
-    registry.async_get_or_create(  # the new id is already in use: left alone
-        "sensor", "other", "y", suggested_object_id="aree_casa_stato",
-    )
-    assert old.entity_id == "select.partizioni_casa_arming_status"
-    registry.async_update_entity(old.entity_id, name="Casa Arming Status")
-    registry.async_update_entity(taken.entity_id, name="La mia area")
-    devices = dr.async_get(hass)
-    areas_device = devices.async_get_or_create(
-        config_entry_id=entry.entry_id, identifiers={(DOMAIN, f"{SERIAL}_partitions")},
-        name="Partizioni",
-    )
-    devices.async_update_device(areas_device.id, name_by_user="Partizioni")
-    custom = devices.async_get_or_create(
-        config_entry_id=entry.entry_id, identifiers={(DOMAIN, f"{SERIAL}_zones")}, name="Zone",
-    )
-    devices.async_update_device(custom.id, name_by_user="Le mie zone")
-
-    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
-        assert await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
-
-    assert entry.minor_version == 2
-    assert entry.options["alarm_panel_type"] == "aree"
-    assert registry.async_get("select.partizioni_casa_arming_status") is None
-    renamed = registry.async_get("select.aree_casa_arming_status")
-    assert renamed is not None and renamed.unique_id == old.unique_id
-    assert registry.async_get(taken.entity_id) is not None  # not renamed
-    # the old default kept as a custom device name no longer hides "Aree"
-    areas_device = devices.async_get(areas_device.id)
-    assert areas_device.name_by_user is None and areas_device.name == "Aree"
-    assert devices.async_get(custom.id).name_by_user == "Le mie zone"
-    # an old English default kept as a custom entity name is dropped too
-    assert registry.async_get("select.aree_casa_arming_status").name is None
-    assert registry.async_get(taken.entity_id).name == "La mia area"
