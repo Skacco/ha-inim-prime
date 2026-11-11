@@ -103,6 +103,9 @@ class ScenarioAlarmPanel(
         self._armed_snapshot: frozenset[int] | None = None
         self._settle_until: float = 0.0
         self._arming_until: float = 0.0
+        # Bumped by every command: a command still finishing (its last reads can
+        # take seconds) must not overwrite the state of a newer one.
+        self._command_seq = 0
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{self.coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(self.coordinator.serial_number)
@@ -176,7 +179,12 @@ class ScenarioAlarmPanel(
                 # scenario flips: that can be read before the partitions).
                 reached = not self._armed_set()
             else:
-                reached = self._active_scenario_id() == self._commands.get(command)
+                # Both reads must agree: the scenario alone can be a stale read
+                # from before the previous command (same mode armed again).
+                reached = (
+                    self._active_scenario_id() == self._commands.get(command)
+                    and bool(self._armed_set())
+                )
             if reached or time.monotonic() > deadline:
                 self._pending = None
             elif command != "disarm":
@@ -242,12 +250,15 @@ class ScenarioAlarmPanel(
         # is still in flight.
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT)
         self._set_direction(command)
+        self._command_seq += 1
+        seq = self._command_seq
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
-            self._pending = None
-            self.async_write_ha_state()
+            if seq == self._command_seq:
+                self._pending = None
+                self.async_write_ha_state()
             raise
         # The panel needs a moment to switch scenario: poll it briefly.
         # Disarm is immediate on the panel, so confirm it on the fast partition
@@ -256,6 +267,8 @@ class ScenarioAlarmPanel(
         success = False
         # An arm can take several seconds to show up as the active scenario.
         for _ in range(10 if disarm else 20):
+            if seq != self._command_seq:
+                return  # superseded by a newer command
             if disarm:
                 await self._partitions_coordinator.async_refresh()
                 if not self._armed_set():
@@ -270,21 +283,25 @@ class ScenarioAlarmPanel(
         await self.coordinator.async_refresh()
         await self._partitions_coordinator.async_refresh()
 
-        open_zones = [] if success else self._open_zones()
+        result = {
+            "command": command,
+            "scenario_id": target,
+            "success": success,
+            "open_zones": [] if success else self._open_zones(),
+        }
+        self.hass.bus.async_fire(EVENT_COMMAND_RESULT, {
+            "entity_id": self.entity_id,
+            **result,
+        })
+        if seq != self._command_seq:
+            # A newer command started while this one was finishing: its pending
+            # state and direction are not ours to touch.
+            return
         if not success and not disarm:
             # The arm didn't take (e.g. open zone): stop showing "arming".
             self._arming_until = 0.0
         self._pending = None
-        self._last_command = {
-            "command": command,
-            "scenario_id": target,
-            "success": success,
-            "open_zones": open_zones,
-        }
-        self.hass.bus.async_fire(EVENT_COMMAND_RESULT, {
-            "entity_id": self.entity_id,
-            **self._last_command,
-        })
+        self._last_command = result
         self.async_write_ha_state()
 
     def _open_zones(self) -> list[str]:
@@ -520,6 +537,9 @@ class HybridAlarmPanel(
         self._armed_snapshot: frozenset[int] | None = None
         self._settle_until: float = 0.0
         self._arming_until: float = 0.0
+        # Bumped by every command: a command still finishing (its last reads can
+        # take seconds) must not overwrite the state of a newer one.
+        self._command_seq = 0
         self._last_command: dict[str, Any] | None = None
         self._attr_unique_id = f"{coordinator.serial_number}_alarm_panel"
         self._attr_device_info = create_panel_device_info(coordinator.serial_number)
@@ -601,7 +621,12 @@ class HybridAlarmPanel(
                 # Disarm is immediate on the panel; confirm on the partition read.
                 reached = not current
             elif path == "scenario":
-                reached = self._active_scenario_id() == self._scenarios.get(command)
+                # Both reads must agree: the scenario alone can be a stale read
+                # from before the previous command (same mode armed again).
+                reached = (
+                    self._active_scenario_id() == self._scenarios.get(command)
+                    and bool(current)
+                )
             else:
                 reached = current == self._targets.get(command, {})
             if reached or time.monotonic() > deadline:
@@ -675,12 +700,15 @@ class HybridAlarmPanel(
         target = self._scenarios[command]
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT, "scenario")
         self._set_direction(command)
+        self._command_seq += 1
+        seq = self._command_seq
         self.async_write_ha_state()
         try:
             await self.coordinator.gateway.activate_scenario(target)
         except Exception:
-            self._pending = None
-            self.async_write_ha_state()
+            if seq == self._command_seq:
+                self._pending = None
+                self.async_write_ha_state()
             raise
         # Disarm is immediate on the panel, so confirm it on the fast partition
         # read rather than waiting for the (slower) scenario poll.
@@ -688,6 +716,8 @@ class HybridAlarmPanel(
         success = False
         # An arm can take several seconds to show up as the active scenario.
         for _ in range(10 if disarm else 20):
+            if seq != self._command_seq:
+                return  # superseded by a newer command
             if disarm:
                 await self._partitions_coordinator.async_refresh()
                 if not self._current_armed():
@@ -702,21 +732,25 @@ class HybridAlarmPanel(
         await self.coordinator.async_refresh()
         await self._partitions_coordinator.async_refresh()
 
-        open_zones = [] if success else self._open_zones()
+        result = {
+            "command": command,
+            "scenario_id": target,
+            "success": success,
+            "open_zones": [] if success else self._open_zones(),
+        }
+        self.hass.bus.async_fire(EVENT_COMMAND_RESULT, {
+            "entity_id": self.entity_id,
+            **result,
+        })
+        if seq != self._command_seq:
+            # A newer command started while this one was finishing: its pending
+            # state and direction are not ours to touch.
+            return
         if not success and not disarm:
             # The arm didn't take (e.g. open zone): stop showing "arming".
             self._arming_until = 0.0
         self._pending = None
-        self._last_command = {
-            "command": command,
-            "scenario_id": target,
-            "success": success,
-            "open_zones": open_zones,
-        }
-        self.hass.bus.async_fire(EVENT_COMMAND_RESULT, {
-            "entity_id": self.entity_id,
-            **self._last_command,
-        })
+        self._last_command = result
         self.async_write_ha_state()
 
     async def _apply_partitions(self, command: str) -> None:
@@ -724,6 +758,7 @@ class HybridAlarmPanel(
         self._pending = (command, time.monotonic() + self._PENDING_TIMEOUT, "partition")
         if command == "disarm":
             self._arming_until = 0.0
+        self._command_seq += 1
         self.async_write_ha_state()
         statuses = {
             p.partition_id: target.get(p.partition_id, UnifiedArmingStatus.DISARMED)

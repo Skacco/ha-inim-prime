@@ -742,3 +742,65 @@ async def test_alarm_panel_no_flash_while_scenario_and_partitions_disagree(hass:
         await coords.partitions.async_refresh()
         await hass.async_block_till_done()
         assert hass.states.get(eid).state == "disarmed"  # not "arming"
+
+
+async def test_alarm_panel_new_command_not_clobbered_by_previous_one(hass: HomeAssistant):
+    """Arm pressed while the previous disarm is still doing its last reads."""
+    import asyncio
+
+    panel = FakePanel()
+    panel.scenarios[2]["st"] = 0
+    panel.scenarios[0]["st"] = 1
+    await _setup(hass, panel, {"disarm": 0, "arm_vacation": 1})
+    eid = _eid(hass, "alarm_control_panel", f"{SERIAL}_alarm_panel")
+    original = panel.request
+    hold = {"scenario_reads": False, "arm": False, "waiting": 0}
+    release_reads = asyncio.Event()
+    release_arm = asyncio.Event()
+
+    async def slow(cmd, **params):
+        if cmd == "get_scenarios_status" and hold["scenario_reads"]:
+            hold["waiting"] += 1
+            await release_reads.wait()
+        if cmd == "set_scenarios_mode" and params.get("p1") == 1 and hold["arm"]:
+            await release_arm.wait()
+        return await original(cmd, **params)
+
+    async def spin(until):
+        for _ in range(200):
+            if until():
+                return
+            await asyncio.sleep(0.01)
+        raise AssertionError("condition not reached")
+
+    def call(service):
+        return hass.async_create_task(hass.services.async_call(
+            "alarm_control_panel", service, {"entity_id": eid}, blocking=True))
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=slow):
+        await call("alarm_arm_vacation")
+        await hass.async_block_till_done()
+        assert hass.states.get(eid).state == "armed_vacation"
+
+        # disarm: partitions go off at once, its closing scenario read hangs
+        hold["scenario_reads"] = True
+        disarm = call("alarm_disarm")
+        await spin(lambda: hass.states.get(eid).state == "disarmed" and hold["waiting"])
+
+        # arm again while the disarm is still finishing
+        hold["arm"] = True
+        arm = call("alarm_arm_vacation")
+        await spin(lambda: hass.states.get(eid).state == "arming")
+
+        # the old disarm completes: it must not reset the new arm
+        hold["scenario_reads"] = False
+        release_reads.set()
+        await disarm
+        assert hass.states.get(eid).state == "arming"  # not "disarmed"
+
+        release_arm.set()
+        await arm
+        await hass.async_block_till_done()
+        st = hass.states.get(eid)
+        assert st.state == "armed_vacation"
+        assert st.attributes["last_command"]["command"] == "arm_vacation"
