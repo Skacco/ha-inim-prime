@@ -78,6 +78,7 @@ class ConfigOptions:
     hide_unused_partitions: bool | None = None
     shutter_commands: dict | None = None
     realtime_push: bool | None = None
+    webhook_allow_remote: bool | None = None
     alarm_pin_panel: bool | None = None
     alarm_pin: str | None = None
 

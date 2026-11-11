@@ -302,6 +302,8 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                     self._pending[OptionsKey.WEBHOOK_ID] = webhook.async_generate_id()
                     # First activation: also surface the URL once in a notification.
                     self._notify_webhook_url = True
+            if OptionsKey.WEBHOOK_ALLOW_REMOTE in user_input:
+                self._pending[OptionsKey.WEBHOOK_ALLOW_REMOTE] = user_input[OptionsKey.WEBHOOK_ALLOW_REMOTE]
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
             if OptionsKey.ALARM_PIN_PANEL in user_input:
@@ -478,6 +480,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             hide_unused_partitions=o.get("hide_unused_partitions"),
             shutter_commands=o.get("shutter_commands"),
             realtime_push=o.get("realtime_push"),
+            webhook_allow_remote=o.get("webhook_allow_remote"),
             alarm_pin_panel=o.get("alarm_pin_panel"),
             alarm_pin=o.get("alarm_pin"),
         )

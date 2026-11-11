@@ -358,6 +358,10 @@ def build_general_params_schema(
             OptionsKey.REALTIME_PUSH,
             default = bool(current_options.realtime_push) if current_options else False,
         )] = bool
+        schema[vol.Required(
+            OptionsKey.WEBHOOK_ALLOW_REMOTE,
+            default = bool(current_options.webhook_allow_remote) if current_options else False,
+        )] = bool
     if has_native and has_primelan:
         schema[vol.Required(
             OptionsKey.SHOW_HIDDEN_OUTPUTS,

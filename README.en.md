@@ -182,7 +182,7 @@ How to enable it:
 | Output | `?ev=output` |
 | Tamper / fault | `?ev=tamper` / `?ev=fault` |
 
-The **secret id** in the URL is the key: keep it private. The webhook only triggers a *refresh* (no commands), so it accepts the request even when HA, behind a reverse proxy, sees it as non-local. On each event the integration refreshes the affected entity right away.
+By default the webhook accepts **LAN** requests only (the panel calls it on the local IP). If HA is behind a **reverse proxy** and sees even local requests as «remote» (webhook rejected), enable **«Accept non-local requests»** in General parameters. The **secret id** in the URL is the key: keep it private. On each event the integration refreshes the affected entity right away.
 
 > **Experimental**: the exact parameter names your panel sends should be verified in the field.
 

@@ -67,6 +67,12 @@ def async_register_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> 
     if not webhook_id:
         return
     try:
+        # LAN-only by default (the panel calls HA's local IP directly). Some
+        # setups behind a reverse proxy make HA see even LAN requests as
+        # "remote"; the "accept non-local requests" option lifts the check
+        # (safe: the webhook only triggers a refresh and is guarded by the
+        # secret id in the URL).
+        allow_remote = bool(entry.options.get(OptionsKey.WEBHOOK_ALLOW_REMOTE))
         webhook.async_register(
             hass,
             DOMAIN,
@@ -74,11 +80,7 @@ def async_register_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> 
             webhook_id,
             _make_handler(entry),
             allowed_methods=["POST", "GET"],
-            # Not local_only: behind a reverse proxy HA often sees even LAN
-            # requests as "remote" and would reject them. The webhook only
-            # triggers a refresh (no commands, no data exposed) and is guarded
-            # by the secret id in the URL, so accepting it is safe.
-            local_only=False,
+            local_only=not allow_remote,
         )
     except ValueError:
         # Already registered (e.g. a reload raced the unregister); harmless.

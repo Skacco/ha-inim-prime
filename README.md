@@ -182,7 +182,7 @@ Come si attiva:
 | Uscita | `?ev=output` |
 | Tamper / guasto | `?ev=tamper` / `?ev=fault` |
 
-L'**id segreto** nell'URL fa da chiave: tienilo privato. Il webhook esegue solo un *refresh* (nessun comando), quindi accetta la richiesta anche se HA, dietro reverse proxy, la vede come non‑locale. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.
+Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.
 
 > Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 
