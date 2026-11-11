@@ -44,12 +44,14 @@ _CMD_LABELS_EN = {
 }
 _TEXTS = {
     "it": {
-        "custom_partitions": "Partizioni personalizzate…",
-        "partitions": "Partizioni",
+        "custom_partitions": "Aree personalizzate…",
+        "all_disarmed": "➜ Tutte le aree disinserite",
+        "partitions": "Aree",
         "back_to_menu": "‹ Torna al menù",
     },
     "en": {
         "custom_partitions": "Custom partitions…",
+        "all_disarmed": "➜ All partitions disarmed",
         "partitions": "Partitions",
         "back_to_menu": "‹ Back to menu",
     },
@@ -243,9 +245,15 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             for sid, name in self._scenario_choices()
         ]
         if self._has_native:
+            # Disarming has no per-partition choice: it turns them all off.
+            disarm_options = options + [SelectOptionDict(
+                value=_PARTITIONS_CHOICE, label=self._text("all_disarmed"),
+            )]
             options.append(SelectOptionDict(
                 value=_PARTITIONS_CHOICE, label=self._text("custom_partitions"),
             ))
+        else:
+            disarm_options = options
         _, output_choices = self._shutter_context()
         partitions = self._partition_choices()
         schema: dict = {}
@@ -262,7 +270,10 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             schema[vol.Optional(
                 cmd, description={"suggested_value": current},
             )] = SelectSelector(SelectSelectorConfig(
-                options=options, mode=SelectSelectorMode.DROPDOWN,
+                options=(
+                    disarm_options if cmd == OptionsKey.AlarmPanel.DISARM else options
+                ),
+                mode=SelectSelectorMode.DROPDOWN,
             ))
             if self._has_native:
                 schema[vol.Optional(_section_key(cmd))] = section(
@@ -499,7 +510,7 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         gateway = getattr(runtime, "gateway", None) if runtime else None
         partitions = dict(getattr(gateway, "partitions", None) or {}) if gateway else {}
         return sorted(
-            ((pid, (p.label or f"Partizione {pid}")) for pid, p in partitions.items()),
+            ((pid, (p.label or f"Area {pid}")) for pid, p in partitions.items()),
             key=lambda item: item[0],
         )
 

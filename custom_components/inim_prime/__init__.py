@@ -615,7 +615,7 @@ def _link_child_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> Non
         return device
 
     zones_group = group("zones", "Zone")
-    partitions_group = group("partitions", "Partizioni")
+    partitions_group = group("partitions", "Aree")
     group_ids = {zones_group.id, partitions_group.id}
 
     # The Shutters group exists only when the panel has shutters (its cover

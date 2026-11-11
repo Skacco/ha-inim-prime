@@ -1,6 +1,6 @@
 🇮🇹 **Italiano** · 🇬🇧 [English](README.en.md)
 
-> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (interruttori; le dimmerabili come luci solo in modalità PrimeLAN), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle partizioni (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
+> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (interruttori; le dimmerabili come luci solo in modalità PrimeLAN), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle aree (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
@@ -12,7 +12,7 @@ Puoi usare due modalità di integrazione, **singolarmente o insieme**. La scelta
 Comunica **direttamente con la centrale** sulla porta del protocollo locale (TCP, default **6004**), con cifratura AES. È il canale **veloce e completamente locale**: non passa dal cloud né dalla Web API.
 Espone:
 - **zone** (stato aperto/chiuso, memoria allarme, esclusione)
-- **partizioni** (stato, inserimento/disinserimento, memoria allarme)
+- **aree** (stato, inserimento/disinserimento, memoria allarme)
 - **uscite** (interruttori)
 - **timer**
 - **termostati** (sensori di temperatura)
@@ -30,7 +30,7 @@ Usa la **Web API ufficiale Inim** esposta dalla scheda di rete **PrimeLAN**. Agg
 Richiede la **scheda di rete PrimeLAN** installata nella centrale.
 
 ### Entrambi (consigliato)
-Attivi le due modalità di integrazione insieme: **Native** fa il lavoro locale e veloce (zone, partizioni, uscite, tapparelle, termostati, timer), **PrimeLAN** aggiunge scenari, GSM, guasti e registro. Il **pannello di allarme** di Home Assistant unisce i due mondi: legge lo stato dalle partizioni e invia i comandi di inserimento/disinserimento tramite gli **scenari** PrimeLAN.
+Attivi le due modalità di integrazione insieme: **Native** fa il lavoro locale e veloce (zone, aree, uscite, tapparelle, termostati, timer), **PrimeLAN** aggiunge scenari, GSM, guasti e registro. Il **pannello di allarme** di Home Assistant unisce i due mondi: legge lo stato dalle aree e invia i comandi di inserimento/disinserimento tramite gli **scenari** PrimeLAN.
 
 ## Compatibilità firmware
 Testata sia con centrali a **firmware 4.x** sia a **firmware 5.x**.
@@ -79,7 +79,7 @@ All'inizio scegli quale modalità di integrazione usare: **Solo Native**, **Solo
 - Sezione **Native** (se attivo): porta (default 6004), password del protocollo (default `pass`), eventuale PIN personalizzato.
 - Sezione **PrimeLAN** (se attivo): `Usa HTTPS` (consigliato) e la `Chiave API` generata in Prime/STUDIO.
 
-Il primo setup chiede **solo la connessione**. Intervalli di scansione, pannello allarme, tapparelle e gli altri parametri partono con valori predefiniti e si regolano in qualsiasi momento dalle **Opzioni** (vedi sotto) — dove i nomi di scenari/partizioni e i moduli tapparella sono già caricati.
+Il primo setup chiede **solo la connessione**. Intervalli di scansione, pannello allarme, tapparelle e gli altri parametri partono con valori predefiniti e si regolano in qualsiasi momento dalle **Opzioni** (vedi sotto) — dove i nomi di scenari/aree e i moduli tapparella sono già caricati.
 La prima configurazione può richiedere un po': è normale, la centrale Inim Prime non è velocissima 😅.
 
 ### Fine setup
@@ -89,7 +89,7 @@ Al termine vedrai i dispositivi creati dall'integrazione, che puoi rinominare e 
 Per cambiare host, HTTPS, chiave API, porta/password/PIN o cambiare modalità di integrazione: apri l'integrazione, clicca i tre puntini del dispositivo (nome di default `INIM Prime (numero_di_serie)`) e premi `Riconfigura`.
 
 ## Dopo modifiche sulla centrale
-Quando cambi la configurazione della centrale (aggiungi/rinomini **zone, uscite, partizioni, scenari, tapparelle**, ecc.) le nuove entità **non** compaiono da sole: dopo aver fatto `Upload` da Prime/STUDIO, in HA apri l'integrazione → menù ⋮ → **Ricarica** (oppure riavvia Home Assistant). Al ricaricamento l'integrazione rilegge la centrale e crea/aggiorna le entità.
+Quando cambi la configurazione della centrale (aggiungi/rinomini **zone, uscite, aree, scenari, tapparelle**, ecc.) le nuove entità **non** compaiono da sole: dopo aver fatto `Upload` da Prime/STUDIO, in HA apri l'integrazione → menù ⋮ → **Ricarica** (oppure riavvia Home Assistant). Al ricaricamento l'integrazione rilegge la centrale e crea/aggiorna le entità.
 
 # Opzioni
 Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
@@ -98,9 +98,9 @@ Clicca l'icona dell'ingranaggio accanto alla centrale. Puoi configurare:
 Numero massimo di eventi scaricati quando vengono rilevati nuovi log. Consigliato il valore predefinito; l'integrazione ne scarica automaticamente di più se serve. Non è in tempo reale (il recupero è asincrono).
 
 ## Intervalli di scansione
-Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni campo indica la **modalità di integrazione** usata: **Zone / Partizioni / Uscite** sono lette dal **Native** se configurato (locale, veloce), altrimenti da **PrimeLAN**; **GSM / Guasti / Eventi registro / Scenari** sono **solo PrimeLAN**.
+Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traffico). Ogni campo indica la **modalità di integrazione** usata: **Zone / Aree / Uscite** sono lette dal **Native** se configurato (locale, veloce), altrimenti da **PrimeLAN**; **GSM / Guasti / Eventi registro / Scenari** sono **solo PrimeLAN**.
 
-⚠️ La modalità **Native** supporta intervalli molto più bassi di PrimeLAN per zone, partizioni e uscite (polling locale).
+⚠️ La modalità **Native** supporta intervalli molto più bassi di PrimeLAN per zone, aree e uscite (polling locale).
 
 ℹ️ Quando usi **entrambe** le modalità di integrazione, i dati "vivi" arrivano dal Native, quindi i poller **solo-PrimeLAN** partono con un **default più lento (60s per GSM, guasti ed eventi registro)** per ridurre il traffico PrimeLAN; gli **scenari** restano più reattivi perché guidano il pannello allarme. Puoi comunque cambiare ogni valore nelle opzioni.
 
@@ -108,35 +108,35 @@ Ogni quanto Home Assistant interroga la centrale (valori più bassi = più traff
 L'integrazione crea un'entità `alarm_control_panel` per inserire/disinserire l'impianto. Un comando può essere eseguito in **due modi**, che si differenziano per una cosa importante: cosa succede con **zone/finestre aperte**.
 
 - **Scenario** (via PrimeLAN): attiva uno **scenario** della centrale. Lo scenario applica i **controlli della centrale**, quindi con una zona aperta non auto-escludibile **si rifiuta di armare e avvisa**. È l'equivalente del comportamento di sdomotica.
-- **Partizioni** (via Native): agisce **direttamente sulle partizioni**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune partizioni in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
+- **Aree** (via Native): agisce **direttamente sulle aree**, **forzando l'inserimento** (bypassa il controllo dello scenario). Le zone auto-escludibili vengono escluse; quelle non auto-escludibili vengono comunque segnalate/bloccate dalla centrale. È **quasi istantaneo** (tutto locale). Permette di **mescolare le modalità** (alcune aree in Totale, altre in Istantaneo nello stesso comando), cosa che molti scenari non fanno.
 
 ### Come si configura
 Le opzioni si aprono con un **menù**: *Parametri generali*, *Intervalli di scansione*, *Pannello allarme*, — **solo se la centrale ha moduli tapparella** — *Tapparelle*, e **💾 Salva ed esci**. Ogni sezione modifica una copia in memoria e torna al menù; **niente viene scritto finché non premi «💾 Salva ed esci»**. La **X** in alto chiude senza salvare. Così c'è un solo salvataggio e un solo annulla: tornare indietro non salva mai nulla a metà.
 
 In *Pannello allarme* (con scenari disponibili, cioè con PrimeLAN) c'è **una sola schermata con un gruppo per comando**, con gli stessi nomi di Home Assistant e nello stesso ordine (*In casa* / *Fuori casa* / *Notte* / *Vacanza* / *Disattivato*). Ogni gruppo ha:
-- una **tendina**: gli **scenari della centrale per nome**, oppure **Partizioni personalizzate…** (solo se è attiva anche la modalità Native); vuota (la X) = comando non offerto nel pannello;
-- subito sotto una **sezione chiusa** «↳ Vacanza: partizioni personalizzate e uscite» con **una riga per partizione** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Vale **solo** se nella tendina hai scelto *Partizioni personalizzate…*; altrimenti viene ignorata.
+- una **tendina**: gli **scenari della centrale per nome**, oppure **Aree personalizzate…** (solo se è attiva anche la modalità Native); vuota (la X) = comando non offerto nel pannello;
+- subito sotto una **sezione chiusa** «↳ Vacanza: aree personalizzate e uscite» con **una riga per area** (*Disinserita* / Totale / Parziale / Istantaneo) più **Attivazione uscite**. Vale **solo** se nella tendina hai scelto *Aree personalizzate…*; altrimenti viene ignorata.
 
-Vedi subito cosa è impostato per tutti i comandi e fai tutto in una schermata. Premi **«Avanti»** per tornare al menù, dove salvi con **💾 Salva ed esci**. Una partizione ha **una sola modalità** per comando (stato doppio impossibile). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form, per questo i form usano «Avanti».
+Vedi subito cosa è impostato per tutti i comandi e fai tutto in una schermata. Premi **«Avanti»** per tornare al menù, dove salvi con **💾 Salva ed esci**. Un'area ha **una sola modalità** per comando (stato doppio impossibile). Nota: Home Assistant non consente di chiamare «Salva» il pulsante di un form, per questo i form usano «Avanti».
 
 Esempio tipico (entrambe le modalità):
 - **Fuori casa** → scenario *Acceso giorno* (mantieni l'avviso finestre aperte per l'uso quotidiano)
 - **Notte** → scenario *Acceso notte*
-- **Vacanza** → *Partizioni personalizzate…*, poi nella sezione sotto, su ogni partizione la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
-- **Disattivato** → scenario *Spento* (oppure *Partizioni personalizzate…* senza nulla = spegne tutte)
+- **Vacanza** → *Aree personalizzate…*, poi nella sezione sotto, su ogni area la modalità (es. perimetrali *Totale*, volumetrici interni *Istantaneo*, le altre *Disinserita*) — forza l'inserimento con un mix che gli scenari non replicano
+- **Disattivato** → *➜ Tutte le aree disinserite* (consigliato: è il comando più veloce) oppure lo scenario *Spento*
 
-> Solo Native → non ci sono scenari: *Pannello allarme* mostra l'elenco dei comandi e ognuno apre direttamente il form partizioni. Solo PrimeLAN → le tendine contengono solo scenari.
+> Solo Native → non ci sono scenari: *Pannello allarme* mostra l'elenco dei comandi e ognuno apre direttamente il form aree. Solo PrimeLAN → le tendine contengono solo scenari.
 
-Le partizioni non elencate restano disinserite. Lo **stato** mostrato in HA: una partizione in allarme → *triggered*; altrimenti, se un comando a partizioni combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
+Le aree non elencate restano disinserite. Lo **stato** mostrato in HA: un'area in allarme → *triggered*; altrimenti, se un comando a aree combacia esattamente con lo stato attuale lo mostra, altrimenti vale lo scenario attivo, altrimenti *disinserito*/*custom bypass*.
 
-**Attivazione uscite.** Un comando a partizioni può anche attivare **una o più uscite** (es. "Chiusura casa" per chiudere le persiane); la centrale rilascia da sola le uscite monostabili. Per i comandi a scenario ci pensa lo scenario stesso, quindi il campo uscite vale solo quando il comando è a partizioni.
+**Attivazione uscite.** Un comando a aree può anche attivare **una o più uscite** (es. "Chiusura casa" per chiudere le persiane); la centrale rilascia da sola le uscite monostabili. Per i comandi a scenario ci pensa lo scenario stesso, quindi il campo uscite vale solo quando il comando è a aree.
 
-**Zone autoescludibili.** Con la modalità PrimeLAN l'attivazione di uno scenario non avviene se una zona autoescludibile è aperta. Se usi zone autoescludibili, configura quel comando con *Partizioni personalizzate…* (richiede la modalità Native): con la sola PrimeLAN non c'è alternativa.
+**Zone autoescludibili.** Con la modalità PrimeLAN l'attivazione di uno scenario non avviene se una zona autoescludibile è aperta. Se usi zone autoescludibili, configura quel comando con *Aree personalizzate…* (richiede la modalità Native): con la sola PrimeLAN non c'è alternativa.
 
 ### Quale pannello viene creato
-- **Solo Native** → blocchi **a partizioni** (niente campo Scenario).
+- **Solo Native** → blocchi **a aree** (niente campo Scenario).
 - **Solo PrimeLAN** → mappatura **a scenari** (si sceglie lo scenario per comando da una tendina con i nomi; senza scenario di disinserimento il pannello non viene creato).
-- **Entrambe le modalità di integrazione** → **un unico pannello ibrido**: per ogni comando scegli scenario o partizioni con la regola sopra.
+- **Entrambe le modalità di integrazione** → **un unico pannello ibrido**: per ogni comando scegli scenario o aree con la regola sopra.
 
 ### Pannello allarme con PIN (facoltativo, per un tablet a parete)
 Se tieni un tablet sempre acceso in una stanza ad accesso libero, puoi aggiungere un **secondo pannello protetto da PIN**, lasciando quello originale senza PIN per l'uso da telefono.
@@ -169,7 +169,7 @@ Se spento mostra solo le uscite che PrimeLAN pubblica all'utente collegato; se a
 Nasconde le aree mai nominate nella centrale (col nome predefinito tipo `AREA 013`) e le loro entità.
 
 ## Push in tempo reale (opzionale, richiede PrimeLAN)
-Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, che fa parte della Web API **PrimeLAN**: quindi è disponibile solo con la modalità PrimeLAN attiva. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, partizioni, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
+Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, che fa parte della Web API **PrimeLAN**: quindi è disponibile solo con la modalità PrimeLAN attiva. Se acceso, la centrale invia gli **eventi** a Home Assistant via **webhook locale**, così zone, aree, uscite e guasti si aggiornano **all'istante** senza aspettare il polling (comodo soprattutto se alzi gli intervalli di scansione per alleggerire la centrale). Il polling resta attivo come riconciliazione.
 
 Come si attiva:
 1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. L'**URL locale** del webhook compare **in cima** ai Parametri generali (usa l'**IP locale** di HA: la centrale è in LAN).
@@ -194,10 +194,10 @@ L'integrazione raggruppa le entità in pochi dispositivi.
 
 ## Centrale Inim Prime
 Rappresenta la centrale.
-- **Sensori:** Zone escluse, Memoria allarme zone, Memoria allarme partizioni, Scenario attivo.
+- **Sensori:** Zone escluse, Memoria allarme zone, Memoria allarme aree, Scenario attivo.
 - **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok`. Accanto, i sensori **Connessione Native/PrimeLAN ultimo aggiornamento** (`timestamp`) espongono lo stesso orario come entità a sé (comodi in card/grafici) e restano "congelati" sull'ultimo momento buono quando il link cade. Anche di questi ne compare uno per ogni modalità configurata — due se usi entrambi.
 - **Registro eventi** (event entity): traccia i log della centrale. Non è in tempo reale (vedi sezione sulla card del registro).
-- **Pulsanti:** Annulla esclusioni zone, Azzera memorie partizioni, e i pulsanti degli **scenari**.
+- **Pulsanti:** Annulla esclusioni zone, Azzera memorie aree, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
 
 ## Zone
@@ -207,8 +207,8 @@ Device unico che contiene tutte le zone. Per ogni zona:
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memoria allarme** (diagnostica).
 
-## Partizioni
-Device unico con tutte le partizioni. Per ognuna:
+## Aree
+Device unico con tutte le aree. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
 - **Stato** — ALARM / READY / SABOTAGE.
 - **Azzera memoria** (pulsante).
@@ -231,9 +231,9 @@ Operatore, Potenza segnale, Credito, Tensione alimentazione.
 
 # Configurazione consigliata
 ## Rinomina i dispositivi
-Rinomina zone e partizioni con nomi parlanti (funzionano per id, quindi rinominarle è sicuro).
+Rinomina zone e aree con nomi parlanti (funzionano per id, quindi rinominarle è sicuro).
 ## Disabilita i dispositivi inutilizzati
-Puoi disabilitare le entità di zone/partizioni che non usi.
+Puoi disabilitare le entità di zone/aree che non usi.
 ## Scegli il tipo giusto per i binary sensor delle zone
 Per ogni zona apri il binary sensor, icona ingranaggio, e sotto `Mostra come` scegli Porta, Finestra, Movimento, ecc.
 

@@ -298,7 +298,7 @@ class ResetAllPartitionMemoriesButton(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     ButtonEntity,
 ):
-    _attr_name = "Azzera memorie partizioni"
+    _attr_name = "Azzera memorie aree"
     _attr_icon = "mdi:alarm-light-off"
     _attr_entity_category = EntityCategory.CONFIG
 
@@ -344,7 +344,7 @@ class PartitionsAlarmMemoryCountSensor(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],
     SensorEntity,
 ):
-    _attr_name = "Memoria allarme partizioni"
+    _attr_name = "Memoria allarme aree"
     _attr_icon = "mdi:alarm-light"
 
     def __init__(

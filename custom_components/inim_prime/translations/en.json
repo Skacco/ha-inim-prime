@@ -255,7 +255,7 @@
       },
       "alarm_form": {
         "title": "Alarm panel",
-        "description": "In the dropdown pick a panel scenario or “Custom partitions…”: in that case open the section right below and set each partition's mode and the outputs to activate. Leave the dropdown empty to not offer that command.\n\nNote: if there are auto-bypassable zones use “Custom partitions…”: through a scenario, with one of those zones open, arming does not happen.",
+        "description": "In the dropdown pick a panel scenario or “Custom partitions…”: in that case open the section right below and set each partition's mode and the outputs to activate. Leave the dropdown empty to not offer that command. For disarming, “All partitions disarmed” is recommended: the command is faster.\n\nNote: if there are auto-bypassable zones use “Custom partitions…”: with one of those zones open, arming through a scenario does not happen.",
         "data": {
           "arm_home": "Home",
           "arm_away": "Away",
@@ -294,7 +294,7 @@
           },
           "disarm_partitions": {
             "name": "↳ Disarmed: custom partitions and outputs",
-            "description": "Used only when “Custom partitions…” is selected above. There is nothing to choose for the partitions here: disarming sets all of them to disarmed. You can only pick outputs to switch on.",
+            "description": "Used only when “All partitions disarmed” is selected above. There is nothing to choose for the partitions here: disarming sets all of them to disarmed. You can only pick outputs to switch on.",
             "data": {
               "outputs": "Output activation"
             }
