@@ -450,8 +450,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
         )
         refresh_labels = False
 
-    if deferred or panel_log_events_coordinator is not None or refresh_labels:
+    # Native present -> shutter module names can be read ahead (see below).
+    warm_module_names = inim_gateway.supports_timers
+
+    async def _warm_module_names() -> None:
+        """Read the names of all shutter modules once, so the Options shutters
+        form finds them ready instead of reading them (slowly, behind the
+        polling) when it is opened. The cover platform only reads the mapped
+        ones, which may be fewer."""
+        started = time.monotonic()
+        shutters = discover_shutters(dict(inim_gateway.all_outputs or {}))
+        if not shutters:
+            return
+        await inim_gateway.module_labels(max(shutters))
+        _LOGGER.debug(
+            "Shutter module names read ahead in %.2fs", time.monotonic() - started
+        )
+
+    if (
+            deferred or panel_log_events_coordinator is not None
+            or refresh_labels or warm_module_names
+    ):
         async def _load_deferred() -> None:
+            if warm_module_names:
+                try:
+                    await _warm_module_names()
+                except Exception:  # noqa: BLE001 - names are cosmetic
+                    _LOGGER.debug("Shutter module names: read ahead failed", exc_info = True)
             for coordinator in deferred:
                 await coordinator.async_refresh()
             if refresh_labels:

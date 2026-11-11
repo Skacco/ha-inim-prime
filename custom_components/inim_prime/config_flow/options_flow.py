@@ -1,4 +1,6 @@
 from __future__ import annotations
+import logging
+import time
 import re
 from typing import Any
 
@@ -42,6 +44,8 @@ _CMD_LABELS_EN = {
     OptionsKey.AlarmPanel.ARM_VACATION: "Vacation",
     OptionsKey.AlarmPanel.DISARM: "Disarmed",
 }
+_LOGGER = logging.getLogger(__name__)
+
 _TEXTS = {
     "it": {
         "custom_partitions": "➜ Aree personalizzate…",
@@ -402,10 +406,14 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         module_names: dict[int, str] = {}
         if shutters:
             gateway = self.config_entry.runtime_data.gateway
+            started = time.monotonic()
             try:
                 module_names = await gateway.module_labels(max(shutters))
             except Exception:  # noqa: BLE001 - names are cosmetic
                 module_names = {}
+            _LOGGER.debug(
+                "Shutters form: module names ready in %.2fs", time.monotonic() - started
+            )
 
         schema = vol.Schema(
             build_shutters_schema(
