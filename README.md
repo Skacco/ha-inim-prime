@@ -1,6 +1,6 @@
 🇮🇹 **Italiano** · 🇬🇧 [English](README.en.md)
 
-> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (switch/luci), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle partizioni (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
+> **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (interruttori; le dimmerabili come luci solo in modalità PrimeLAN), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle partizioni (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
@@ -13,7 +13,7 @@ Comunica **direttamente con la centrale** sulla porta del protocollo locale (TCP
 Espone:
 - **zone** (stato aperto/chiuso, memoria allarme, esclusione)
 - **partizioni** (stato, inserimento/disinserimento, memoria allarme)
-- **uscite** (switch/luci)
+- **uscite** (interruttori)
 - **timer**
 - **termostati** (sensori di temperatura)
 - **tapparelle** (comandate tramite le uscite-comando della centrale)
@@ -212,7 +212,7 @@ Device unico con tutte le partizioni. Per ognuna:
 - **Memoria allarme** (diagnostica).
 
 ## Uscite
-Device unico con tutte le uscite della centrale, come interruttori (`switch`) o luci dimmerabili (`light`).
+Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off.
 
 ## Tapparelle
 Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale posizione).

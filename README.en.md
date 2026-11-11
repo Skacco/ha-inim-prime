@@ -1,6 +1,6 @@
 🇮🇹 [Italiano](README.md) · 🇬🇧 **English**
 
-> **Project maintained by [Skacco](https://github.com/Skacco).** Built on the work of [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), author of the original integration and of the panel communication libraries. This project adds: the **Native mode** (local TCP protocol, fast), **outputs** (switches/lights), **scenarios** (buttons + active scenario sensor), an **alarm panel** driven by scenarios or partitions (with an optional second **PIN**-protected panel), **timers**, **thermostats** (temperature sensors), **roller shutters** (driven by virtual outputs), **realtime push** (local webhook, optional), device grouping and the **Italian interface**.
+> **Project maintained by [Skacco](https://github.com/Skacco).** Built on the work of [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), author of the original integration and of the panel communication libraries. This project adds: the **Native mode** (local TCP protocol, fast), **outputs** (switches; dimmable ones as lights only in PrimeLAN mode), **scenarios** (buttons + active scenario sensor), an **alarm panel** driven by scenarios or partitions (with an optional second **PIN**-protected panel), **timers**, **thermostats** (temperature sensors), **roller shutters** (driven by virtual outputs), **realtime push** (local webhook, optional), device grouping and the **Italian interface**.
 
 # Introduction
 This custom integration lets Home Assistant communicate with **Inim Prime alarm panels**.
@@ -13,7 +13,7 @@ Talks **directly to the panel** on the local protocol port (TCP, default **6004*
 It exposes:
 - **zones** (open/closed state, alarm memory, bypass)
 - **partitions** (state, arm/disarm, alarm memory)
-- **outputs** (switches/lights)
+- **outputs** (switches)
 - **timers**
 - **thermostats** (temperature sensors)
 - **roller shutters** (driven through the panel's command outputs)
@@ -212,7 +212,7 @@ A single device with all the partitions. For each one:
 - **Alarm memory** (diagnostic).
 
 ## Outputs
-A single device with all the panel outputs, as switches (`switch`) or dimmable lights (`light`).
+A single device with all the panel outputs, as switches (`switch`). **Dimmable** outputs become lights (`light`) with brightness **only in PrimeLAN mode**; in Native they are on/off.
 
 ## Roller shutters
 A single device with the configured shutters (covers with Open/Close and optional position).
