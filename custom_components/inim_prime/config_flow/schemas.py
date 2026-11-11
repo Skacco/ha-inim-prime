@@ -497,14 +497,14 @@ def build_options_schema(
             if current_alarm.get(command) is not None:
                 default = OptionsKey.PanelType.SCENARI
             elif (current_native.get(command) or {}):
-                default = OptionsKey.PanelType.PARTIZIONI
+                default = OptionsKey.PanelType.AREE
             else:
                 default = OptionsKey.PanelType.SCENARI
             fields[vol.Required(
                 OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method",
                 default = default,
             )] = SelectSelector(SelectSelectorConfig(
-                options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.PARTIZIONI],
+                options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.AREE],
                 translation_key = "alarm_method",
                 mode = SelectSelectorMode.LIST,
             ))
@@ -667,7 +667,7 @@ def build_alarm_method_schema(default_method: str) -> dict:
             OptionsKey.AlarmPanel.SCENARIO_FIELD + "_method",  # distinct key
             default = default_method,
         ): SelectSelector(SelectSelectorConfig(
-            options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.PARTIZIONI],
+            options = [OptionsKey.PanelType.SCENARI, OptionsKey.PanelType.AREE],
             translation_key = "alarm_method",
             mode = SelectSelectorMode.LIST,
         ))

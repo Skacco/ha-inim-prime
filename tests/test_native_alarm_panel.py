@@ -92,7 +92,7 @@ def test_extract_hybrid_sections_method_selector():
     # overriding the other method's fields.
     data = {
         "arm_away": {"scenario_method": "scenari", "scenario": "2", "P0": "total"},
-        "arm_vacation": {"scenario_method": "partizioni", "scenario": "1",
+        "arm_vacation": {"scenario_method": "aree", "scenario": "1",
                          "P0": "total", "P2": "instant"},
         "arm_home": {"scenario_method": "scenari", "scenario": ""},  # empty -> not offered
     }

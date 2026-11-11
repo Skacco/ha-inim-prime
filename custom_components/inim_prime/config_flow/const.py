@@ -24,7 +24,7 @@ class OptionsKey:
     HIDE_UNUSED_PARTITIONS: Final = "hide_unused_partitions"
     SCAN_INTERVALS: Final = "scan_intervals"
     ALARM_PANEL: Final = "alarm_panel"        # scenario mapping (PrimeLAN)
-    ALARM_PANEL_TYPE: Final = "alarm_panel_type"    # "scenari" | "partizioni"
+    ALARM_PANEL_TYPE: Final = "alarm_panel_type"    # "scenari" | "aree"
     ALARM_PANEL_NATIVE: Final = "alarm_panel_native"  # per-arm partition sets
     SHUTTERS: Final = "shutters"              # the options-form section
     SHUTTER_COMMANDS: Final = "shutter_commands"  # stored mapping
@@ -68,7 +68,7 @@ class OptionsKey:
 
     class PanelType:
         SCENARI: Final[str] = "scenari"
-        PARTIZIONI: Final[str] = "partizioni"
+        AREE: Final[str] = "aree"
 
     class ScanIntervals:
         ZONES: Final[str] = "zones"

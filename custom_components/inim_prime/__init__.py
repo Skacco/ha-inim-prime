@@ -795,4 +795,63 @@ async def async_migrate_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) 
             minor_version = 0,
         )
 
+    if entry.version == 2 and entry.minor_version < 1:
+        _migrate_partizioni_to_aree(hass, entry)
+
     return True
+
+
+def _aree_entity_id(entity_id: str) -> str:
+    """`select.partizioni_casetta_x` -> `select.aree_casetta_x` (whole words)."""
+    domain, object_id = entity_id.split(".", 1)
+    words = {"partizioni": "aree", "partizione": "area"}
+    return domain + "." + "_".join(words.get(w, w) for w in object_id.split("_"))
+
+
+def _aree_value(value):
+    """Stored option values: the Italian 'partizioni' choice is now 'aree'."""
+    if isinstance(value, dict):
+        return {k: _aree_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_aree_value(v) for v in value]
+    return "aree" if value == "partizioni" else value
+
+
+def _migrate_partizioni_to_aree(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
+    """2.0 -> 2.1: Inim calls them "aree" in Italian, not "partizioni".
+
+    Renames the stored option value and the Italian entity ids (unique ids,
+    and so history, are untouched). An id is left alone when the new one is
+    already taken.
+    """
+    registry = er.async_get(hass)
+    renamed = 0
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        new_entity_id = _aree_entity_id(entity.entity_id)
+        if new_entity_id == entity.entity_id:
+            continue
+        try:
+            registry.async_update_entity(entity.entity_id, new_entity_id = new_entity_id)
+            renamed += 1
+        except ValueError:
+            _LOGGER.warning(
+                "Could not rename %s to %s (id already in use)",
+                entity.entity_id, new_entity_id,
+            )
+    if renamed:
+        _LOGGER.info("Renamed %d entity ids from 'partizioni' to 'aree'", renamed)
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            "entity_ids_renamed_aree",
+            is_fixable = False,
+            is_persistent = True,
+            severity = ir.IssueSeverity.WARNING,
+            translation_key = "entity_ids_renamed_aree",
+        )
+    hass.config_entries.async_update_entry(
+        entry,
+        options = _aree_value(dict(entry.options)),
+        version = 2,
+        minor_version = 1,
+    )

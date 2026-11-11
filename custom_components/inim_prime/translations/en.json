@@ -513,8 +513,14 @@
     "alarm_method": {
       "options": {
         "scenario": "Scenario (PrimeLAN)",
-        "partizioni": "Partitions (Native)"
+        "aree": "Partitions (Native)"
       }
+    }
+  },
+  "issues": {
+    "entity_ids_renamed_aree": {
+      "title": "Entity IDs renamed: “partizioni” is now “aree”",
+      "description": "Inim calls “aree” what the integration used to call “partizioni” in Italian. With this update the entity IDs have been renamed accordingly (for example `select.partizioni_casetta_arming_status` is now `select.aree_casetta_arming_status`). History is kept.\n\nIf you have dashboards, automations or scripts using the old IDs, update them to the new ones."
     }
   }
 }

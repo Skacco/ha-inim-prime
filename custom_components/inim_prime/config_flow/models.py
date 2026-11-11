@@ -141,7 +141,7 @@ def extract_hybrid_sections(
 
     Each command is its own form section (keyed by the command, e.g. 'arm_away').
     A section holds, optionally, a 'scenario_method' selector (both backends;
-    'scenari' or 'partizioni'), a 'scenario' field, one mode field per partition
+    'scenari' or 'aree'), a 'scenario' field, one mode field per partition
     (keyed by the partition's label, value 'disarmed'/'total'/'stay'/'instant')
     and an 'outputs' field. ``partition_index`` maps a partition label to its id.
 
@@ -171,7 +171,7 @@ def extract_hybrid_sections(
         scenario_set = scenario is not None and str(scenario).strip() != ""
         if method == OptionsKey.PanelType.SCENARI:
             use_scenario = True
-        elif method == OptionsKey.PanelType.PARTIZIONI:
+        elif method == OptionsKey.PanelType.AREE:
             use_scenario = False
         else:  # single backend: no selector -> scenario wins if set
             use_scenario = scenario_set

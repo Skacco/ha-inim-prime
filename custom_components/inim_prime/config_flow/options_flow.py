@@ -67,7 +67,7 @@ _STEP_TO_CMD = {
     "cmd_disarm": OptionsKey.AlarmPanel.DISARM,
 }
 # Dropdown value meaning "arm via custom partitions" (scenario ids are digits).
-_PARTITIONS_CHOICE = "partizioni"
+_PARTITIONS_CHOICE = "aree"
 
 
 def _section_key(cmd: str) -> str:
