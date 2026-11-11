@@ -44,13 +44,13 @@ _CMD_LABELS_EN = {
 }
 _TEXTS = {
     "it": {
-        "custom_partitions": "Aree personalizzate…",
+        "custom_partitions": "➜ Aree personalizzate…",
         "all_disarmed": "➜ Tutte le aree disinserite",
         "partitions": "Aree",
         "back_to_menu": "‹ Torna al menù",
     },
     "en": {
-        "custom_partitions": "Custom partitions…",
+        "custom_partitions": "➜ Custom partitions…",
         "all_disarmed": "➜ All partitions disarmed",
         "partitions": "Partitions",
         "back_to_menu": "‹ Back to menu",
