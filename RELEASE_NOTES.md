@@ -1,3 +1,10 @@
+## Novità 1.1.5
+
+### Zone doppie con firmware 5
+- **Nome della seconda zona**: sulle centrali con firmware 5 la seconda zona di un morsetto a zona doppia compariva senza nome (una riga chiamata solo «Zone»). Ora ha il nome impostato sulla centrale.
+- **Numero di zona corretto**: la seconda zona viene ora identificata con il numero che usa il firmware 5, anche per impostazioni ed esclusione.
+- Dopo l'aggiornamento le entità delle seconde zone vengono ricreate con il nome giusto: se le avevi rinominate a mano o usate in automazioni e schede, vanno riassegnate. Con firmware 4 non cambia nulla.
+
 ## Novità 1.1.4
 
 ### Connessione più stabile
