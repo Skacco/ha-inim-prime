@@ -3,9 +3,14 @@
 The Inim Prime panel's own outbound HTTP client ("Invio pagine web" in
 Prime/STUDIO) can fire an HTTP request on each event. When the user enables
 "realtime push" in the options, we register a Home Assistant local webhook and
-point those panel events at it. On each event we trigger an immediate refresh
-of the coordinator that owns the affected entities, so they update right away
-instead of waiting for the next poll.
+point those panel events at it.
+
+The panel sends each URL exactly as written (no variables, no wildcard), so
+the user writes the object and its new state into the URL, one entry per
+object and per activation/restoral. When an event names a zone or an output
+we set that entity's state straight from the parameters, so even a pulse
+shorter than a poll is seen; then, and for every other event, we refresh the
+coordinator that owns the affected entities, which reconciles with the panel.
 
 Design notes:
 - Opt-in and off by default: nothing is registered unless the user enabled it
@@ -14,15 +19,16 @@ Design notes:
   routes unknown ids to a 200 with no handler, so ids can't be enumerated.
 - The handler never errors back to the panel: it always answers 200, so a
   malformed request can't make the panel retry or log noise.
-- We refresh the relevant coordinator rather than optimistically patching the
-  cached state: the Native link serializes commands under a lock and the poll
-  is already fast, so a targeted refresh is simple and always consistent.
+- A state taken from the URL is only as right as the entry written in
+  Prime/STUDIO; the refresh that follows corrects a wrong one.
 """
 
 from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
+from types import MappingProxyType
 
 from aiohttp import web
 from homeassistant.components import webhook
@@ -30,6 +36,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .config_flow.const import OptionsKey
+from .models.zones import UnifiedZoneState
 from .runtime_data import InimPrimeConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,8 +77,8 @@ def async_register_webhook(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> 
         # LAN-only by default (the panel calls HA's local IP directly). Some
         # setups behind a reverse proxy make HA see even LAN requests as
         # "remote"; the "accept non-local requests" option lifts the check
-        # (safe: the webhook only triggers a refresh and is guarded by the
-        # secret id in the URL).
+        # (the webhook only sets zone/output states and triggers a refresh, and
+        # is guarded by the secret id in the URL).
         allow_remote = bool(entry.options.get(OptionsKey.WEBHOOK_ALLOW_REMOTE))
         webhook.async_register(
             hass,
@@ -109,14 +116,48 @@ def _make_handler(
     return _handle
 
 
+_ZONE_EVENT_STATES = {
+    "zone_open": UnifiedZoneState.ALARM,
+    "zone_close": UnifiedZoneState.STANDBY,
+}
+_OUTPUT_ON = ("1", "on", "true")
+_OUTPUT_OFF = ("0", "off", "false")
+
+
+def _apply_event(coordinators, ev: str, params: dict[str, str]) -> None:
+    """Set the state the event carries (zones and outputs) on the entity."""
+    if ev in _ZONE_EVENT_STATES:
+        coordinator, change = coordinators.zones, {"state": _ZONE_EVENT_STATES[ev]}
+    elif ev == "output":
+        state = (params.get("state") or "").strip().lower()
+        if state not in _OUTPUT_ON + _OUTPUT_OFF:
+            return
+        coordinator, change = coordinators.outputs, {"state": state in _OUTPUT_ON}
+    else:
+        return
+    try:
+        item_id = int(params.get("id", ""))
+    except ValueError:
+        return
+    data = getattr(coordinator, "data", None)
+    if not data or item_id not in data:
+        _LOGGER.debug("INIM webhook: %r for unknown id %s", ev, item_id)
+        return
+    updated = dict(data)
+    updated[item_id] = replace(data[item_id], **change)
+    coordinator.async_set_updated_data(MappingProxyType(updated))
+
+
 async def _process(entry: InimPrimeConfigEntry, request: web.Request) -> None:
-    ev = (await _read_params(request)).get("ev")
+    params = await _read_params(request)
+    ev = params.get("ev")
     names = _EVENT_COORDINATORS.get(ev or "")
     if not names:
         _LOGGER.debug("INIM webhook: ignoring unknown event %r", ev)
         return
     _LOGGER.debug("INIM webhook: event %r -> refresh %s", ev, names)
     coordinators = entry.runtime_data.coordinators
+    _apply_event(coordinators, ev, params)
     for name in names:
         coordinator = getattr(coordinators, name, None)
         if coordinator is not None:

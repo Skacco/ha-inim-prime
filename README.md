@@ -186,7 +186,8 @@ Come si attiva:
 | Area inserita | `?ev=arm&area=<area>` |
 | Area disinserita | `?ev=disarm&area=<area>` |
 | Allarme | `?ev=alarm&area=<area>` |
-| Uscita | `?ev=output` |
+| Uscita accesa | `?ev=output&id=<uscita>&state=1` |
+| Uscita spenta | `?ev=output&id=<uscita>&state=0` |
 | Tamper / guasto | `?ev=tamper` / `?ev=fault` |
 
 Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato. All'arrivo dell'evento l'integrazione aggiorna subito l'entità coinvolta.

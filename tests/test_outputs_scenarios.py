@@ -612,6 +612,54 @@ async def test_webhook_routes_event_to_coordinator():
     zones.async_request_refresh.assert_not_called()
 
 
+async def test_webhook_sets_state_from_parameters():
+    """A zone/output event sets the entity state from the URL right away (a
+    pulse shorter than a poll is seen), then refreshes to reconcile."""
+    from types import MappingProxyType
+    from unittest.mock import AsyncMock, MagicMock
+    from custom_components.inim_prime.models.outputs import UnifiedOutput
+    from custom_components.inim_prime.models.zones import UnifiedZone, UnifiedZoneState
+    from custom_components.inim_prime.webhook import _process
+
+    def coordinator(data):
+        c = MagicMock()
+        c.data = MappingProxyType(data)
+        c.async_request_refresh = AsyncMock()
+        c.async_set_updated_data = lambda new: setattr(c, "data", new)
+        return c
+
+    zones = coordinator({5: UnifiedZone(5, 5, "PORTA", None, UnifiedZoneState.STANDBY, False, False)})
+    outputs = coordinator({7: UnifiedOutput(7, "ACQUA", False), 8: UnifiedOutput(8, "LUCE", False)})
+    entry = MagicMock()
+    entry.runtime_data.coordinators.zones = zones
+    entry.runtime_data.coordinators.outputs = outputs
+
+    async def send(**query):
+        request = MagicMock()
+        request.method, request.query = "GET", query
+        await _process(entry, request)
+
+    await send(ev = "output", id = "7", state = "1")
+    assert outputs.data[7].state is True and outputs.data[8].state is False
+    outputs.async_request_refresh.assert_awaited_once()
+    await send(ev = "output", id = "7", state = "0")
+    assert outputs.data[7].state is False
+
+    await send(ev = "zone_open", id = "5")
+    assert zones.data[5].state == UnifiedZoneState.ALARM and zones.data[5].label == "PORTA"
+    await send(ev = "zone_close", id = "5")
+    assert zones.data[5].state == UnifiedZoneState.STANDBY
+
+    # Nothing to apply: unknown id, missing or odd state. Still refreshes.
+    before = dict(outputs.data)
+    outputs.async_request_refresh.reset_mock()
+    await send(ev = "output", id = "99", state = "1")
+    await send(ev = "output", id = "7")
+    await send(ev = "output", id = "x", state = "maybe")
+    assert dict(outputs.data) == before and all(o.state is False for o in outputs.data.values())
+    assert outputs.async_request_refresh.await_count == 3
+
+
 def test_connection_only_setup_seeds_scan_intervals():
     """Connection-only first setup must produce options the integration can
     load: scan_intervals present for zones/partitions (regression: it used to

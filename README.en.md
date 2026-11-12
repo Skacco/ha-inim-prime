@@ -186,7 +186,8 @@ How to enable it:
 | Area armed | `?ev=arm&area=<area>` |
 | Area disarmed | `?ev=disarm&area=<area>` |
 | Alarm | `?ev=alarm&area=<area>` |
-| Output | `?ev=output` |
+| Output on | `?ev=output&id=<output>&state=1` |
+| Output off | `?ev=output&id=<output>&state=0` |
 | Tamper / fault | `?ev=tamper` / `?ev=fault` |
 
 By default the webhook accepts **LAN** requests only (the panel calls it on the local IP). If HA is behind a **reverse proxy** and sees even local requests as «remote» (webhook rejected), enable **«Accept non-local requests»** in General parameters. The **secret id** in the URL is the key: keep it private. On each event the integration refreshes the affected entity right away.
