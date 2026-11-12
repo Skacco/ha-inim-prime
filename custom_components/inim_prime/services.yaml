@@ -94,3 +94,6 @@ debug_arm_drop_test:
     taps:
       selector:
         number: {min: 1, max: 5, mode: box}
+    burst:
+      selector:
+        boolean:

@@ -296,6 +296,7 @@ async def _primelan_outputs(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
 ARM_DROP_TEST_SCHEMA = vol.Schema({
     vol.Required("output_id"): vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009)),
     vol.Optional("taps", default = 2): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 5)),
+    vol.Optional("burst", default = False): cv.boolean,
 })
 
 
@@ -306,6 +307,9 @@ async def _arm_drop_test(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
         gateway = getattr(entry.runtime_data, "gateway", None)
         native = getattr(gateway, "_native", None) if gateway else None
         if native is not None:
+            if call.data["burst"]:
+                drop_at = native.arm_burst_test(call.data["output_id"])
+                return {"armed": True, "output_id": call.data["output_id"], "burst": True, "drop_at": drop_at}
             native.arm_drop_test(call.data["output_id"], call.data["taps"])
             return {"armed": True, "output_id": call.data["output_id"], "taps": call.data["taps"]}
     raise ServiceValidationError("No loaded Inim Prime entry with the native protocol")

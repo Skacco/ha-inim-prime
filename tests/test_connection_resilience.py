@@ -298,3 +298,35 @@ def test_partial_response_bytes():
     except ConnectionError as err:
         assert na._partial_response_bytes(err) == 3
     assert na._partial_response_bytes(ConnectionError("refused")) == 0
+
+
+async def test_burst_test_reports_whether_the_cut_command_ran(monkeypatch, caplog):
+    class _Panel:
+        is_connected = True
+        state = False
+        calls = 0
+
+        async def set_output(self, output_id, state):
+            self.calls += 1
+            if self.calls == 4:
+                self.state = state  # executed, but the answer is cut
+                raise ConnectionResetError("reset")
+            self.state = state
+
+        async def update_outputs(self):
+            status = type("S", (), {"state": self.state})()
+            return {7: type("O", (), {"terminal_id": 7, "label": "x", "output_status": status})()}
+
+        async def reconnect(self):
+            pass
+
+    real_sleep = asyncio.sleep
+
+    async def _fast(_seconds):
+        await real_sleep(0)
+
+    monkeypatch.setattr(na.asyncio, "sleep", _fast)
+    adapter = na.NativeAdapter(_Panel())
+    with caplog.at_level("WARNING"):
+        await adapter._run_burst_test(7, na.time.time() + 1.0)
+    assert "was EXECUTED" in caplog.text
