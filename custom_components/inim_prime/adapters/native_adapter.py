@@ -194,6 +194,8 @@ class NativeAdapter:
         "_last_reconnect_attempt",
         "_outage_started",
         "_held_commands",
+        "_drop_test",
+        "_drop_test_task",
         "_timer_labels",
         "_timers",
         "_thermostat_names",
@@ -214,6 +216,10 @@ class NativeAdapter:
         self._outage_started: float | None = None
         # Commands currently waiting for the panel to come back (see _call_command).
         self._held_commands: set = set()
+        # Beta test only (debug_arm_drop_test): (output_id, taps) to send at
+        # the next connection drop, one shot.
+        self._drop_test: tuple[int, int] | None = None
+        self._drop_test_task: asyncio.Task | None = None
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
@@ -274,10 +280,40 @@ class NativeAdapter:
             _LOGGER.info("Command %s sent: the panel is back", key)
         return await self._call_with_reconnect(coro_factory)
 
+    def arm_drop_test(self, output_id: int, taps: int) -> None:
+        """Beta test only: at the next drop, turn `output_id` on `taps` times."""
+        self._drop_test = (output_id, taps)
+
+    async def _run_drop_test(self, output_id: int, taps: int) -> None:
+        loop = asyncio.get_running_loop()
+        started = loop.time()
+        # like a person tapping a moment after the panel went away
+        await _sleep(2.0)
+        _LOGGER.warning(
+            "Drop test: +%.1fs sending output %s ON %d times (panel connected: %s)",
+            loop.time() - started, output_id, taps, self._client.is_connected,
+        )
+        results = await asyncio.gather(
+            *(self.set_output(output_id, True) for _ in range(taps)),
+            return_exceptions = True,
+        )
+        _LOGGER.warning(
+            "Drop test: finished +%.1fs after the drop, results: %s",
+            loop.time() - started,
+            ["ok" if result is None else repr(result) for result in results],
+        )
+
     def _note_outage(self, err: BaseException) -> None:
         if self._outage_started is not None:
             return
         self._outage_started = asyncio.get_running_loop().time()
+        if self._drop_test is not None:
+            output_id, taps = self._drop_test
+            self._drop_test = None
+            _LOGGER.warning("Drop test: connection drop noticed (%s)", err)
+            self._drop_test_task = asyncio.get_running_loop().create_task(
+                self._run_drop_test(output_id, taps)
+            )
         if matches_periodic_drop_cadence(time.time()):
             _LOGGER.info(
                 "The panel closed the local connection (%s). This matches the "

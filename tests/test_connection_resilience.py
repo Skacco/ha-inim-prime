@@ -215,3 +215,21 @@ async def test_primelan_second_tap_while_held_is_dropped(monkeypatch):
     released.set()
     await first
     assert sent == [2]
+
+
+async def test_armed_drop_test_sends_one_command(monkeypatch):
+    """The beta drop test: two taps at the drop become one command."""
+    monkeypatch.setattr(na, "NATIVE_RECONNECT_MIN_INTERVAL", 0)
+
+    async def _yield(_):
+        await asyncio.sleep(0)      # a real wait lets the second tap run
+    monkeypatch.setattr(na, "_sleep", _yield)
+    client = _FlakyClient(refusals = 3)
+    adapter = na.NativeAdapter(client)
+    adapter.arm_drop_test(615, 2)
+
+    adapter._note_outage(ConnectionError("down"))
+    await adapter._drop_test_task
+
+    assert client.sent == [(615, True)]
+    assert adapter._drop_test is None, "one shot"
