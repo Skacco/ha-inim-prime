@@ -90,3 +90,27 @@ async def test_gateway_output_labels_can_come_from_the_saved_copy():
     assert fresh != gateway.primelan_output_labels        # -> would save and reload
 
     assert not InimPrimeGateway(primelan = primelan).uses_primelan_output_labels
+
+
+async def test_first_setup_reuses_the_client_parked_by_the_form():
+    """The setup that follows the form must pick up the parked client.
+
+    Regression: is_initialized is a property of the library's client; calling
+    it raised TypeError and the very first setup after a fresh install failed
+    with "Configurazione non riuscita".
+    """
+    import custom_components.inim_prime as integration
+    from custom_components.inim_prime import native_handoff
+    from inim.prime.native.client import Client
+
+    client = Client(host = "192.0.2.1", password = "x", use_outer_frame = False, port = 6004, pin = None)
+    client._initialized = True
+    native_handoff.keep("192.0.2.1", 6004, client)
+
+    gateway = integration._build_gateway({
+        "serial_number": "1", "host": "192.0.2.1",
+        "native": {"port": 6004, "password": "x", "use_outer_frame": False, "pin": None},
+    })
+
+    assert gateway._native._client is client
+    assert native_handoff.take("192.0.2.1", 6004) is None

@@ -91,7 +91,7 @@ def _build_gateway(data: InimPrimeConfigData) -> InimPrimeGateway:
         # Right after the setup form the client it opened is still connected
         # and initialised: use it instead of connecting a second time.
         native_client = native_handoff.take(host, native_conf["port"])
-        if native_client is not None and native_client.is_initialized():
+        if native_client is not None and native_client.is_initialized:
             _LOGGER.debug("Setup: reusing the Native connection opened by the setup form")
             native_adapter = NativeAdapter(native_client, connected = True)
         else:
