@@ -95,37 +95,34 @@ def test_offset_by_firmware_text():
     assert native_compat.zone_1_id_offset("") == 1005
 
 
-class _Backend:
-    def __init__(self, firmware_5 = False):
-        self.second_zones_use_firmware_5_ids = firmware_5
-        self.bypass_calls = []
+class _Protocol:
+    def __init__(self):
+        self.commands = []
 
-    async def set_zone_bypass(self, zone_id, bypass, known_only = True):
-        self.bypass_calls.append((zone_id, bypass, known_only))
-
-
-async def test_firmware_5_second_zone_is_excluded_through_primelan():
-    from custom_components.inim_prime.gateway import InimPrimeGateway
-
-    native, primelan = _Backend(firmware_5 = True), _Backend()
-    gateway = InimPrimeGateway(native = native, primelan = primelan)
-
-    await gateway.set_zone_bypass(1524, True)   # ALLAGAMENTO, second zone
-    await gateway.set_zone_bypass(10, True)     # a single zone
-
-    assert primelan.bypass_calls == [(1524, True, False)]
-    assert native.bypass_calls == [(10, True, True)]
+    async def execute_command_with_pin(self, operation, data = None, pin = None, **_):
+        self.commands.append((int(operation), data.hex(" ")))
+        return b""
 
 
-async def test_second_zone_stays_on_native_otherwise():
-    from custom_components.inim_prime.gateway import InimPrimeGateway
+async def test_firmware_5_second_zone_bypass_uses_terminal_and_value():
+    protocol = _Protocol()
+    native_compat._second_zone_offsets[id(protocol)] = 1505
+    try:
+        await native_compat._set_zone_bypass_for_firmware(protocol, 1524, True)
+        await native_compat._set_zone_bypass_for_firmware(protocol, 1524, False)
+        await native_compat._set_zone_bypass_for_firmware(protocol, 19, True)
+        await native_compat._set_zone_bypass_for_firmware(protocol, 19, False)
+    finally:
+        del native_compat._second_zone_offsets[id(protocol)]
+    assert protocol.commands == [
+        (9, "13 00 01 00"),   # second zone of terminal 19: exclude
+        (9, "13 00 03 00"),   # ... include
+        (9, "13 00 00 00"),   # first zone: unchanged
+        (9, "13 00 02 00"),
+    ]
 
-    # firmware 4 with both backends: unchanged
-    native, primelan = _Backend(), _Backend()
-    await InimPrimeGateway(native = native, primelan = primelan).set_zone_bypass(1020, True)
-    assert native.bypass_calls == [(1020, True, True)] and primelan.bypass_calls == []
 
-    # firmware 5 without PrimeLAN: nothing else to send it from
-    native = _Backend(firmware_5 = True)
-    await InimPrimeGateway(native = native, primelan = None).set_zone_bypass(1524, True)
-    assert native.bypass_calls == [(1524, True, True)]
+async def test_firmware_4_second_zone_bypass_is_unchanged():
+    protocol = _Protocol()
+    await native_compat._set_zone_bypass_for_firmware(protocol, 1023, True)
+    assert protocol.commands == [(9, "ff 03 00 00")]

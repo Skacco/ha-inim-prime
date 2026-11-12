@@ -1,3 +1,8 @@
+## Novità 1.1.6
+
+### Zone doppie con firmware 5
+- **Esclusione della seconda zona**: sulle centrali con firmware 5 l'interruttore «Esclusione» della seconda zona di un morsetto a zona doppia tornava spento da solo e la zona non veniva esclusa. Ora esclusione e riattivazione funzionano.
+
 ## Novità 1.1.5
 
 ### Zone doppie con firmware 5

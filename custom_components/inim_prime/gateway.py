@@ -30,9 +30,6 @@ from .exceptions import InimPrimeFeatureNotSupportedError
 
 # "Mod.dom 01 T01", "ModDomot 09 T02", ... -- a domotic module's internal
 # terminals, reported as zones by the panel but not real alarm zones.
-# Zone ids below this are the first (or only) zone of a terminal.
-_FIRST_SECOND_ZONE_ID = 1005
-
 _MODULE_ZONE_LABEL = re.compile(r"(?i)^mod\.?dom(?:ot)?\s*\d+\s*t\d")
 
 
@@ -438,19 +435,6 @@ class InimPrimeGateway:
             zone_id: int,
             bypass: bool
     ) -> None:
-        # Firmware 5, second zone of a double-zone terminal: the Native command
-        # is accepted but the zone is not excluded (seen on a PR060 5.00, where
-        # single zones are excluded fine). PrimeLAN identifies that zone with
-        # the same id (checked on two firmware 5 panels), so send it from there
-        # when it is configured.
-        if (
-            zone_id >= _FIRST_SECOND_ZONE_ID
-            and self._native is not None
-            and self._primelan is not None
-            and getattr(self._native, "second_zones_use_firmware_5_ids", False)
-        ):
-            await self._primelan.set_zone_bypass(zone_id, bypass, known_only = False)
-            return
         await self._preferred.set_zone_bypass(zone_id, bypass)
 
     async def set_all_zone_bypasses(

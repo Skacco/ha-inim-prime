@@ -376,13 +376,9 @@ class PrimelanAdapter:
     async def set_zone_bypass(
             self,
             zone_id: int,
-            bypass: bool,
-            known_only: bool = True,
+            bypass: bool
     ) -> None:
-        # known_only=False: the zone list is polled by the Native backend (both
-        # configured), so this adapter's own list is empty -- the caller vouches
-        # for the id.
-        if known_only and zone_id not in self._zones:
+        if zone_id not in self._zones:
             raise KeyError(f"Unknown zone id: {zone_id}")
 
         request = ZoneBypassSetRequest(zone_id = zone_id, bypass = bypass)

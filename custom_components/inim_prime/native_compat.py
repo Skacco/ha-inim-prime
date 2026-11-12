@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import asyncio
 import re
+import struct
 
 from inim.prime.native import client as _client
+from inim.prime.native.const import CommandOperation as _CommandOperation
 from inim.prime.native.helpers import terminals as _terminals
 from inim.prime.native.utils import Interval as _Interval
 from inim.prime.native.models import terminals as _terminal_models
@@ -109,7 +111,19 @@ _panel_descriptions: dict[int, str] = {}
 _zone_ids_interval: _Interval | None = None
 _layout_lock = asyncio.Lock()
 
+# Protocols of the panels on the firmware 5 layout -> their second-zone offset.
+_second_zone_offsets: dict[int, int] = {}
+
+# Firmware 5 does not accept a second zone's own id in the bypass command (it
+# answers 05, "refused", to <terminal> + 1505 and to <terminal> + 1005). The
+# second zone is addressed with the terminal id and a different value: 1
+# excludes it, 3 includes it again (0 and 2 do the same for the first zone).
+# Found on a PR060 5.00 and confirmed on a second one.
+_SECOND_ZONE_ENABLE_BYPASS_VALUE = 1
+_SECOND_ZONE_DISABLE_BYPASS_VALUE = 3
+
 _original_get_panel_info = _client.get_panel_info
+_original_set_zone_bypass = _client.set_zone_bypass
 _original_initialize_terminals = _client.initialize_terminals
 _original_get_zone_settings = _terminals.get_zone_settings
 
@@ -130,7 +144,9 @@ async def _initialize_terminals_for_firmware(protocol, pin = None):
     global _zone_ids_interval
     offset = zone_1_id_offset(_panel_descriptions.pop(id(protocol), ""))
     if offset == _FIRMWARE_4_ZONE_1_ID_OFFSET:
+        _second_zone_offsets.pop(id(protocol), None)
         return await _original_initialize_terminals(protocol, pin)
+    _second_zone_offsets[id(protocol)] = offset
     # The library reads the offset from a module constant: hold a lock so a
     # second panel on another firmware cannot be initialised with it.
     async with _layout_lock:
@@ -143,7 +159,21 @@ async def _initialize_terminals_for_firmware(protocol, pin = None):
             _zone_ids_interval = None
 
 
+async def _set_zone_bypass_for_firmware(protocol, zone_id, bypass, pin = None):
+    offset = _second_zone_offsets.get(id(protocol))
+    if offset is None or zone_id < offset:
+        return await _original_set_zone_bypass(protocol, zone_id, bypass, pin)
+    value = _SECOND_ZONE_ENABLE_BYPASS_VALUE if bypass else _SECOND_ZONE_DISABLE_BYPASS_VALUE
+    await protocol.execute_command_with_pin(
+        operation = _CommandOperation.SET_ZONE_BYPASS,
+        data = struct.pack("<HH", zone_id - offset, value),
+        pin = pin,
+    )
+
+
 def apply() -> None:
+    if _client.set_zone_bypass is not _set_zone_bypass_for_firmware:
+        _client.set_zone_bypass = _set_zone_bypass_for_firmware
     if _client.get_panel_info is not _get_panel_info_recording:
         _client.get_panel_info = _get_panel_info_recording
     if _client.initialize_terminals is not _initialize_terminals_for_firmware:
