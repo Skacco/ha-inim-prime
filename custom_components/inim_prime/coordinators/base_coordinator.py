@@ -35,6 +35,12 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
     # True while failed reads are being covered by the last data
     _riding_through: bool = False
 
+    @property
+    def backend_reachable(self) -> bool:
+        """False as soon as a read fails, even while the last data is still
+        being served (the connectivity sensors report the real link state)."""
+        return bool(self.last_update_success) and not self._riding_through
+
     def __init_subclass__(cls, **kwargs) -> None:
         """Make every coordinator ride through short connection drops.
 

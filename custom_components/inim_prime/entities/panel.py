@@ -30,6 +30,12 @@ def create_panel_device_info(
     )
 
 
+def _reachable(coordinator) -> bool:
+    """Real link state: entities keep their last state through a short drop
+    (see InimPrimeBaseCoordinator), these diagnostics must still show it."""
+    return bool(getattr(coordinator, "backend_reachable", coordinator.last_update_success))
+
+
 class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
     """Connectivity of one backend (Native or PrimeLAN), from whether its
     coordinator's last poll succeeded.
@@ -46,7 +52,7 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_name = name
         self._attr_unique_id = f"{serial_number}_{suffix}"
         self._attr_device_info = create_panel_device_info(serial_number)
-        self._last_ok = dt_util.utcnow() if coordinator.last_update_success else None
+        self._last_ok = dt_util.utcnow() if _reachable(coordinator) else None
 
     @property
     def available(self) -> bool:
@@ -56,11 +62,11 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return bool(self.coordinator.last_update_success)
+        return _reachable(self.coordinator)
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        if self.coordinator.last_update_success:
+        if _reachable(self.coordinator):
             self._last_ok = dt_util.utcnow()
         super()._handle_coordinator_update()
 
@@ -84,7 +90,7 @@ class BackendLastUpdateSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = name
         self._attr_unique_id = f"{serial_number}_{suffix}"
         self._attr_device_info = create_panel_device_info(serial_number)
-        self._last_ok = dt_util.utcnow() if coordinator.last_update_success else None
+        self._last_ok = dt_util.utcnow() if _reachable(coordinator) else None
 
     @property
     def available(self) -> bool:
@@ -96,7 +102,7 @@ class BackendLastUpdateSensor(CoordinatorEntity, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        if self.coordinator.last_update_success:
+        if _reachable(self.coordinator):
             self._last_ok = dt_util.utcnow()
         super()._handle_coordinator_update()
 

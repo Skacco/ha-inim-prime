@@ -41,12 +41,16 @@ async def test_failed_read_within_grace_keeps_last_data(hass):
     await coordinator.async_refresh()
     assert coordinator.last_update_success and coordinator.data == {"zone": "ok"}
 
+    assert coordinator.backend_reachable
+
     await coordinator.async_refresh()
     assert coordinator.last_update_success, "a short drop must not make entities unavailable"
     assert coordinator.data == {"zone": "ok"}
+    assert not coordinator.backend_reachable, "the connectivity sensors must still show the drop"
 
     await coordinator.async_refresh()
     assert coordinator.data == {"zone": "new"}
+    assert coordinator.backend_reachable
 
 
 async def test_failed_read_after_grace_is_reported(hass, monkeypatch):
