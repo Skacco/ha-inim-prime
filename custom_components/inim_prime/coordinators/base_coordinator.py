@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.core import HomeAssistant, _LOGGER
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 if TYPE_CHECKING:
     # only imported by the type checker -- never executes at runtime,
@@ -34,11 +35,30 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
     _last_success: float | None = None
     # True while failed reads are being covered by the last data
     _riding_through: bool = False
+    # monotonic/wall time at which the current run of failed reads began
+    _drop_started: float | None = None
+    _drop_started_at = None
+    # last completed drop: when it began and how long it lasted (seconds)
+    last_drop_at = None
+    last_drop_duration: float | None = None
+
+    def _note_read_failed(self) -> None:
+        if self._drop_started is None:
+            self._drop_started = time.monotonic()
+            self._drop_started_at = dt_util.utcnow()
+
+    def _note_read_ok(self) -> None:
+        if self._drop_started is None:
+            return
+        self.last_drop_at = self._drop_started_at
+        self.last_drop_duration = round(time.monotonic() - self._drop_started, 1)
+        self._drop_started = None
+        self._drop_started_at = None
 
     @property
     def backend_reachable(self) -> bool:
         """False as soon as a read fails, even while the last data is still
-        being served (the connectivity sensors report the real link state)."""
+        being served (used for the "last successful poll" diagnostics)."""
         return bool(self.last_update_success) and not self._riding_through
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -60,6 +80,7 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
             try:
                 data = await fetch(self)
             except UpdateFailed as err:
+                self._note_read_failed()
                 if (
                     self.data is not None
                     and self._last_success is not None
@@ -77,6 +98,7 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
             if self._riding_through:
                 self._riding_through = False
                 _LOGGER.debug("%s: reads working again", self.name)
+            self._note_read_ok()
             self._last_success = time.monotonic()
             return data
 

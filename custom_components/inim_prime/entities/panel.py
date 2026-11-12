@@ -31,8 +31,8 @@ def create_panel_device_info(
 
 
 def _reachable(coordinator) -> bool:
-    """Real link state: entities keep their last state through a short drop
-    (see InimPrimeBaseCoordinator), these diagnostics must still show it."""
+    """Real link state, also during a short drop that the entities ride
+    through (see InimPrimeBaseCoordinator). Used for the last-poll time."""
     return bool(getattr(coordinator, "backend_reachable", coordinator.last_update_success))
 
 
@@ -42,6 +42,9 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     Stays visible (never "unavailable") when the link drops, so you can see it is
     off, and records the last successful poll time in the 'ultimo_ok' attribute.
+    Like every other entity it rides through a short drop (it turns off only
+    past the grace period); the last drop is still reported, for diagnostics,
+    in the 'ultima_caduta' and 'durata_ultima_caduta' attributes.
     Lives on the panel device as a diagnostic entity."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
@@ -62,7 +65,7 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return _reachable(self.coordinator)
+        return bool(self.coordinator.last_update_success)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -72,7 +75,12 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {"ultimo_ok": self._last_ok.isoformat() if self._last_ok else None}
+        last_drop = getattr(self.coordinator, "last_drop_at", None)
+        return {
+            "ultimo_ok": self._last_ok.isoformat() if self._last_ok else None,
+            "ultima_caduta": last_drop.isoformat() if last_drop else None,
+            "durata_ultima_caduta": getattr(self.coordinator, "last_drop_duration", None),
+        }
 
 
 class BackendLastUpdateSensor(CoordinatorEntity, SensorEntity):
