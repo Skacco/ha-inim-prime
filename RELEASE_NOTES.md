@@ -1,3 +1,7 @@
+## Novità 1.1.8
+
+- **Manutenzione interna**: adeguamenti ai controlli di validazione di Home Assistant e HACS.
+
 ## Novità 1.1.7
 
 ### Push in tempo reale (webhook)
