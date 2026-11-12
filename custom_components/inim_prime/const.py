@@ -12,6 +12,10 @@ PANEL_LOG_EVENTS_FETCH_LIMIT_MAX: Final[int] = 100
 
 # After a failed reconnect, wait this long before the next attempt (seconds).
 NATIVE_RECONNECT_MIN_INTERVAL = 1.0
+# Once the panel has been unreachable for NATIVE_RECONNECT_FAST_WINDOW the
+# outage is not a short drop: reconnect attempts slow down to this interval.
+NATIVE_RECONNECT_FAST_WINDOW = 30.0
+NATIVE_RECONNECT_SLOW_INTERVAL = 5.0
 # A command issued while the panel is unreachable waits this long for the
 # connection to come back before giving up (seconds).
 NATIVE_COMMAND_RETRY_WINDOW = 20.0

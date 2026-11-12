@@ -233,3 +233,20 @@ async def test_armed_drop_test_sends_one_command(monkeypatch):
 
     assert client.sent == [(615, True)]
     assert adapter._drop_test is None, "one shot"
+
+
+async def test_reconnect_slows_down_on_a_long_outage():
+    adapter = na.NativeAdapter(_FlakyClient(refusals = 0))
+    now = asyncio.get_running_loop().time()
+
+    assert adapter._reconnect_interval(now) == na.NATIVE_RECONNECT_MIN_INTERVAL
+
+    adapter._outage_started = now - 5
+    assert adapter._reconnect_interval(now) == na.NATIVE_RECONNECT_MIN_INTERVAL, (
+        "a short drop is retried every second"
+    )
+
+    adapter._outage_started = now - na.NATIVE_RECONNECT_FAST_WINDOW
+    assert adapter._reconnect_interval(now) == na.NATIVE_RECONNECT_SLOW_INTERVAL, (
+        "a long outage is retried less often"
+    )

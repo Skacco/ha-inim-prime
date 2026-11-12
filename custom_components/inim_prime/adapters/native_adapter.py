@@ -51,7 +51,9 @@ from ..const import (
     PERIODIC_DROP_PHASE,
     PERIODIC_DROP_TOLERANCE,
     NATIVE_COMMAND_RETRY_WINDOW,
+    NATIVE_RECONNECT_FAST_WINDOW,
     NATIVE_RECONNECT_MIN_INTERVAL,
+    NATIVE_RECONNECT_SLOW_INTERVAL,
 )
 
 
@@ -334,12 +336,21 @@ class NativeAdapter:
         self._outage_started = None
         _LOGGER.info("Connection to the panel restored after %.1fs", elapsed)
 
+    def _reconnect_interval(self, now: float) -> float:
+        """Every second during a short drop, slower once the outage drags on."""
+        if (
+                self._outage_started is not None and
+                now - self._outage_started >= NATIVE_RECONNECT_FAST_WINDOW
+        ):
+            return max(NATIVE_RECONNECT_MIN_INTERVAL, NATIVE_RECONNECT_SLOW_INTERVAL)
+        return NATIVE_RECONNECT_MIN_INTERVAL
+
     async def _ensure_reconnected(self) -> None:
         async with self._reconnect_lock:
             now = asyncio.get_running_loop().time()
             if (
                     self._last_reconnect_attempt is not None and
-                    now - self._last_reconnect_attempt < NATIVE_RECONNECT_MIN_INTERVAL
+                    now - self._last_reconnect_attempt < self._reconnect_interval(now)
             ):
                 return
             self._last_reconnect_attempt = now
