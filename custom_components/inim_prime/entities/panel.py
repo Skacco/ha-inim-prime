@@ -30,6 +30,10 @@ def create_panel_device_info(
     )
 
 
+# seconds between two updates of the 'ultimo_ok' attribute
+LAST_OK_MIN_INTERVAL = 60.0
+
+
 def _reachable(coordinator) -> bool:
     """Real link state, also during a short drop that the entities ride
     through (see InimPrimeBaseCoordinator). Used for the last-poll time."""
@@ -69,8 +73,15 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        # 'ultimo_ok' moves at most once a minute: a new value at every poll
+        # would write a new state to the recorder every second or two.
         if _reachable(self.coordinator):
-            self._last_ok = dt_util.utcnow()
+            now = dt_util.utcnow()
+            if (
+                self._last_ok is None
+                or (now - self._last_ok).total_seconds() >= LAST_OK_MIN_INTERVAL
+            ):
+                self._last_ok = now
         super()._handle_coordinator_update()
 
     @property
