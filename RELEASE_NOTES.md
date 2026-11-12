@@ -1,3 +1,11 @@
+## Novità 1.1.7
+
+### Push in tempo reale (webhook)
+- **Stato applicato subito**: quando la centrale segnala una zona aperta o chiusa, un'uscita accesa o spenta, un'area disinserita o in allarme, l'entità cambia all'istante con lo stato scritto nella riga, senza aspettare la lettura della centrale. Subito dopo l'integrazione rilegge comunque la centrale.
+- **Impulsi brevi delle uscite**: un'uscita che resta accesa meno di un giro di polling ora viene vista, con le due righe «accesa» e «spenta».
+- **Nuova riga per le uscite**: `?ev=output&id=<uscita>&state=1` (accesa) e `state=0` (spenta). Senza parametri aggiuntivi, `?ev=output` fa partire la sola rilettura.
+- **Numeri da scrivere nelle righe**: ora si leggono negli attributi delle entità: `zone_id` sulla zona, `output_id` sull'uscita, `partition_id` sull'area.
+
 ## Novità 1.1.6
 
 ### Zone doppie con firmware 5
