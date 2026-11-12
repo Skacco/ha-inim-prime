@@ -110,7 +110,7 @@ class PartitionArmingStatusSelect(
         """Set a new partition arming_status."""
         await self.coordinator.gateway.set_partition_arming_status(
             partition_id = self.partition_id,
-            # upper(): the old upper-case values are still accepted in service calls.
+            # The options are the enum names in lower case.
             arming_status = UnifiedArmingStatus[option.upper()],
         )
         await self.coordinator.async_request_refresh()
