@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - custom_components/inim_prime/manifest.json
+      - RELEASE_NOTES.md
+      - .github/workflows/release.yml
   workflow_dispatch:
 
 permissions:
@@ -29,28 +31,45 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists"
-            exit 0
-          fi
-          # Notes: commit subjects since the previous release (no links).
-          PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
-          # Use the previous release only if it is in this branch's history
-          # (after a history rewrite it may not be); otherwise just this commit.
-          if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV" >/dev/null \
-             && git merge-base --is-ancestor "refs/tags/$PREV" "$GITHUB_SHA"; then
-            RANGE="$PREV..$GITHUB_SHA"
-          else
-            RANGE="$GITHUB_SHA~1..$GITHUB_SHA"
-          fi
-          # Skip the version-bump commits ("Release x.y.z ...").
-          git log --no-merges --format='- %s' "$RANGE" | grep -v '^- Release [0-9]' > notes.md || true
-          [ -s notes.md ] || echo "- Version $VERSION" > notes.md
-          # Mark alpha/beta/rc (or any version with a hyphen) as a pre-release so
+          # Alpha/beta/rc (or any version with a hyphen) is a pre-release, so
           # HACS only offers it to users who enabled "Show beta versions".
           PRERELEASE=""
           case "$VERSION" in
             *a[0-9]|*a[0-9][0-9]|*b[0-9]|*b[0-9][0-9]|*rc[0-9]|*rc[0-9][0-9]|*-*)
               PRERELEASE="--prerelease" ;;
           esac
-          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md $PRERELEASE
+          if [ -z "$PRERELEASE" ] && [ -s RELEASE_NOTES.md ]; then
+            # Stable release: the notes are the hand-written RELEASE_NOTES.md.
+            cp RELEASE_NOTES.md notes.md
+          else
+            # Pre-release: commit subjects since the previous release (no links).
+            PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // empty')
+            # Use the previous release only if it is in this branch's history
+            # (after a history rewrite it may not be); otherwise just this commit.
+            if [ -n "$PREV" ] && git rev-parse -q --verify "refs/tags/$PREV" >/dev/null \
+               && git merge-base --is-ancestor "refs/tags/$PREV" "$GITHUB_SHA"; then
+              RANGE="$PREV..$GITHUB_SHA"
+            else
+              RANGE="$GITHUB_SHA~1..$GITHUB_SHA"
+            fi
+            # Skip the version-bump commits ("Release x.y.z ...").
+            git log --no-merges --format='- %s' "$RANGE" | grep -v '^- Release [0-9]' > notes.md || true
+            [ -s notes.md ] || echo "- Version $VERSION" > notes.md
+          fi
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            if [ -z "$PRERELEASE" ]; then
+              gh release edit "$VERSION" --notes-file notes.md
+              echo "Release $VERSION: notes updated"
+            else
+              echo "Release $VERSION already exists"
+            fi
+          else
+            gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md $PRERELEASE
+          fi
+          # A stable release supersedes the betas: remove them and their tags.
+          if [ -z "$PRERELEASE" ]; then
+            gh release list --limit 100 --json tagName,isPrerelease \
+              --jq '.[] | select(.isPrerelease) | .tagName' | while read -r TAG; do
+              gh release delete "$TAG" --yes --cleanup-tag < /dev/null
+            done
+          fi
