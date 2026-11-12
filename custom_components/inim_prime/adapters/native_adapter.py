@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-import math
 import time
 from types import MappingProxyType
 from typing import Optional
@@ -208,10 +207,7 @@ class NativeAdapter:
         "_reconnect_lock",
         "_last_reconnect_attempt",
         "_outage_started",
-        "_command_stats",
         "_held_commands",
-        "_drop_test",
-        "_drop_test_task",
         "_timer_labels",
         "_timers",
         "_thermostat_names",
@@ -230,13 +226,8 @@ class NativeAdapter:
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
         self._outage_started: float | None = None
-        self._command_stats = {"held": 0, "ignored": 0}
         # Commands currently waiting for the panel to come back (see _call_command).
         self._held_commands: set = set()
-        # Beta test only (debug_arm_drop_test): (output_id, taps) to send at
-        # the next connection drop, one shot.
-        self._drop_test: tuple[int, int] | None = None
-        self._drop_test_task: asyncio.Task | None = None
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
@@ -268,7 +259,6 @@ class NativeAdapter:
         happened" must not become a second pulse once the panel is back).
         """
         if key is not None and key in self._held_commands:
-            self._command_stats["ignored"] += 1
             _LOGGER.debug(
                 "Command %s ignored: the same command is already waiting for the panel", key,
             )
@@ -282,7 +272,6 @@ class NativeAdapter:
                     held = True
                     if key is not None:
                         self._held_commands.add(key)
-                    self._command_stats["held"] += 1
                     _LOGGER.debug("Command %s held: the panel is unreachable, waiting", key)
                 try:
                     await self._ensure_reconnected()
@@ -314,103 +303,10 @@ class NativeAdapter:
             )
             return None
 
-    def arm_drop_test(self, output_id: int, taps: int) -> None:
-        """Beta test only: at the next drop, turn `output_id` on `taps` times."""
-        self._drop_test = (output_id, taps)
-
-    async def _run_drop_test(self, output_id: int, taps: int) -> None:
-        loop = asyncio.get_running_loop()
-        started = loop.time()
-        # like a person tapping a moment after the panel went away
-        await _sleep(2.0)
-        _LOGGER.warning(
-            "Drop test: +%.1fs sending output %s ON %d times (panel connected: %s)",
-            loop.time() - started, output_id, taps, self._client.is_connected,
-        )
-        before = dict(self._command_stats)
-        results = await asyncio.gather(
-            *(self.set_output(output_id, True) for _ in range(taps)),
-            return_exceptions = True,
-        )
-        _LOGGER.warning(
-            "Drop test: finished +%.1fs after the drop, held %d, ignored %d, results: %s",
-            loop.time() - started,
-            self._command_stats["held"] - before["held"],
-            self._command_stats["ignored"] - before["ignored"],
-            ["ok" if result is None else repr(result) for result in results],
-        )
-
-    def arm_burst_test(self, output_id: int) -> float:
-        """Beta test only: around the next periodic drop, switch `output_id`
-        on/off in a burst until a command gets no answer, then read the output
-        back to see whether that command was executed. Returns the predicted
-        drop time (Unix)."""
-        now = time.time()
-        cycles = math.ceil((now + 5.0 - PERIODIC_DROP_PHASE) / PERIODIC_DROP_PERIOD)
-        drop_at = PERIODIC_DROP_PHASE + cycles * PERIODIC_DROP_PERIOD
-        self._drop_test_task = asyncio.get_running_loop().create_task(
-            self._run_burst_test(output_id, drop_at)
-        )
-        return drop_at
-
-    async def _run_burst_test(self, output_id: int, drop_at: float) -> None:
-        await asyncio.sleep(max(0.0, drop_at - 1.0 - time.time()))
-        _LOGGER.warning("Burst test: starting on output %s, drop expected in 1s", output_id)
-        target = True
-        answered = 0
-        failure: BaseException | None = None
-        while time.time() < drop_at + 3.0:
-            try:
-                # straight to the panel: no hold, no duplicate filter, no resend
-                await self._client.set_output(output_id, target)
-            except (ConnectionError, TimeoutError, OSError) as err:
-                failure = err
-                break
-            answered += 1
-            target = not target
-            await asyncio.sleep(0.05)
-        if failure is None:
-            _LOGGER.warning(
-                "Burst test: %d commands, all answered, no drop caught", answered,
-            )
-            return
-        cut_at = time.time() - drop_at
-        self._note_outage(failure)
-        _LOGGER.warning(
-            "Burst test: %d commands answered, then output %s -> %s got no full "
-            "answer at %+.3fs from the expected drop (%r, %d bytes of the answer "
-            "received)",
-            answered, output_id, "ON" if target else "OFF", cut_at, failure,
-            _partial_response_bytes(failure),
-        )
-        for _ in range(60):
-            await asyncio.sleep(0.5)
-            try:
-                outputs = await self.update_outputs()
-            except (ConnectionError, TimeoutError, OSError):
-                continue
-            state = outputs[output_id].state if output_id in outputs else None
-            _LOGGER.warning(
-                "Burst test: panel back +%.1fs, output %s is %s: the unanswered "
-                "command (%s) was %s",
-                time.time() - drop_at, output_id, state,
-                "ON" if target else "OFF",
-                "EXECUTED" if state == target else "NOT executed",
-            )
-            return
-        _LOGGER.warning("Burst test: the panel did not come back within 30s")
-
     def _note_outage(self, err: BaseException) -> None:
         if self._outage_started is not None:
             return
         self._outage_started = asyncio.get_running_loop().time()
-        if self._drop_test is not None:
-            output_id, taps = self._drop_test
-            self._drop_test = None
-            _LOGGER.warning("Drop test: connection drop noticed (%s)", err)
-            self._drop_test_task = asyncio.get_running_loop().create_task(
-                self._run_drop_test(output_id, taps)
-            )
         if matches_periodic_drop_cadence(time.time()):
             _LOGGER.debug(
                 "The panel closed the local connection (%s, %d bytes of the "

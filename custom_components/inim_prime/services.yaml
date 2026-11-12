@@ -85,15 +85,3 @@ debug_probe_commands:
     delay:
       selector:
         number: {min: 0, max: 5, step: 0.1, unit_of_measurement: s}
-debug_arm_drop_test:
-  fields:
-    output_id:
-      required: true
-      selector:
-        number: {min: 0, max: 1009, mode: box}
-    taps:
-      selector:
-        number: {min: 1, max: 5, mode: box}
-    burst:
-      selector:
-        boolean:

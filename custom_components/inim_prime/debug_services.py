@@ -32,7 +32,6 @@ SERVICE_MEMORY_DIFF = "debug_memory_diff"
 SERVICE_WRITE_MEMORY = "debug_write_memory"
 SERVICE_PROBE_COMMANDS = "debug_probe_commands"
 SERVICE_PRIMELAN_OUTPUTS = "debug_primelan_outputs"
-SERVICE_ARM_DROP_TEST = "debug_arm_drop_test"
 _SNAPSHOTS: dict[tuple[int, int], bytes] = {}
 
 _TERMINAL_RANGE = vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009))
@@ -293,28 +292,6 @@ async def _primelan_outputs(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
     return {"count": len(outputs), "outputs": outputs}
 
 
-ARM_DROP_TEST_SCHEMA = vol.Schema({
-    vol.Required("output_id"): vol.All(vol.Coerce(int), vol.Range(min = 0, max = 1009)),
-    vol.Optional("taps", default = 2): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 5)),
-    vol.Optional("burst", default = False): cv.boolean,
-})
-
-
-async def _arm_drop_test(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Beta test only: at the next connection drop turn an output on N times,
-    to check that the command is held and the repeated taps are dropped."""
-    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
-        gateway = getattr(entry.runtime_data, "gateway", None)
-        native = getattr(gateway, "_native", None) if gateway else None
-        if native is not None:
-            if call.data["burst"]:
-                drop_at = native.arm_burst_test(call.data["output_id"])
-                return {"armed": True, "output_id": call.data["output_id"], "burst": True, "drop_at": drop_at}
-            native.arm_drop_test(call.data["output_id"], call.data["taps"])
-            return {"armed": True, "output_id": call.data["output_id"], "taps": call.data["taps"]}
-    raise ServiceValidationError("No loaded Inim Prime entry with the native protocol")
-
-
 def async_register(hass: HomeAssistant) -> None:
     if hass.services.has_service(DOMAIN, SERVICE_READ_TERMINALS):
         return
@@ -327,7 +304,6 @@ def async_register(hass: HomeAssistant) -> None:
         (SERVICE_WRITE_MEMORY, _write_memory, WRITE_MEMORY_SCHEMA),
         (SERVICE_PROBE_COMMANDS, _probe_commands, PROBE_COMMANDS_SCHEMA),
         (SERVICE_PRIMELAN_OUTPUTS, _primelan_outputs, vol.Schema({})),
-        (SERVICE_ARM_DROP_TEST, _arm_drop_test, ARM_DROP_TEST_SCHEMA),
     ):
         async def _handler(call: ServiceCall, _h = handler) -> ServiceResponse:
             return await _h(hass, call)
