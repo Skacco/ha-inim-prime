@@ -67,6 +67,11 @@ class PartitionStateSensor(
             return partition.partition_state.name
         return None
 
+    @property
+    def extra_state_attributes(self) -> dict[str, int]:
+        # The number to write as `area` in the panel's webhook entries.
+        return {"partition_id": self.partition_id}
+
 
 class PartitionArmingStatusSelect(
     CoordinatorEntity[InimPrimePartitionsUpdateCoordinator],

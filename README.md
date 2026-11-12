@@ -190,7 +190,7 @@ Come si attiva:
 | Uscita spenta | `?ev=output&id=<uscita>&state=0` |
 | Tamper / guasto | `?ev=tamper` / `?ev=fault` |
 
-Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato. Il numero da scrivere in `id` si legge negli attributi dell'entità: `zone_id` sul sensore della zona, `output_id` sull'interruttore dell'uscita. All'arrivo dell'evento l'integrazione imposta subito lo stato di zone e uscite e poi rilegge la centrale; per gli altri eventi rilegge soltanto.
+Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato. Il numero da scrivere in `id` si legge negli attributi dell'entità: `zone_id` sul sensore della zona, `output_id` sull'interruttore dell'uscita; quello da scrivere in `area` è `partition_id`, sul sensore di stato dell'area. All'arrivo dell'evento l'integrazione imposta subito lo stato di zone, uscite e aree (disinserimento e allarme) e poi rilegge la centrale; per gli altri eventi, inserimento compreso, rilegge soltanto.
 
 > Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
 

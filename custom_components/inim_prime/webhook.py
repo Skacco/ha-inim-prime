@@ -7,8 +7,8 @@ point those panel events at it.
 
 The panel sends each URL exactly as written (no variables, no wildcard), so
 the user writes the object and its new state into the URL, one entry per
-object and per activation/restoral. When an event names a zone or an output
-we set that entity's state straight from the parameters, so even a pulse
+object and per activation/restoral. When an event names a zone, an output or
+an area (disarm, alarm) we set its state straight from the parameters, so even a pulse
 shorter than a poll is seen; then, and for every other event, we refresh the
 coordinator that owns the affected entities, which reconciles with the panel.
 
@@ -34,6 +34,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .config_flow.const import OptionsKey
+from .models.partitions import UnifiedArmingStatus, UnifiedPartitionState
 from .models.zones import UnifiedZoneState
 from .runtime_data import InimPrimeConfigEntry
 
@@ -122,28 +123,40 @@ _OUTPUT_ON = ("1", "on", "true")
 _OUTPUT_OFF = ("0", "off", "false")
 
 
-def _apply_event(coordinators, ev: str, params: dict[str, str]) -> None:
-    """Set the state the event carries (zones and outputs) on the entity."""
+# Area events whose URL says all there is to know. "arm" is not here: it does
+# not tell the arming mode, so the area is only re-read.
+_AREA_EVENT_CHANGES = {
+    "disarm": {"arming_status": UnifiedArmingStatus.DISARMED},
+    "alarm": {"partition_state": UnifiedPartitionState.ALARM},
+}
+
+
+def _int_param(params: dict[str, str], name: str) -> int | None:
     try:
-        item_id = int(params.get("id", ""))
+        return int(params.get(name, ""))
     except ValueError:
-        return
+        return None
+
+
+def _apply_event(coordinators, ev: str, params: dict[str, str]) -> None:
+    """Set the state the event carries (zones, outputs, areas) on the entity."""
     if ev in _ZONE_EVENT_STATES:
-        coordinator = coordinators.zones
-        applied = coordinator is not None and coordinator.gateway.apply_zone_state(
-            item_id, _ZONE_EVENT_STATES[ev]
-        )
+        coordinator, item_id = coordinators.zones, _int_param(params, "id")
+        apply = lambda gateway: gateway.apply_zone_state(item_id, _ZONE_EVENT_STATES[ev])
     elif ev == "output":
         state = (params.get("state") or "").strip().lower()
         if state not in _OUTPUT_ON + _OUTPUT_OFF:
             return
-        coordinator = coordinators.outputs
-        applied = coordinator is not None and coordinator.gateway.apply_output_state(
-            item_id, state in _OUTPUT_ON
-        )
+        coordinator, item_id = coordinators.outputs, _int_param(params, "id")
+        apply = lambda gateway: gateway.apply_output_state(item_id, state in _OUTPUT_ON)
+    elif ev in _AREA_EVENT_CHANGES:
+        coordinator, item_id = coordinators.partitions, _int_param(params, "area")
+        apply = lambda gateway: gateway.apply_partition_changes(item_id, **_AREA_EVENT_CHANGES[ev])
     else:
         return
-    if applied:
+    if item_id is None or coordinator is None:
+        return
+    if apply(coordinator.gateway):
         # Entities read the gateway cache: have them write the new state now.
         coordinator.async_update_listeners()
     else:

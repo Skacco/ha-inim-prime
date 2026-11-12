@@ -676,6 +676,53 @@ async def test_webhook_sets_state_from_parameters():
     assert outputs.async_request_refresh.await_count == 3
 
 
+async def test_webhook_applies_disarm_and_alarm_but_not_arm():
+    from unittest.mock import AsyncMock, MagicMock
+    from custom_components.inim_prime.adapters.primelan_adapter import PrimelanAdapter
+    from custom_components.inim_prime.entities.partition import PartitionStateSensor
+    from custom_components.inim_prime.gateway import InimPrimeGateway
+    from custom_components.inim_prime.models.partitions import (
+        UnifiedArmingStatus, UnifiedPartition, UnifiedPartitionState,
+    )
+    from custom_components.inim_prime.webhook import _process
+
+    backend = PrimelanAdapter.__new__(PrimelanAdapter)
+    backend._partitions = {
+        2: UnifiedPartition(2, "CASA", None, UnifiedArmingStatus.ARM_AWAY, UnifiedPartitionState.OK, False),
+        3: UnifiedPartition(3, "GARAGE", None, UnifiedArmingStatus.DISARMED, UnifiedPartitionState.OK, False),
+    }
+    gateway = InimPrimeGateway(native = None, primelan = backend)
+    partitions = MagicMock()
+    partitions.gateway, partitions.serial_number = gateway, "SN"
+    partitions.async_request_refresh = AsyncMock()
+    entry = MagicMock()
+    entry.runtime_data.coordinators.partitions = partitions
+    home = PartitionStateSensor(partitions, backend._partitions[2])
+    assert home.extra_state_attributes == {"partition_id": 2}
+
+    async def send(**query):
+        request = MagicMock()
+        request.method, request.query = "GET", query
+        await _process(entry, request)
+
+    await send(ev = "alarm", area = "2")
+    assert home.native_value == "ALARM"
+    assert gateway.get_partition(2).arming_status == UnifiedArmingStatus.ARM_AWAY
+    assert gateway.get_partition(3).partition_state == UnifiedPartitionState.OK
+
+    await send(ev = "disarm", area = "2")
+    assert gateway.get_partition(2).arming_status == UnifiedArmingStatus.DISARMED
+
+    # "arm" does not tell the mode: the area is only re-read.
+    partitions.async_update_listeners.reset_mock()
+    await send(ev = "arm", area = "3")
+    await send(ev = "disarm")              # no area: nothing to apply
+    await send(ev = "alarm", area = "9")   # unknown area
+    assert gateway.get_partition(3).arming_status == UnifiedArmingStatus.DISARMED
+    partitions.async_update_listeners.assert_not_called()
+    assert partitions.async_request_refresh.await_count == 5
+
+
 def test_connection_only_setup_seeds_scan_intervals():
     """Connection-only first setup must produce options the integration can
     load: scan_intervals present for zones/partitions (regression: it used to

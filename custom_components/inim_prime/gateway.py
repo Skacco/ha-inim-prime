@@ -346,6 +346,9 @@ class InimPrimeGateway:
     def apply_zone_state(self, zone_id: int, state: UnifiedZoneState) -> bool:
         return self._preferred.apply_zone_state(zone_id, state)
 
+    def apply_partition_changes(self, partition_id: int, **changes) -> bool:
+        return self._preferred.apply_partition_changes(partition_id, **changes)
+
     def apply_output_state(self, output_id: int, state: bool) -> bool:
         backend = self._native if self._native is not None else self._primelan
         return backend is not None and backend.apply_output_state(output_id, state)

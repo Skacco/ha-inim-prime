@@ -313,6 +313,13 @@ class PrimelanAdapter:
         self._zones = {**self._zones, zone_id: replace(zone, state = state)}
         return True
 
+    def apply_partition_changes(self, partition_id: int, **changes) -> bool:
+        partition = self._partitions.get(partition_id)
+        if partition is None:
+            return False
+        self._partitions = {**self._partitions, partition_id: replace(partition, **changes)}
+        return True
+
     def apply_output_state(self, output_id: int, state: bool) -> bool:
         output = self._outputs.get(output_id)
         if output is None:
