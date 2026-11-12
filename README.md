@@ -354,7 +354,7 @@ Prima di operare, carica la configurazione attuale con l'icona di download in al
 Attiva `API HTTP/HTTPS enable`, poi `Generates` per creare una nuova API Key.
 La API Key ti servirà nella configurazione di Home Assistant. Dà accesso a gran parte delle funzioni della centrale: se pensi sia compromessa, rigenerala (ricordandoti di ricaricare la configurazione dopo).
 Seleziona quale `Code` userà la Web API per le operazioni. Consigliato creare un codice dedicato solo a questo scopo.
-Attiva `Only Allow connections via HTTPS`: così la API Key non viaggia in chiaro sulla rete (il protocollo è datato, ma su LAN va bene). In Home Assistant lascia poi spuntato `Usa HTTPS` nella sezione PrimeLAN. Attenzione: da quel momento altri programmi che interrogano la centrale in HTTP (porta 80) smettono di funzionare, finché non li imposti su HTTPS.
+Attiva `Only Allow connections via HTTPS`: così la API Key non viaggia in chiaro sulla rete (il protocollo è datato, ma su LAN va bene). In Home Assistant lascia poi spuntato `Usa HTTPS` nella sezione PrimeLAN.
 L'opzione `Not allow disalarm` è a tua scelta: se attiva, alcune operazioni falliranno e al momento l'integrazione non supporta bene questo caso.
 Al termine clicca `Upload` per caricare la nuova configurazione.
 
