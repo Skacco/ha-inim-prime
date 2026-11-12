@@ -10,7 +10,9 @@ are available at all (gated on whether PrimelanAdapter is configured).
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
+import time
 from types import MappingProxyType
 from typing import Optional
 
@@ -45,6 +47,10 @@ from ..models.zones import (
     UnifiedZone,
 )
 from ..const import (
+    PERIODIC_DROP_PERIOD,
+    PERIODIC_DROP_PHASE,
+    PERIODIC_DROP_TOLERANCE,
+    NATIVE_COMMAND_RETRY_WINDOW,
     NATIVE_RECONNECT_MIN_INTERVAL,
 )
 
@@ -158,6 +164,14 @@ TIMERS_MASK_SIZE = 6
 
 _sleep = asyncio.sleep
 
+_LOGGER = logging.getLogger(__name__)
+
+
+def matches_periodic_drop_cadence(wall_time: float) -> bool:
+    """True when wall_time falls on the periodic drop cadence (see const)."""
+    offset = (wall_time - PERIODIC_DROP_PHASE) % PERIODIC_DROP_PERIOD
+    return min(offset, PERIODIC_DROP_PERIOD - offset) <= PERIODIC_DROP_TOLERANCE
+
 # Default (unconfigured) timer slot, e.g. "TIMER      004". Used to confirm we
 # are reading the timer-label table and not, on another firmware layout, the
 # codes or scenario labels.
@@ -178,6 +192,7 @@ class NativeAdapter:
         "_already_connected",
         "_reconnect_lock",
         "_last_reconnect_attempt",
+        "_outage_started",
         "_timer_labels",
         "_timers",
         "_thermostat_names",
@@ -195,6 +210,7 @@ class NativeAdapter:
 
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
+        self._outage_started: float | None = None
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
@@ -202,10 +218,62 @@ class NativeAdapter:
 
     async def _call_with_reconnect(self, coro_factory):
         try:
-            return await coro_factory()
-        except (ConnectionError, TimeoutError, OSError):
+            result = await coro_factory()
+        except (ConnectionError, TimeoutError, OSError) as err:
+            self._note_outage(err)
             await self._ensure_reconnected()
-            return await coro_factory()
+            result = await coro_factory()
+        self._note_recovered()
+        return result
+
+    async def _call_command(self, coro_factory):
+        """Run a command, waiting for the panel if it is unreachable right now.
+
+        While the connection is known to be down the command is held (up to
+        NATIVE_COMMAND_RETRY_WINDOW) and sent once the panel is back, instead
+        of failing. It is only held *before* being sent: a command that fails
+        halfway is not blindly repeated here, since the panel may have
+        executed it (an output pulse sent twice would e.g. stop a gate).
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + NATIVE_COMMAND_RETRY_WINDOW
+        while self._outage_started is not None and not self._client.is_connected:
+            try:
+                await self._ensure_reconnected()
+            except (ConnectionError, TimeoutError, OSError):
+                pass
+            if self._client.is_connected:
+                break
+            if loop.time() >= deadline:
+                raise ConnectionError(
+                    "Panel unreachable: the command was not sent"
+                )
+            await _sleep(NATIVE_RECONNECT_MIN_INTERVAL)
+        return await self._call_with_reconnect(coro_factory)
+
+    def _note_outage(self, err: BaseException) -> None:
+        if self._outage_started is not None:
+            return
+        self._outage_started = asyncio.get_running_loop().time()
+        if matches_periodic_drop_cadence(time.time()):
+            _LOGGER.info(
+                "The panel closed the local connection (%s). This matches the "
+                "periodic drop seen every ~71.6 minutes, probably Inim's "
+                "remote check of the panel. Reconnecting, last state is kept",
+                err,
+            )
+        else:
+            _LOGGER.warning(
+                "Connection to the panel lost (%s). Reconnecting, last state is kept",
+                err,
+            )
+
+    def _note_recovered(self) -> None:
+        if self._outage_started is None:
+            return
+        elapsed = asyncio.get_running_loop().time() - self._outage_started
+        self._outage_started = None
+        _LOGGER.info("Connection to the panel restored after %.1fs", elapsed)
 
     async def _ensure_reconnected(self) -> None:
         async with self._reconnect_lock:
@@ -358,7 +426,7 @@ class NativeAdapter:
             new = current | bit if enabled else current & ~bit
             if new != current:
                 await self._write_memory(address, bytes([new]))
-        await self._call_with_reconnect(_do)
+        await self._call_command(_do)
 
     async def update_timers(self) -> MappingProxyType[int, UnifiedTimer]:
         async def _do() -> MappingProxyType[int, UnifiedTimer]:
@@ -455,12 +523,12 @@ class NativeAdapter:
 
     ### Zones
     async def set_zone_bypass(self, zone_id: int, bypass: bool) -> None:
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_zone_bypass(zone_id, bypass)
         )
 
     async def set_all_zone_bypasses(self, bypass: bool) -> None:
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_all_zone_bypasses(bypass)
         )
 
@@ -473,7 +541,7 @@ class NativeAdapter:
             partition_id: _UNIFIED_ARMING_STATUS_MAP[arming_status]
             for partition_id, arming_status in arming_statuses.items()
         }
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_partition_arming_statuses(native_arming_statuses)
         )
 
@@ -483,32 +551,32 @@ class NativeAdapter:
             arming_status: UnifiedArmingStatus,
     ) -> None:
         native_arming_status = _UNIFIED_ARMING_STATUS_MAP[arming_status]
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_partition_arming_status(partition_id, native_arming_status)
         )
 
     async def set_all_partitions_arming_status(self, arming_status: UnifiedArmingStatus) -> None:
         native_arming_status = _UNIFIED_ARMING_STATUS_MAP[arming_status]
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_all_partitions_arming_status(native_arming_status)
         )
 
     ### Reset partition memory
     async def reset_partition_memories(self, partition_ids: set[int]) -> None:
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.reset_partition_memories(partition_ids)
         )
 
     async def reset_partition_memory(self, partition_id: int) -> None:
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.reset_partition_memory(partition_id)
         )
 
     async def reset_all_partition_memories(self) -> None:
-        await self._call_with_reconnect(self._client.reset_all_partition_memories)
+        await self._call_command(self._client.reset_all_partition_memories)
 
     ### Outputs
     async def set_output(self, output_id: int, state: bool) -> None:
-        await self._call_with_reconnect(
+        await self._call_command(
             lambda: self._client.set_output(output_id, state)
         )

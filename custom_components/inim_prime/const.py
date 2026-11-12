@@ -10,7 +10,21 @@ PANEL_LOG_EVENTS_FETCH_LIMIT_TRIGGER: Final[int] = 3
 PANEL_LOG_EVENTS_FETCH_LIMIT_MIN: Final[int] = 10
 PANEL_LOG_EVENTS_FETCH_LIMIT_MAX: Final[int] = 100
 
-NATIVE_RECONNECT_MIN_INTERVAL = 5.0 # seconds
+# After a failed reconnect, wait this long before the next attempt (seconds).
+NATIVE_RECONNECT_MIN_INTERVAL = 1.0
+# A command issued while the panel is unreachable waits this long for the
+# connection to come back before giving up (seconds).
+NATIVE_COMMAND_RETRY_WINDOW = 20.0
+# Entities keep their last state for this long when the panel stops answering,
+# so a short drop does not flip everything to "unavailable" (seconds).
+CONNECTION_GRACE_PERIOD = 30.0
+# Inim panels were seen closing the local connection for ~10 s on a fixed
+# wall-clock cadence of 2^32 microseconds (~71.6 min), at the same instant on
+# unrelated installations -- probably Inim's remote check of the panel.
+# Only used to label the drop in the log.
+PERIODIC_DROP_PERIOD = 4294.967296
+PERIODIC_DROP_PHASE = 2147.483648
+PERIODIC_DROP_TOLERANCE = 5.0
 
 # Native defaults
 NATIVE_PORT_DEFAULT: Final[int] = inim.prime.native.const.Panel.DEFAULT_PORT
