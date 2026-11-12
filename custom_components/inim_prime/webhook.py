@@ -33,7 +33,7 @@ from homeassistant.components import webhook
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
-from .config_flow.const import OptionsKey
+from .flow.const import OptionsKey
 from .models.partitions import UnifiedArmingStatus, UnifiedPartitionState
 from .models.zones import UnifiedZoneState
 from .runtime_data import InimPrimeConfigEntry

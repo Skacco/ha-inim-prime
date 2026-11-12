@@ -67,7 +67,7 @@ class ZoneStateSensor(
     SensorEntity,
 ):
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [state.name for state in UnifiedZoneState]
+    _attr_options = [state.name.lower() for state in UnifiedZoneState]
     # The values stay as they are (automations rely on them); the translation
     # only changes how they are shown.
     _attr_translation_key = "zone_state"
@@ -96,7 +96,7 @@ class ZoneStateSensor(
     def native_value(self) -> str | None:
         zone = self.coordinator.gateway.get_zone(self.zone_id)
         if zone and zone.state is not None:
-            return zone.state.name
+            return zone.state.name.lower()
         return None
 
 

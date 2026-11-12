@@ -217,14 +217,14 @@ Rappresenta la centrale.
 Device unico che contiene tutte le zone. Per ogni zona:
 - **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…). L'attributo `zone_id` è il numero della zona.
 - Un morsetto a **zona doppia** compare come due zone, ognuna con il proprio nome e la propria esclusione (firmware 4 e 5).
-- **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
+- **Stato** — uno tra `standby` / `alarm` / `tamper` / `short_circuit` / `unknown` (a schermo: Riposo, Allarme, Sabotaggio, Corto, Sconosciuto).
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memorie allarme** (diagnostica).
 
 ## Aree
 Device unico con tutte le aree. Per ognuna:
-- **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
-- **Stato** — ALARM / READY / SABOTAGE. L'attributo `partition_id` è il numero dell'area.
+- **Stato inserimento** (select) — `disarmed` / `arm_instant` / `arm_stay` / `arm_away` (a schermo: Disinserita, Istantaneo, Parziale, Totale).
+- **Stato** — `ok` / `alarm` / `tamper` (a schermo: Riposo, Allarme, Sabotaggio). L'attributo `partition_id` è il numero dell'area.
 - **Cancella memorie** (pulsante).
 - **Memorie allarme** (diagnostica).
 

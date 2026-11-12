@@ -1,4 +1,4 @@
-from .config_flow.const import OptionsKey
+from .flow.const import OptionsKey
 from .entities.alarm_panel import (
     ScenarioAlarmPanel,
     PartitionAlarmPanel,

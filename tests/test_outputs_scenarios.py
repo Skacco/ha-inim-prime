@@ -181,7 +181,7 @@ async def test_options_flow_has_outputs_and_scenarios(hass: HomeAssistant):
 
 
 async def test_new_primelan_defaults():
-    from custom_components.inim_prime.config_flow.schemas import build_options_schema
+    from custom_components.inim_prime.flow.schemas import build_options_schema
     schema = build_options_schema(has_native=False, has_primelan=True)
     fields = list(schema.values())[0].schema.schema
     d = {str(k): k.default() for k in fields}
@@ -195,7 +195,7 @@ async def test_new_primelan_defaults():
 def test_shutters_split_from_general():
     """Shutter sections live in their own schema, not the general options form."""
     import re
-    from custom_components.inim_prime.config_flow.schemas import (
+    from custom_components.inim_prime.flow.schemas import (
         build_options_schema, build_shutters_schema,
     )
     section_key = re.compile(r"^\d{1,3}\s*·")
@@ -508,7 +508,7 @@ async def test_alarm_panel_keypad_arming_settles(hass: HomeAssistant):
 async def test_alarm_form_mixed_scenario_and_partitions():
     """Both integration modes: scenarios from the dropdown, and "custom
     partitions" opens that command's partitions form before returning."""
-    from custom_components.inim_prime.config_flow.options_flow import (
+    from custom_components.inim_prime.flow.options_flow import (
         InimPrimeOptionsFlowHandler,
     )
 
@@ -706,7 +706,7 @@ async def test_webhook_applies_disarm_and_alarm_but_not_arm():
         await _process(entry, request)
 
     await send(ev = "alarm", area = "2")
-    assert home.native_value == "ALARM"
+    assert home.native_value == "alarm"
     assert gateway.get_partition(2).arming_status == UnifiedArmingStatus.ARM_AWAY
     assert gateway.get_partition(3).partition_state == UnifiedPartitionState.OK
 
@@ -727,8 +727,8 @@ def test_connection_only_setup_seeds_scan_intervals():
     """Connection-only first setup must produce options the integration can
     load: scan_intervals present for zones/partitions (regression: it used to
     assert-fail because the defaults were never seeded)."""
-    from custom_components.inim_prime.config_flow.config_flow import InimPrimeConfigFlow
-    from custom_components.inim_prime.config_flow.models import ConfigData
+    from custom_components.inim_prime.flow.config_flow import InimPrimeConfigFlow
+    from custom_components.inim_prime.flow.models import ConfigData
 
     captured = {}
 
@@ -750,10 +750,10 @@ def test_connection_only_setup_seeds_scan_intervals():
 
 def test_webhook_url_line_shown_in_options():
     """The push URL line is empty when off and present (fallback form) when on."""
-    from custom_components.inim_prime.config_flow.options_flow import (
+    from custom_components.inim_prime.flow.options_flow import (
         InimPrimeOptionsFlowHandler,
     )
-    from custom_components.inim_prime.config_flow.const import OptionsKey
+    from custom_components.inim_prime.flow.const import OptionsKey
 
     flow = InimPrimeOptionsFlowHandler()
     flow.hass = None  # forces the fallback URL branch (no real hass)
@@ -965,7 +965,7 @@ async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
         return {}, {"native_error": "", "primelan_error": "", "status": ""}
 
     with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request), \
-         patch("custom_components.inim_prime.config_flow.config_flow._run_connection_tests", tests_ok):
+         patch("custom_components.inim_prime.flow.config_flow._run_connection_tests", tests_ok):
         result = await entry.start_reconfigure_flow(hass)
         assert result["step_id"] == "reconfigure"
         result = await hass.config_entries.flow.async_configure(
@@ -987,7 +987,7 @@ async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
 
 
 async def test_area_and_zone_values_are_translated(hass: HomeAssistant):
-    """Values stay ARM_AWAY/..., but every one of them has a label to show."""
+    """Values are lower-case (arm_away, ...) and every one has a label to show."""
     from homeassistant.helpers.translation import async_get_translations
 
     panel = FakePanel()
@@ -1002,12 +1002,12 @@ async def test_area_and_zone_values_are_translated(hass: HomeAssistant):
         if e.translation_key == "area_arming_status"
     )
     assert hass.states.get(select.entity_id).attributes["options"] == [
-        "ARM_AWAY", "ARM_STAY", "ARM_INSTANT", "DISARMED"]
+        "arm_away", "arm_stay", "arm_instant", "disarmed"]
     for language, shown in (("it", "Totale"), ("en", "Total")):
         texts = await async_get_translations(hass, language, "entity", {DOMAIN})
         prefix = f"component.{DOMAIN}.entity."
-        assert texts[prefix + "select.area_arming_status.state.ARM_AWAY"] == shown
-        for value in ("OK", "ALARM", "TAMPER"):
+        assert texts[prefix + "select.area_arming_status.state.arm_away"] == shown
+        for value in ("ok", "alarm", "tamper"):
             assert prefix + f"sensor.area_state.state.{value}" in texts
-        for value in ("STANDBY", "ALARM", "TAMPER", "SHORT_CIRCUIT", "UNKNOWN"):
+        for value in ("standby", "alarm", "tamper", "short_circuit", "unknown"):
             assert prefix + f"sensor.zone_state.state.{value}" in texts

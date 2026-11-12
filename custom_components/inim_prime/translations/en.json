@@ -521,28 +521,28 @@
     "select": {
       "area_arming_status": {
         "state": {
-          "ARM_AWAY": "Total",
-          "ARM_STAY": "Partial",
-          "ARM_INSTANT": "Instant",
-          "DISARMED": "Disarmed"
+          "arm_away": "Total",
+          "arm_stay": "Partial",
+          "arm_instant": "Instant",
+          "disarmed": "Disarmed"
         }
       }
     },
     "sensor": {
       "area_state": {
         "state": {
-          "OK": "Normal",
-          "ALARM": "Alarm",
-          "TAMPER": "Tamper"
+          "ok": "Normal",
+          "alarm": "Alarm",
+          "tamper": "Tamper"
         }
       },
       "zone_state": {
         "state": {
-          "STANDBY": "Standby",
-          "ALARM": "Alarm",
-          "TAMPER": "Tamper",
-          "SHORT_CIRCUIT": "Short circuit",
-          "UNKNOWN": "Unknown"
+          "standby": "Standby",
+          "alarm": "Alarm",
+          "tamper": "Tamper",
+          "short_circuit": "Short circuit",
+          "unknown": "Unknown"
         }
       }
     }

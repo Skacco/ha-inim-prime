@@ -57,8 +57,8 @@ async def test_native_only_has_outputs_but_no_scenarios():
 
 
 def test_outer_frame_hidden_with_primelan():
-    from custom_components.inim_prime.config_flow.models import ConfigData
-    from custom_components.inim_prime.config_flow.schemas import build_connection_schema
+    from custom_components.inim_prime.flow.models import ConfigData
+    from custom_components.inim_prime.flow.schemas import build_connection_schema
 
     def native_keys(use_primelan):
         schema = build_connection_schema(flow_data=ConfigData(use_native=True, use_primelan=use_primelan))
@@ -71,8 +71,8 @@ def test_outer_frame_hidden_with_primelan():
 
 async def test_connection_errors_say_which_backend_failed():
     from unittest.mock import patch
-    from custom_components.inim_prime.config_flow import config_flow as cf
-    from custom_components.inim_prime.config_flow.models import ConfigData, NativeConfig, PrimelanConfig
+    from custom_components.inim_prime.flow import config_flow as cf
+    from custom_components.inim_prime.flow.models import ConfigData, NativeConfig, PrimelanConfig
 
     data = ConfigData(host="192.0.2.1", use_native=True, use_primelan=True,
                       native=NativeConfig(6004, "pass", True, None),
@@ -202,7 +202,7 @@ async def test_primelan_names_unlabelled_native_output():
 
 
 def test_hidden_outputs_option_only_with_both():
-    from custom_components.inim_prime.config_flow.schemas import build_options_schema
+    from custom_components.inim_prime.flow.schemas import build_options_schema
     keys = lambda **kw: {str(k) for k in build_options_schema(**kw)}
     assert "show_hidden_outputs" in keys(has_native=True, has_primelan=True)
     assert "show_hidden_outputs" not in keys(has_native=True, has_primelan=False)

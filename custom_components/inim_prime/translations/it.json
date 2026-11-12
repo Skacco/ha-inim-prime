@@ -521,28 +521,28 @@
     "select": {
       "area_arming_status": {
         "state": {
-          "ARM_AWAY": "Totale",
-          "ARM_STAY": "Parziale",
-          "ARM_INSTANT": "Istantaneo",
-          "DISARMED": "Disinserita"
+          "arm_away": "Totale",
+          "arm_stay": "Parziale",
+          "arm_instant": "Istantaneo",
+          "disarmed": "Disinserita"
         }
       }
     },
     "sensor": {
       "area_state": {
         "state": {
-          "OK": "Riposo",
-          "ALARM": "Allarme",
-          "TAMPER": "Sabotaggio"
+          "ok": "Riposo",
+          "alarm": "Allarme",
+          "tamper": "Sabotaggio"
         }
       },
       "zone_state": {
         "state": {
-          "STANDBY": "Riposo",
-          "ALARM": "Allarme",
-          "TAMPER": "Sabotaggio",
-          "SHORT_CIRCUIT": "Corto",
-          "UNKNOWN": "Sconosciuto"
+          "standby": "Riposo",
+          "alarm": "Allarme",
+          "tamper": "Sabotaggio",
+          "short_circuit": "Corto",
+          "unknown": "Sconosciuto"
         }
       }
     }

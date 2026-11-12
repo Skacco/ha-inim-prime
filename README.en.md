@@ -216,14 +216,14 @@ Represents the panel.
 A single device holding all the zones. For each zone:
 - **Binary sensor** (the zone's name) — open/closed state. Setting its type with `Show as` (Door, Window, Motion…) is recommended. The `zone_id` attribute is the zone's number.
 - A **double-zone** terminal shows up as two zones, each with its own name and bypass (firmware 4 and 5).
-- **State** — one of FAULT / READY / ALARM / SHORT_CIRCUIT.
+- **State** — one of `standby` / `alarm` / `tamper` / `short_circuit` / `unknown` (shown as Standby, Alarm, Tamper, Short circuit, Unknown).
 - **Bypass** (switch) — shows and changes the bypass state.
 - **Alarm memory** (diagnostic).
 
 ## Partitions
 A single device with all the partitions. For each one:
-- **Arming state** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
-- **State** — ALARM / READY / SABOTAGE. The `partition_id` attribute is the partition's number.
+- **Arming state** (select) — `disarmed` / `arm_instant` / `arm_stay` / `arm_away` (shown as Disarmed, Instant, Partial, Total).
+- **State** — `ok` / `alarm` / `tamper` (shown as Normal, Alarm, Tamper). The `partition_id` attribute is the partition's number.
 - **Reset memory** (button).
 - **Alarm memory** (diagnostic).
 

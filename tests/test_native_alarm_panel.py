@@ -8,8 +8,8 @@ from custom_components.inim_prime.alarm_control_panel import (
     _native_arm_map,
     _native_output_map,
 )
-from custom_components.inim_prime.config_flow.const import OptionsKey
-from custom_components.inim_prime.config_flow.models import (
+from custom_components.inim_prime.flow.const import OptionsKey
+from custom_components.inim_prime.flow.models import (
     clean_native_panel,
     extract_hybrid_sections,
     extract_command_partitions,

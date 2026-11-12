@@ -1,6 +1,6 @@
 """After a failed connection test the first-setup form keeps what was typed."""
-from custom_components.inim_prime.config_flow.models import ConfigData, NativeConfig, PrimelanConfig
-from custom_components.inim_prime.config_flow.schemas import build_connection_schema
+from custom_components.inim_prime.flow.models import ConfigData, NativeConfig, PrimelanConfig
+from custom_components.inim_prime.flow.schemas import build_connection_schema
 
 
 def _defaults(schema: dict) -> dict:

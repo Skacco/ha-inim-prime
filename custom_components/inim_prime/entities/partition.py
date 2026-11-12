@@ -35,7 +35,7 @@ class PartitionStateSensor(
     SensorEntity,
 ):
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [state.name for state in UnifiedPartitionState]
+    _attr_options = [state.name.lower() for state in UnifiedPartitionState]
     # The values stay as they are (automations rely on them); the translation
     # only changes how they are shown.
     _attr_translation_key = "area_state"
@@ -64,7 +64,7 @@ class PartitionStateSensor(
     def native_value(self) -> str | None:
         partition = self.coordinator.gateway.get_partition(self.partition_id)
         if partition and partition.partition_state is not None:
-            return partition.partition_state.name
+            return partition.partition_state.name.lower()
         return None
 
     @property
@@ -78,9 +78,8 @@ class PartitionArmingStatusSelect(
     SelectEntity,
 ):
     _attr_icon = "mdi:shield-lock"
-    _attr_options = [mode.name for mode in UnifiedArmingStatus]
-    # The values stay as they are (automations rely on them); the translation
-    # only changes how they are shown.
+    # Lower-case values, as Home Assistant requires for translated states.
+    _attr_options = [mode.name.lower() for mode in UnifiedArmingStatus]
     _attr_translation_key = "area_arming_status"
 
     def __init__(
@@ -104,14 +103,15 @@ class PartitionArmingStatusSelect(
         """Return the current partition arming_status."""
         partition = self.coordinator.gateway.get_partition(self.partition_id)
         if partition and partition.arming_status is not None:
-            return partition.arming_status.name
+            return partition.arming_status.name.lower()
         return None
 
     async def async_select_option(self, option: str) -> None:
         """Set a new partition arming_status."""
         await self.coordinator.gateway.set_partition_arming_status(
             partition_id = self.partition_id,
-            arming_status = UnifiedArmingStatus[option],
+            # upper(): the old upper-case values are still accepted in service calls.
+            arming_status = UnifiedArmingStatus[option.upper()],
         )
         await self.coordinator.async_request_refresh()
 
