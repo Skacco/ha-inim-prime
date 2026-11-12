@@ -589,14 +589,16 @@ def _remove_old_grouped_devices(hass: HomeAssistant, entry: InimPrimeConfigEntry
 
 
 def _remove_old_connectivity_entities(hass: HomeAssistant, entry: InimPrimeConfigEntry) -> None:
-    """Remove the first-generation "last update" timestamp sensors (unique_id
-    ..._last_update_native/_last_update_primelan), renamed to "Connessione …
-    ultimo aggiornamento" with a new unique_id so HA creates them fresh with the
-    right name instead of keeping the stuck old one ("Ultimo aggiornamento …")."""
+    """Remove the "Connessione … ultimo aggiornamento" timestamp sensors, in
+    both generations of their unique_id. They duplicated the 'ultimo_ok'
+    attribute of the connectivity binary sensors and wrote a new state to the
+    recorder at every poll."""
     serial_number = entry.data["serial_number"]
     old_ids = {
         f"{serial_number}_last_update_native",
         f"{serial_number}_last_update_primelan",
+        f"{serial_number}_native_last_update",
+        f"{serial_number}_primelan_last_update",
     }
     entity_registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
