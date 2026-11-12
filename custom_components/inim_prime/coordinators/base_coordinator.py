@@ -61,7 +61,7 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
                 ):
                     if not self._riding_through:
                         self._riding_through = True
-                        _LOGGER.warning(
+                        _LOGGER.debug(
                             "%s: read failed (%r), keeping the last data",
                             self.name, err.__cause__ or err,
                         )
@@ -70,7 +70,7 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
                 raise
             if self._riding_through:
                 self._riding_through = False
-                _LOGGER.warning("%s: reads working again", self.name)
+                _LOGGER.debug("%s: reads working again", self.name)
             self._last_success = time.monotonic()
             return data
 

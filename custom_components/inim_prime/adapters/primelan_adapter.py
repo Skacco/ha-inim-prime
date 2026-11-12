@@ -7,7 +7,11 @@ on whether a PrimelanAdapter is configured at all.
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 from types import MappingProxyType
+
+import aiohttp
 
 from inim.prime.primelan.client import InimPrimeClient
 from inim.prime.primelan.models.partition import (
@@ -150,6 +154,17 @@ def _scenario_to_unified(scenario: PrimelanScenarioStatus) -> UnifiedScenario:
     )
 
 
+from ..const import (
+    PRIMELAN_COMMAND_RETRY_INTERVAL,
+    PRIMELAN_COMMAND_RETRY_WINDOW,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+# Indirection so tests can skip the waits.
+_sleep = asyncio.sleep
+
+
 class PrimelanAdapter:
     """Wraps a connected inim.prime.primelan.InimPrimeClient instance."""
 
@@ -162,6 +177,7 @@ class PrimelanAdapter:
         "_scenarios",
         "_gsm",
         "_system_faults",
+        "_held_commands",
     )
 
     def __init__(self, client: InimPrimeClient) -> None:
@@ -177,6 +193,51 @@ class PrimelanAdapter:
         self._scenarios: dict[int, UnifiedScenario] = {}
         self._gsm: UnifiedGSM | None = None
         self._system_faults: UnifiedSystemFaults | None = None
+        # Commands currently waiting for the panel to accept connections again.
+        self._held_commands: set = set()
+
+    async def _send_command(self, coro_factory, key):
+        """Send a command, retrying while the panel refuses the connection.
+
+        During its periodic drop the panel resets connections for a few
+        seconds. A command whose connection could not be opened at all
+        (aiohttp.ClientConnectorError) never reached the panel, so it is safe
+        to send it again; it is retried for PRIMELAN_COMMAND_RETRY_WINDOW.
+        Any other failure is reported as before: the panel may have executed
+        the command, and repeating e.g. an output pulse would undo it.
+
+        The same command issued again while the first is still waiting is
+        dropped (a second tap must not become a second pulse).
+        """
+        if key in self._held_commands:
+            _LOGGER.warning(
+                "Command %s ignored: the same command is already waiting for the panel", key,
+            )
+            return None
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + PRIMELAN_COMMAND_RETRY_WINDOW
+        held = False
+        try:
+            while True:
+                try:
+                    result = await coro_factory()
+                except aiohttp.ClientConnectorError as err:
+                    if loop.time() >= deadline:
+                        raise
+                    if not held:
+                        held = True
+                        self._held_commands.add(key)
+                        _LOGGER.warning(
+                            "Command %s held: the panel is not accepting connections (%s), retrying",
+                            key, err,
+                        )
+                    await _sleep(PRIMELAN_COMMAND_RETRY_INTERVAL)
+                    continue
+                if held:
+                    _LOGGER.info("Command %s sent: the panel is back", key)
+                return result
+        finally:
+            self._held_commands.discard(key)
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -320,11 +381,9 @@ class PrimelanAdapter:
         if zone_id not in self._zones:
             raise KeyError(f"Unknown zone id: {zone_id}")
 
-        await self._client.set_zone_bypass(
-            ZoneBypassSetRequest(
-                zone_id = zone_id,
-                bypass = bypass
-            )
+        request = ZoneBypassSetRequest(zone_id = zone_id, bypass = bypass)
+        await self._send_command(
+            lambda: self._client.set_zone_bypass(request), ("zone_bypass", zone_id, bypass),
         )
 
     async def set_all_zone_bypasses(
@@ -335,10 +394,7 @@ class PrimelanAdapter:
         for zone in self._zones.values():
             if zone.bypass is not None and zone.bypass == bypass:
                 continue
-            await self._client.set_zone_bypass(ZoneBypassSetRequest(
-                zone_id = zone.zone_id,
-                bypass = bypass,
-            ))
+            await self.set_zone_bypass(zone.zone_id, bypass)
 
 
     ### Partition arming status
@@ -354,7 +410,10 @@ class PrimelanAdapter:
             partition_id = partition_id,
             arming_status = _UNIFIED_ARMING_STATUS_MAP[arming_status],
         )
-        await self._client.set_partition_mode(request)
+        await self._send_command(
+            lambda: self._client.set_partition_mode(request),
+            ("arming_status", partition_id, arming_status),
+        )
 
 
     async def set_partition_arming_statuses(
@@ -384,7 +443,10 @@ class PrimelanAdapter:
         request = ClearPartitionAlarmMemoryRequest(
             partition_id = partition_id,
         )
-        await self._client.clear_partition_alarm_memory(request)
+        await self._send_command(
+            lambda: self._client.clear_partition_alarm_memory(request),
+            ("reset_memory", partition_id),
+        )
 
     async def reset_partition_memories(
             self,
@@ -430,8 +492,9 @@ class PrimelanAdapter:
         else:
             value = 1
 
-        await self._client.set_output(
-            OutputSetRequest(output_id = output_id, value = value)
+        request = OutputSetRequest(output_id = output_id, value = value)
+        await self._send_command(
+            lambda: self._client.set_output(request), ("output", output_id, value),
         )
 
     ### Scenarios
@@ -439,8 +502,9 @@ class PrimelanAdapter:
         if scenario_id not in self._scenarios:
             raise KeyError(f"Unknown scenario id: {scenario_id}")
 
-        await self._client.activate_scenario(
-            ActivateScenarioRequest(scenario_id = scenario_id)
+        request = ActivateScenarioRequest(scenario_id = scenario_id)
+        await self._send_command(
+            lambda: self._client.activate_scenario(request), ("scenario", scenario_id),
         )
 
     # ------------------------------------------------------------------

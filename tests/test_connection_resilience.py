@@ -119,49 +119,95 @@ async def test_command_gives_up_after_the_window(monkeypatch):
     assert client.sent == []
 
 
-async def test_outage_probe_describes_results():
-    from custom_components.inim_prime import outage_probe as op
+async def test_second_tap_while_held_is_dropped(monkeypatch):
+    """Pressing again because "nothing happened" must not send two pulses."""
+    released = asyncio.Event()
 
-    async def _ok():
-        return None
+    async def _wait(_):
+        await released.wait()
+    monkeypatch.setattr(na, "_sleep", _wait)
+    monkeypatch.setattr(na, "NATIVE_RECONNECT_MIN_INTERVAL", 0)
+    client = _FlakyClient(refusals = 1)
+    adapter = na.NativeAdapter(client)
+    adapter._outage_started = asyncio.get_running_loop().time()
 
-    async def _refused():
-        raise ConnectionRefusedError()
+    first = asyncio.create_task(adapter.set_output(7, True))
+    await asyncio.sleep(0)          # the first tap is now waiting for the panel
+    await adapter.set_output(7, True)   # second tap: dropped, returns at once
+    assert client.sent == []
 
-    async def _hangs():
-        await asyncio.Event().wait()
+    released.set()
+    await first
+    assert client.sent == [(7, True)]
 
-    assert (await op._timed(_ok())).startswith("ok ")
-    assert await op._timed(_refused()) == "refused"
-    op.PROBE_TIMEOUT, saved = 0.01, op.PROBE_TIMEOUT
-    try:
-        assert await op._timed(_hangs()) == "timeout"
-    finally:
-        op.PROBE_TIMEOUT = saved
-
-
-async def test_outage_probe_logs_every_second(monkeypatch, caplog):
-    from custom_components.inim_prime import outage_probe as op
-
-    monkeypatch.setattr(op, "PROBE_SECONDS", 2)
-    monkeypatch.setattr(op.asyncio, "sleep", _no_sleep)
-
-    async def _refused(host, port):
-        raise ConnectionRefusedError()
-    monkeypatch.setattr(op, "tcp_connect", _refused)
-    native = SimpleNamespace(_protocol = SimpleNamespace(
-        _transport = SimpleNamespace(_host = "127.0.0.1", _port = 9),
-    ))
-    with caplog.at_level("WARNING"):
-        await op.probe_outage(native, None)
-    lines = [r.getMessage() for r in caplog.records if "Outage probe" in r.getMessage()]
-    assert len(lines) == 2 and "Native tcp:9 refused" in lines[0]
+    # once nothing is waiting, the same command goes through again
+    await adapter.set_output(7, True)
+    assert client.sent == [(7, True), (7, True)]
 
 
-async def test_drop_starts_the_probe_once():
-    calls = []
-    adapter = na.NativeAdapter(SimpleNamespace())
-    adapter.on_outage = lambda: calls.append(1)
-    adapter._note_outage(ConnectionError("down"))
-    adapter._note_outage(ConnectionError("down again"))
-    assert calls == [1]
+def _primelan_adapter(failures: list):
+    from aiohttp import ClientConnectorError
+    from aiohttp.client_reqrep import ConnectionKey
+    from custom_components.inim_prime.adapters import primelan_adapter as pa
+
+    key = ConnectionKey("192.168.1.98", 443, True, None, None, None, None)
+    sent = []
+
+    async def activate_scenario(request):
+        if failures:
+            kind = failures.pop(0)
+            if kind == "refused":
+                raise ClientConnectorError(key, ConnectionResetError("reset by peer"))
+            raise TimeoutError("no answer")
+        sent.append(request.scenario_id)
+
+    adapter = pa.PrimelanAdapter(SimpleNamespace(activate_scenario = activate_scenario))
+    adapter._scenarios = {2: object()}
+    return pa, adapter, sent
+
+
+async def test_primelan_command_retried_while_connection_is_refused(monkeypatch):
+    pa, adapter, sent = _primelan_adapter(["refused", "refused"])
+    monkeypatch.setattr(pa, "_sleep", _no_sleep)
+
+    await adapter.activate_scenario(2)
+
+    assert sent == [2], "sent once, after the panel accepts connections again"
+    assert adapter._held_commands == set()
+
+
+async def test_primelan_command_not_repeated_when_it_may_have_run(monkeypatch):
+    pa, adapter, sent = _primelan_adapter(["timeout"])
+    monkeypatch.setattr(pa, "_sleep", _no_sleep)
+
+    with pytest.raises(TimeoutError):
+        await adapter.activate_scenario(2)
+    assert sent == []
+
+
+async def test_primelan_command_gives_up_after_the_window(monkeypatch):
+    pa, adapter, sent = _primelan_adapter(["refused"] * 5)
+    monkeypatch.setattr(pa, "_sleep", _no_sleep)
+    monkeypatch.setattr(pa, "PRIMELAN_COMMAND_RETRY_WINDOW", 0)
+
+    with pytest.raises(Exception):
+        await adapter.activate_scenario(2)
+    assert sent == []
+
+
+async def test_primelan_second_tap_while_held_is_dropped(monkeypatch):
+    pa, adapter, sent = _primelan_adapter(["refused"])
+    released = asyncio.Event()
+
+    async def _wait(_):
+        await released.wait()
+    monkeypatch.setattr(pa, "_sleep", _wait)
+
+    first = asyncio.create_task(adapter.activate_scenario(2))
+    await asyncio.sleep(0)
+    await adapter.activate_scenario(2)
+    assert sent == []
+
+    released.set()
+    await first
+    assert sent == [2]
