@@ -660,6 +660,8 @@ async def test_webhook_sets_state_from_parameters():
 
     await send(ev = "zone_open", id = "5")
     assert door.is_on is True and gateway.get_zone(5).label == "PORTA"
+    assert door.extra_state_attributes == {"zone_id": 5}
+    assert water.extra_state_attributes == {"output_id": 7}
     await send(ev = "zone_close", id = "5")
     assert door.is_on is False
 

@@ -56,6 +56,11 @@ class ZoneStateBinarySensor(
                 return False
         return None
 
+    @property
+    def extra_state_attributes(self) -> dict[str, int]:
+        # The number to write as `id` in the panel's webhook entries.
+        return {"zone_id": self.zone_id}
+
 
 class ZoneStateSensor(
     CoordinatorEntity[InimPrimeZonesUpdateCoordinator],
