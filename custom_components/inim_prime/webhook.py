@@ -27,8 +27,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from dataclasses import replace
-from types import MappingProxyType
 
 from aiohttp import web
 from homeassistant.components import webhook
@@ -126,26 +124,30 @@ _OUTPUT_OFF = ("0", "off", "false")
 
 def _apply_event(coordinators, ev: str, params: dict[str, str]) -> None:
     """Set the state the event carries (zones and outputs) on the entity."""
-    if ev in _ZONE_EVENT_STATES:
-        coordinator, change = coordinators.zones, {"state": _ZONE_EVENT_STATES[ev]}
-    elif ev == "output":
-        state = (params.get("state") or "").strip().lower()
-        if state not in _OUTPUT_ON + _OUTPUT_OFF:
-            return
-        coordinator, change = coordinators.outputs, {"state": state in _OUTPUT_ON}
-    else:
-        return
     try:
         item_id = int(params.get("id", ""))
     except ValueError:
         return
-    data = getattr(coordinator, "data", None)
-    if not data or item_id not in data:
-        _LOGGER.debug("INIM webhook: %r for unknown id %s", ev, item_id)
+    if ev in _ZONE_EVENT_STATES:
+        coordinator = coordinators.zones
+        applied = coordinator is not None and coordinator.gateway.apply_zone_state(
+            item_id, _ZONE_EVENT_STATES[ev]
+        )
+    elif ev == "output":
+        state = (params.get("state") or "").strip().lower()
+        if state not in _OUTPUT_ON + _OUTPUT_OFF:
+            return
+        coordinator = coordinators.outputs
+        applied = coordinator is not None and coordinator.gateway.apply_output_state(
+            item_id, state in _OUTPUT_ON
+        )
+    else:
         return
-    updated = dict(data)
-    updated[item_id] = replace(data[item_id], **change)
-    coordinator.async_set_updated_data(MappingProxyType(updated))
+    if applied:
+        # Entities read the gateway cache: have them write the new state now.
+        coordinator.async_update_listeners()
+    else:
+        _LOGGER.debug("INIM webhook: %r for unknown id %s", ev, item_id)
 
 
 async def _process(entry: InimPrimeConfigEntry, request: web.Request) -> None:

@@ -7,6 +7,8 @@ on whether a PrimelanAdapter is configured at all.
 """
 from __future__ import annotations
 
+from dataclasses import replace
+
 import asyncio
 import logging
 from types import MappingProxyType
@@ -301,6 +303,22 @@ class PrimelanAdapter:
 
     def get_partition(self, partition_id: int) -> UnifiedPartition | None:
         return self._partitions.get(partition_id)
+
+    # State reported by a panel event (webhook), applied to the cache until the
+    # next read replaces it. False when the object is not known.
+    def apply_zone_state(self, zone_id: int, state: UnifiedZoneState) -> bool:
+        zone = self._zones.get(zone_id)
+        if zone is None:
+            return False
+        self._zones = {**self._zones, zone_id: replace(zone, state = state)}
+        return True
+
+    def apply_output_state(self, output_id: int, state: bool) -> bool:
+        output = self._outputs.get(output_id)
+        if output is None:
+            return False
+        self._outputs = {**self._outputs, output_id: replace(output, state = state)}
+        return True
 
     # ------------------------------------------------------------------
     # Updaters

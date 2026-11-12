@@ -24,7 +24,7 @@ from .models.outputs import UnifiedOutput
 from .models.scenarios import UnifiedScenario
 from .models.partitions import UnifiedPartition, UnifiedArmingStatus
 from .models.system_faults import UnifiedSystemFaults
-from .models.zones import UnifiedZone
+from .models.zones import UnifiedZoneState, UnifiedZone
 
 from .exceptions import InimPrimeFeatureNotSupportedError
 
@@ -340,6 +340,15 @@ class InimPrimeGateway:
 
     def get_partition(self, partition_id: int) -> UnifiedPartition | None:
             return self._preferred.get_partition(partition_id)
+
+    # State reported by a panel event (webhook): applied to the cache the
+    # entities read, until the next poll replaces it.
+    def apply_zone_state(self, zone_id: int, state: UnifiedZoneState) -> bool:
+        return self._preferred.apply_zone_state(zone_id, state)
+
+    def apply_output_state(self, output_id: int, state: bool) -> bool:
+        backend = self._native if self._native is not None else self._primelan
+        return backend is not None and backend.apply_output_state(output_id, state)
 
     # ------------------------------------------------------------------
     # Refreshes -- do I/O, overwrite the cache, return it. Coordinators call

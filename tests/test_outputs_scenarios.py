@@ -613,26 +613,38 @@ async def test_webhook_routes_event_to_coordinator():
 
 
 async def test_webhook_sets_state_from_parameters():
-    """A zone/output event sets the entity state from the URL right away (a
-    pulse shorter than a poll is seen), then refreshes to reconcile."""
-    from types import MappingProxyType
+    """A zone/output event sets the state the entities read from the URL right
+    away (a pulse shorter than a poll is seen), then refreshes to reconcile."""
     from unittest.mock import AsyncMock, MagicMock
+    from custom_components.inim_prime.adapters.primelan_adapter import PrimelanAdapter
+    from custom_components.inim_prime.entities.output import OutputSwitch
+    from custom_components.inim_prime.entities.zone import ZoneStateBinarySensor
+    from custom_components.inim_prime.gateway import InimPrimeGateway
     from custom_components.inim_prime.models.outputs import UnifiedOutput
     from custom_components.inim_prime.models.zones import UnifiedZone, UnifiedZoneState
     from custom_components.inim_prime.webhook import _process
 
-    def coordinator(data):
+    backend = PrimelanAdapter.__new__(PrimelanAdapter)
+    backend._zones = {5: UnifiedZone(5, 5, "PORTA", None, UnifiedZoneState.STANDBY, False, False)}
+    backend._outputs = {7: UnifiedOutput(7, "ACQUA", False), 8: UnifiedOutput(8, "LUCE", False)}
+    gateway = InimPrimeGateway(native = None, primelan = backend)
+
+    def coordinator():
         c = MagicMock()
-        c.data = MappingProxyType(data)
+        c.gateway = gateway
+        c.serial_number = "SN"
         c.async_request_refresh = AsyncMock()
-        c.async_set_updated_data = lambda new: setattr(c, "data", new)
         return c
 
-    zones = coordinator({5: UnifiedZone(5, 5, "PORTA", None, UnifiedZoneState.STANDBY, False, False)})
-    outputs = coordinator({7: UnifiedOutput(7, "ACQUA", False), 8: UnifiedOutput(8, "LUCE", False)})
+    zones, outputs = coordinator(), coordinator()
     entry = MagicMock()
     entry.runtime_data.coordinators.zones = zones
     entry.runtime_data.coordinators.outputs = outputs
+
+    # The real entities, to check what Home Assistant would show.
+    water = OutputSwitch(outputs, backend._outputs[7])
+    light = OutputSwitch(outputs, backend._outputs[8])
+    door = ZoneStateBinarySensor(zones, backend._zones[5])
 
     async def send(**query):
         request = MagicMock()
@@ -640,23 +652,25 @@ async def test_webhook_sets_state_from_parameters():
         await _process(entry, request)
 
     await send(ev = "output", id = "7", state = "1")
-    assert outputs.data[7].state is True and outputs.data[8].state is False
+    assert water.is_on is True and light.is_on is False
+    outputs.async_update_listeners.assert_called_once()
     outputs.async_request_refresh.assert_awaited_once()
     await send(ev = "output", id = "7", state = "0")
-    assert outputs.data[7].state is False
+    assert water.is_on is False
 
     await send(ev = "zone_open", id = "5")
-    assert zones.data[5].state == UnifiedZoneState.ALARM and zones.data[5].label == "PORTA"
+    assert door.is_on is True and gateway.get_zone(5).label == "PORTA"
     await send(ev = "zone_close", id = "5")
-    assert zones.data[5].state == UnifiedZoneState.STANDBY
+    assert door.is_on is False
 
     # Nothing to apply: unknown id, missing or odd state. Still refreshes.
-    before = dict(outputs.data)
+    outputs.async_update_listeners.reset_mock()
     outputs.async_request_refresh.reset_mock()
     await send(ev = "output", id = "99", state = "1")
     await send(ev = "output", id = "7")
     await send(ev = "output", id = "x", state = "maybe")
-    assert dict(outputs.data) == before and all(o.state is False for o in outputs.data.values())
+    assert water.is_on is False and light.is_on is False
+    outputs.async_update_listeners.assert_not_called()
     assert outputs.async_request_refresh.await_count == 3
 
 
