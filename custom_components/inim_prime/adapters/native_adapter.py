@@ -319,9 +319,10 @@ class NativeAdapter:
         if matches_periodic_drop_cadence(time.time()):
             _LOGGER.info(
                 "The panel closed the local connection (%s). This matches the "
-                "periodic drop seen every ~71.6 minutes (2^32 microseconds): "
-                "it is how the panel behaves, not a fault. Reconnecting, last "
-                "state is kept",
+                "periodic drop seen every ~71.6 minutes (2^32 microseconds), "
+                "when the panel restarts its own network connections: it is "
+                "how the panel behaves, not a fault. Reconnecting, last state "
+                "is kept",
                 err,
             )
         else:

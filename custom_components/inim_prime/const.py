@@ -29,7 +29,9 @@ PRIMELAN_COMMAND_RETRY_INTERVAL = 1.0
 CONNECTION_GRACE_PERIOD = 30.0
 # Inim panels were seen closing the local connection for ~10 s on a fixed
 # wall-clock cadence of 2^32 microseconds (~71.6 min), at the same instant on
-# unrelated installations. The cause is not known.
+# unrelated installations. A capture showed the panel closing all its
+# connections at that instant, its own link to the Inim servers included,
+# and reopening them ~10 s later: it restarts its network side by itself.
 # Only used to label the drop in the log.
 PERIODIC_DROP_PERIOD = 4294.967296
 PERIODIC_DROP_PHASE = 2147.483648
