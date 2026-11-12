@@ -18,11 +18,11 @@ NATIVE_RECONNECT_FAST_WINDOW = 30.0
 NATIVE_RECONNECT_SLOW_INTERVAL = 5.0
 # A command issued while the panel is unreachable waits this long for the
 # connection to come back before giving up (seconds).
-NATIVE_COMMAND_RETRY_WINDOW = 20.0
+NATIVE_COMMAND_RETRY_WINDOW = 15.0
 # Same for PrimeLAN: a command whose connection cannot even be opened (the
 # panel resets new connections for a few seconds during a drop) is retried
 # for this long (seconds).
-PRIMELAN_COMMAND_RETRY_WINDOW = 20.0
+PRIMELAN_COMMAND_RETRY_WINDOW = 15.0
 PRIMELAN_COMMAND_RETRY_INTERVAL = 1.0
 # Entities keep their last state for this long when the panel stops answering,
 # so a short drop does not flip everything to "unavailable" (seconds).
