@@ -253,3 +253,48 @@ async def test_reconnect_slows_down_on_a_long_outage():
     assert adapter._reconnect_interval(now) == na.NATIVE_RECONNECT_SLOW_INTERVAL, (
         "a long outage is retried less often"
     )
+
+
+class _CutClient:
+    """Executes the command, then loses the connection while answering."""
+
+    def __init__(self, answered_bytes: int):
+        self.answered_bytes = answered_bytes
+        self.is_connected = True
+        self.sent = []
+        self.reconnects = 0
+
+    async def reconnect(self):
+        self.reconnects += 1
+        self.is_connected = True
+
+    async def set_output(self, output_id, state):
+        self.sent.append((output_id, state))
+        if len(self.sent) == 1:
+            self.is_connected = False
+            try:
+                raise asyncio.IncompleteReadError(b"x" * self.answered_bytes, 8)
+            except asyncio.IncompleteReadError as exc:
+                raise ConnectionError("Panel closed the connection mid-response.") from exc
+
+
+async def test_command_whose_answer_had_started_is_not_sent_again(monkeypatch):
+    monkeypatch.setattr(na, "_sleep", _no_sleep)
+    client = _CutClient(answered_bytes = 3)
+    adapter = na.NativeAdapter(client)
+
+    await adapter.set_output(7, True)  # no error: the panel executed it
+
+    assert client.sent == [(7, True)], "an output pulse must not be repeated"
+    assert client.reconnects == 0
+
+
+def test_partial_response_bytes():
+    try:
+        try:
+            raise asyncio.IncompleteReadError(b"abc", 8)
+        except asyncio.IncompleteReadError as exc:
+            raise ConnectionError("cut") from exc
+    except ConnectionError as err:
+        assert na._partial_response_bytes(err) == 3
+    assert na._partial_response_bytes(ConnectionError("refused")) == 0

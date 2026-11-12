@@ -210,7 +210,7 @@ class PrimelanAdapter:
         dropped (a second tap must not become a second pulse).
         """
         if key in self._held_commands:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Command %s ignored: the same command is already waiting for the panel", key,
             )
             return None
@@ -227,14 +227,14 @@ class PrimelanAdapter:
                     if not held:
                         held = True
                         self._held_commands.add(key)
-                        _LOGGER.warning(
+                        _LOGGER.debug(
                             "Command %s held: the panel is not accepting connections (%s), retrying",
                             key, err,
                         )
                     await _sleep(PRIMELAN_COMMAND_RETRY_INTERVAL)
                     continue
                 if held:
-                    _LOGGER.info("Command %s sent: the panel is back", key)
+                    _LOGGER.debug("Command %s sent: the panel is back", key)
                 return result
         finally:
             self._held_commands.discard(key)

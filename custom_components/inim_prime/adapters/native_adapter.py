@@ -169,6 +169,18 @@ _sleep = asyncio.sleep
 _LOGGER = logging.getLogger(__name__)
 
 
+def _partial_response_bytes(err: BaseException) -> int:
+    """Bytes of the panel's answer that had arrived when the connection was
+    closed (0 when it was closed before answering at all)."""
+    seen = set()
+    while err is not None and id(err) not in seen:
+        seen.add(id(err))
+        if isinstance(err, asyncio.IncompleteReadError):
+            return len(err.partial)
+        err = err.__cause__ or err.__context__
+    return 0
+
+
 def matches_periodic_drop_cadence(wall_time: float) -> bool:
     """True when wall_time falls on the periodic drop cadence (see const)."""
     offset = (wall_time - PERIODIC_DROP_PHASE) % PERIODIC_DROP_PERIOD
@@ -195,6 +207,7 @@ class NativeAdapter:
         "_reconnect_lock",
         "_last_reconnect_attempt",
         "_outage_started",
+        "_command_stats",
         "_held_commands",
         "_drop_test",
         "_drop_test_task",
@@ -216,6 +229,7 @@ class NativeAdapter:
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
         self._outage_started: float | None = None
+        self._command_stats = {"held": 0, "ignored": 0}
         # Commands currently waiting for the panel to come back (see _call_command).
         self._held_commands: set = set()
         # Beta test only (debug_arm_drop_test): (output_id, taps) to send at
@@ -227,11 +241,13 @@ class NativeAdapter:
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
         self._thermostats: dict = {}
 
-    async def _call_with_reconnect(self, coro_factory):
+    async def _call_with_reconnect(self, coro_factory, resend_started_answer: bool = True):
         try:
             result = await coro_factory()
         except (ConnectionError, TimeoutError, OSError) as err:
             self._note_outage(err)
+            if resend_started_answer is False and _partial_response_bytes(err):
+                raise
             await self._ensure_reconnected()
             result = await coro_factory()
         self._note_recovered()
@@ -251,7 +267,8 @@ class NativeAdapter:
         happened" must not become a second pulse once the panel is back).
         """
         if key is not None and key in self._held_commands:
-            _LOGGER.warning(
+            self._command_stats["ignored"] += 1
+            _LOGGER.debug(
                 "Command %s ignored: the same command is already waiting for the panel", key,
             )
             return None
@@ -264,7 +281,8 @@ class NativeAdapter:
                     held = True
                     if key is not None:
                         self._held_commands.add(key)
-                    _LOGGER.warning("Command %s held: the panel is unreachable, waiting", key)
+                    self._command_stats["held"] += 1
+                    _LOGGER.debug("Command %s held: the panel is unreachable, waiting", key)
                 try:
                     await self._ensure_reconnected()
                 except (ConnectionError, TimeoutError, OSError):
@@ -279,8 +297,21 @@ class NativeAdapter:
         finally:
             self._held_commands.discard(key)
         if held:
-            _LOGGER.info("Command %s sent: the panel is back", key)
-        return await self._call_with_reconnect(coro_factory)
+            _LOGGER.debug("Command %s sent: the panel is back", key)
+        try:
+            return await self._call_with_reconnect(coro_factory, resend_started_answer = False)
+        except ConnectionError as err:
+            partial = _partial_response_bytes(err)
+            if not partial:
+                raise
+            # The panel was already answering when it closed the connection:
+            # it had received and executed the command. Not an error, and
+            # sending it again would repeat it.
+            _LOGGER.debug(
+                "Command %s: the panel closed the connection after %d bytes of "
+                "its answer, the command is considered executed", key, partial,
+            )
+            return None
 
     def arm_drop_test(self, output_id: int, taps: int) -> None:
         """Beta test only: at the next drop, turn `output_id` on `taps` times."""
@@ -295,13 +326,16 @@ class NativeAdapter:
             "Drop test: +%.1fs sending output %s ON %d times (panel connected: %s)",
             loop.time() - started, output_id, taps, self._client.is_connected,
         )
+        before = dict(self._command_stats)
         results = await asyncio.gather(
             *(self.set_output(output_id, True) for _ in range(taps)),
             return_exceptions = True,
         )
         _LOGGER.warning(
-            "Drop test: finished +%.1fs after the drop, results: %s",
+            "Drop test: finished +%.1fs after the drop, held %d, ignored %d, results: %s",
             loop.time() - started,
+            self._command_stats["held"] - before["held"],
+            self._command_stats["ignored"] - before["ignored"],
             ["ok" if result is None else repr(result) for result in results],
         )
 
@@ -317,18 +351,20 @@ class NativeAdapter:
                 self._run_drop_test(output_id, taps)
             )
         if matches_periodic_drop_cadence(time.time()):
-            _LOGGER.info(
-                "The panel closed the local connection (%s). This matches the "
+            _LOGGER.debug(
+                "The panel closed the local connection (%s, %d bytes of the "
+                "answer received). This matches the "
                 "periodic drop seen every ~71.6 minutes (2^32 microseconds), "
                 "when the panel restarts its own network connections: it is "
                 "how the panel behaves, not a fault. Reconnecting, last state "
                 "is kept",
-                err,
+                err, _partial_response_bytes(err),
             )
         else:
-            _LOGGER.warning(
-                "Connection to the panel lost (%s). Reconnecting, last state is kept",
-                err,
+            _LOGGER.debug(
+                "Connection to the panel lost (%s, %d bytes of the answer "
+                "received). Reconnecting, last state is kept",
+                err, _partial_response_bytes(err),
             )
 
     def _note_recovered(self) -> None:
@@ -336,7 +372,7 @@ class NativeAdapter:
             return
         elapsed = asyncio.get_running_loop().time() - self._outage_started
         self._outage_started = None
-        _LOGGER.info("Connection to the panel restored after %.1fs", elapsed)
+        _LOGGER.debug("Connection to the panel restored after %.1fs", elapsed)
 
     def _reconnect_interval(self, now: float) -> float:
         """Every second during a short drop, slower once the outage drags on."""
