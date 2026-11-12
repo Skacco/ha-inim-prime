@@ -421,6 +421,20 @@ class NativeAdapter:
         return self._thermostats
 
     @property
+    def second_zones_use_firmware_5_ids(self) -> bool:
+        """True on firmware 5, where the second zone of a double-zone terminal
+        is <terminal> + 1505 (see native_compat). The Native bypass command
+        does not act on those zones with that id."""
+        from .. import native_compat
+        info = self._client.panel_info
+        if not info:
+            return False
+        return (
+            native_compat.zone_1_id_offset(f"{info[1]} {info[2]}")
+            == native_compat._FIRMWARE_5_ZONE_1_ID_OFFSET
+        )
+
+    @property
     def serial_number(self) -> Optional[str]:
         info = self._client.panel_info
         return info[0] if info else None

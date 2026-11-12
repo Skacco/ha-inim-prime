@@ -93,3 +93,39 @@ def test_offset_by_firmware_text():
     assert native_compat.zone_1_id_offset("5.10 Prime240L") == 1505
     assert native_compat.zone_1_id_offset("4.07 Prime120L") == 1005
     assert native_compat.zone_1_id_offset("") == 1005
+
+
+class _Backend:
+    def __init__(self, firmware_5 = False):
+        self.second_zones_use_firmware_5_ids = firmware_5
+        self.bypass_calls = []
+
+    async def set_zone_bypass(self, zone_id, bypass, known_only = True):
+        self.bypass_calls.append((zone_id, bypass, known_only))
+
+
+async def test_firmware_5_second_zone_is_excluded_through_primelan():
+    from custom_components.inim_prime.gateway import InimPrimeGateway
+
+    native, primelan = _Backend(firmware_5 = True), _Backend()
+    gateway = InimPrimeGateway(native = native, primelan = primelan)
+
+    await gateway.set_zone_bypass(1524, True)   # ALLAGAMENTO, second zone
+    await gateway.set_zone_bypass(10, True)     # a single zone
+
+    assert primelan.bypass_calls == [(1524, True, False)]
+    assert native.bypass_calls == [(10, True, True)]
+
+
+async def test_second_zone_stays_on_native_otherwise():
+    from custom_components.inim_prime.gateway import InimPrimeGateway
+
+    # firmware 4 with both backends: unchanged
+    native, primelan = _Backend(), _Backend()
+    await InimPrimeGateway(native = native, primelan = primelan).set_zone_bypass(1020, True)
+    assert native.bypass_calls == [(1020, True, True)] and primelan.bypass_calls == []
+
+    # firmware 5 without PrimeLAN: nothing else to send it from
+    native = _Backend(firmware_5 = True)
+    await InimPrimeGateway(native = native, primelan = None).set_zone_bypass(1524, True)
+    assert native.bypass_calls == [(1524, True, True)]
