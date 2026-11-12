@@ -117,3 +117,51 @@ async def test_command_gives_up_after_the_window(monkeypatch):
     with pytest.raises(ConnectionError):
         await adapter.set_output(7, True)
     assert client.sent == []
+
+
+async def test_outage_probe_describes_results():
+    from custom_components.inim_prime import outage_probe as op
+
+    async def _ok():
+        return None
+
+    async def _refused():
+        raise ConnectionRefusedError()
+
+    async def _hangs():
+        await asyncio.Event().wait()
+
+    assert (await op._timed(_ok())).startswith("ok ")
+    assert await op._timed(_refused()) == "refused"
+    op.PROBE_TIMEOUT, saved = 0.01, op.PROBE_TIMEOUT
+    try:
+        assert await op._timed(_hangs()) == "timeout"
+    finally:
+        op.PROBE_TIMEOUT = saved
+
+
+async def test_outage_probe_logs_every_second(monkeypatch, caplog):
+    from custom_components.inim_prime import outage_probe as op
+
+    monkeypatch.setattr(op, "PROBE_SECONDS", 2)
+    monkeypatch.setattr(op.asyncio, "sleep", _no_sleep)
+
+    async def _refused(host, port):
+        raise ConnectionRefusedError()
+    monkeypatch.setattr(op, "tcp_connect", _refused)
+    native = SimpleNamespace(_protocol = SimpleNamespace(
+        _transport = SimpleNamespace(_host = "127.0.0.1", _port = 9),
+    ))
+    with caplog.at_level("WARNING"):
+        await op.probe_outage(native, None)
+    lines = [r.getMessage() for r in caplog.records if "Outage probe" in r.getMessage()]
+    assert len(lines) == 2 and "Native tcp:9 refused" in lines[0]
+
+
+async def test_drop_starts_the_probe_once():
+    calls = []
+    adapter = na.NativeAdapter(SimpleNamespace())
+    adapter.on_outage = lambda: calls.append(1)
+    adapter._note_outage(ConnectionError("down"))
+    adapter._note_outage(ConnectionError("down again"))
+    assert calls == [1]

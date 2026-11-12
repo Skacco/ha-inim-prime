@@ -32,6 +32,8 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
 
     # monotonic time of the last successful read (None until the first one)
     _last_success: float | None = None
+    # True while failed reads are being covered by the last data
+    _riding_through: bool = False
 
     def __init_subclass__(cls, **kwargs) -> None:
         """Make every coordinator ride through short connection drops.
@@ -51,14 +53,24 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
         async def _async_update_data(self):
             try:
                 data = await fetch(self)
-            except UpdateFailed:
+            except UpdateFailed as err:
                 if (
                     self.data is not None
                     and self._last_success is not None
                     and time.monotonic() - self._last_success <= CONNECTION_GRACE_PERIOD
                 ):
+                    if not self._riding_through:
+                        self._riding_through = True
+                        _LOGGER.warning(
+                            "%s: read failed (%r), keeping the last data",
+                            self.name, err.__cause__ or err,
+                        )
                     return self.data
+                self._riding_through = False
                 raise
+            if self._riding_through:
+                self._riding_through = False
+                _LOGGER.warning("%s: reads working again", self.name)
             self._last_success = time.monotonic()
             return data
 

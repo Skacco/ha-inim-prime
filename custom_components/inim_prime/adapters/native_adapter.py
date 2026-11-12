@@ -193,6 +193,7 @@ class NativeAdapter:
         "_reconnect_lock",
         "_last_reconnect_attempt",
         "_outage_started",
+        "on_outage",
         "_timer_labels",
         "_timers",
         "_thermostat_names",
@@ -211,6 +212,8 @@ class NativeAdapter:
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
         self._outage_started: float | None = None
+        # Called (no arguments) when a connection drop is first noticed.
+        self.on_outage = None
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
@@ -255,6 +258,8 @@ class NativeAdapter:
         if self._outage_started is not None:
             return
         self._outage_started = asyncio.get_running_loop().time()
+        if self.on_outage is not None:
+            self.on_outage()
         if matches_periodic_drop_cadence(time.time()):
             _LOGGER.info(
                 "The panel closed the local connection (%s). This matches the "

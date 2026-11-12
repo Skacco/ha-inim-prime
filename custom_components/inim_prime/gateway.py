@@ -74,6 +74,11 @@ class InimPrimeGateway:
         self._poll_released = asyncio.Event()
         self._poll_released.set()
         self._poll_hold_timer: asyncio.TimerHandle | None = None
+        # Beta diagnostics: when the Native link drops, probe what the panel
+        # still answers (see outage_probe).
+        self._outage_probe_task: asyncio.Task | None = None
+        if native is not None and hasattr(native, "on_outage"):
+            native.on_outage = self._start_outage_probe
         # False (default) = show only the outputs PrimeLAN publishes to the
         # linked user (matched on terminal id), like the panel apps. True = also
         # show the panel's internal/mainboard outputs that aren't on PrimeLAN.
@@ -129,6 +134,17 @@ class InimPrimeGateway:
         return MappingProxyType({
             tid: t for tid, t in self._native.timers.items() if not _is_default_timer_label(t.label)
         })
+
+    def _start_outage_probe(self) -> None:
+        if self._outage_probe_task is not None and not self._outage_probe_task.done():
+            return
+        from .outage_probe import probe_outage
+        self._outage_probe_task = asyncio.get_running_loop().create_task(
+            probe_outage(
+                self._native._client,
+                self._primelan._client if self._primelan is not None else None,
+            )
+        )
 
     def hold_polling(self, seconds: float) -> None:
         """Pause routine polls until release_polling(), at most `seconds`."""
