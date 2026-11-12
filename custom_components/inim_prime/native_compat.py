@@ -13,7 +13,12 @@ back to PrimeLAN, or to "Output <id>".
 """
 from __future__ import annotations
 
+import asyncio
+import re
+
+from inim.prime.native import client as _client
 from inim.prime.native.helpers import terminals as _terminals
+from inim.prime.native.utils import Interval as _Interval
 from inim.prime.native.models import terminals as _terminal_models
 from inim.prime.native.wire import header as _header
 
@@ -66,13 +71,85 @@ async def _get_output_labels_with_default(*args, **kwargs):
 
 
 async def _get_zone_labels_recording(*args, **kwargs):
+    if _zone_ids_interval is not None:
+        kwargs.setdefault("interval", _zone_ids_interval)
     labels = await _original_get_zone_labels(*args, **kwargs)
     _terminal_labels.clear()
     _terminal_labels.update(labels)
     return labels
 
 
+# Firmware 5 added 500 zones (video, radio and "and" zones) to the zone
+# tables, right after the 1005 terminal zones. Everything that followed moved
+# forward by 500: the second zone of a double-zone terminal, which firmware 4
+# keeps at <terminal> + 1005 (read on a PR120 4.07), is at <terminal> + 1505
+# on firmware 5 (read on two PR060 5.00, where the second zones came up with
+# no name and could not be told apart). The library only knows the firmware 4
+# layout, so the offset and the size of the tables it reads are chosen here
+# from the firmware the panel reports.
+_ZONE_TERMINALS = 1005
+_FIRMWARE_4_ZONE_1_ID_OFFSET = _terminals.ZONE_1_ID_OFFSET
+_FIRMWARE_5_ZONE_1_ID_OFFSET = _FIRMWARE_4_ZONE_1_ID_OFFSET + 500
+
+
+def zone_1_id_offset(panel_description: str) -> int:
+    """Offset of a double zone's second zone for the given firmware/model text
+    (e.g. "5.00 PR060"); the firmware 4 layout when the version is not found."""
+    version = re.search(r"(?<![\d.])(\d+)\.\d+", panel_description or "")
+    if version and int(version.group(1)) >= 5:
+        return _FIRMWARE_5_ZONE_1_ID_OFFSET
+    return _FIRMWARE_4_ZONE_1_ID_OFFSET
+
+
+# Firmware/model text reported by each panel, between the two steps of the
+# library's initialize() (panel info first, terminals right after).
+_panel_descriptions: dict[int, str] = {}
+# Zone ids to read while terminals are being initialised (None: the library's
+# own default). Set only inside _layout_lock.
+_zone_ids_interval: _Interval | None = None
+_layout_lock = asyncio.Lock()
+
+_original_get_panel_info = _client.get_panel_info
+_original_initialize_terminals = _client.initialize_terminals
+_original_get_zone_settings = _terminals.get_zone_settings
+
+
+async def _get_panel_info_recording(protocol):
+    serial_number, firmware, model = await _original_get_panel_info(protocol)
+    _panel_descriptions[id(protocol)] = f"{firmware} {model}"
+    return serial_number, firmware, model
+
+
+async def _get_zone_settings_for_layout(*args, **kwargs):
+    if _zone_ids_interval is not None:
+        kwargs.setdefault("interval", _zone_ids_interval)
+    return await _original_get_zone_settings(*args, **kwargs)
+
+
+async def _initialize_terminals_for_firmware(protocol, pin = None):
+    global _zone_ids_interval
+    offset = zone_1_id_offset(_panel_descriptions.pop(id(protocol), ""))
+    if offset == _FIRMWARE_4_ZONE_1_ID_OFFSET:
+        return await _original_initialize_terminals(protocol, pin)
+    # The library reads the offset from a module constant: hold a lock so a
+    # second panel on another firmware cannot be initialised with it.
+    async with _layout_lock:
+        _terminals.ZONE_1_ID_OFFSET = offset
+        _zone_ids_interval = _Interval(0, offset + _ZONE_TERMINALS - 1)
+        try:
+            return await _original_initialize_terminals(protocol, pin)
+        finally:
+            _terminals.ZONE_1_ID_OFFSET = _FIRMWARE_4_ZONE_1_ID_OFFSET
+            _zone_ids_interval = None
+
+
 def apply() -> None:
+    if _client.get_panel_info is not _get_panel_info_recording:
+        _client.get_panel_info = _get_panel_info_recording
+    if _client.initialize_terminals is not _initialize_terminals_for_firmware:
+        _client.initialize_terminals = _initialize_terminals_for_firmware
+    if _terminals.get_zone_settings is not _get_zone_settings_for_layout:
+        _terminals.get_zone_settings = _get_zone_settings_for_layout
     if _terminals.get_output_labels is not _get_output_labels_with_default:
         _terminals.get_output_labels = _get_output_labels_with_default
     if _terminals.get_zone_labels is not _get_zone_labels_recording:
