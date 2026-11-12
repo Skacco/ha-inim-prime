@@ -177,22 +177,29 @@ It relies on the panel's **outbound HTTP API** ("Gestione Api Http in uscita"), 
 
 How to enable it:
 1. Options → *General parameters* → **Realtime push (local webhook)** → save. The webhook **local URL** appears **at the top** of General parameters (use HA's **local IP**: the panel is on the LAN).
-2. In Prime/STUDIO → **PrimeLAN settings → Web API → outbound HTTP API**, create **one entry per event** (there is no wildcard), method **GET**, no authentication, pointing at the webhook URL plus parameters:
+2. In Prime/STUDIO → **PrimeLAN settings → Web API → outbound HTTP API**, create the entries, method **GET**, no authentication, pointing at the webhook URL plus parameters. The panel sends the address **exactly as you write it**: there are no variables and no wildcard, so you need **one entry per object and per event** (for a zone: one entry for «opened» and one for «closed»), with the object's number written by hand.
 
-| Event | Parameters |
-|---|---|
-| Zone opened | `?ev=zone_open&id=<zone>` |
-| Zone closed | `?ev=zone_close&id=<zone>` |
-| Area armed | `?ev=arm&area=<area>` |
-| Area disarmed | `?ev=disarm&area=<area>` |
-| Alarm | `?ev=alarm&area=<area>` |
-| Output on | `?ev=output&id=<output>&state=1` |
-| Output off | `?ev=output&id=<output>&state=0` |
-| Tamper / fault | `?ev=tamper` / `?ev=fault` |
+| Event | Parameters | What the integration does |
+|---|---|---|
+| Zone opened | `?ev=zone_open&id=<zone>` | zone open right away, then re-read |
+| Zone closed | `?ev=zone_close&id=<zone>` | zone closed right away, then re-read |
+| Output on | `?ev=output&id=<output>&state=1` | output on right away, then re-read |
+| Output off | `?ev=output&id=<output>&state=0` | output off right away, then re-read |
+| Area disarmed | `?ev=disarm&area=<area>` | area disarmed right away, then re-read |
+| Alarm | `?ev=alarm&area=<area>` | area in alarm right away, then re-read |
+| Area armed | `?ev=arm&area=<area>` | re-read only (the address does not tell the mode) |
+| Tamper / fault / restore | `?ev=tamper` / `?ev=fault` / `?ev=fault_restore` | re-read of the faults only |
 
-By default the webhook accepts **LAN** requests only (the panel calls it on the local IP). If HA is behind a **reverse proxy** and sees even local requests as «remote» (webhook rejected), enable **«Accept non-local requests»** in General parameters. The **secret id** in the URL is the key: keep it private. The number to write as `id` is in the entity's attributes: `zone_id` on the zone sensor, `output_id` on the output switch; the one to write as `area` is `partition_id`, on the area's state sensor. On each event the integration sets the state of zones, outputs and areas (disarm and alarm) right away and then re-reads the panel; for the other events, arming included, it only re-reads.
+**Where to read the numbers**, in the entities' attributes:
+- `<zone>` → `zone_id`, on the zone's open/closed sensor;
+- `<output>` → `output_id`, on the output switch;
+- `<area>` → `partition_id`, on the area's «State» sensor.
 
-> **Experimental**: the exact parameter names your panel sends should be verified in the field.
+**«Right away»** means the state is taken from the address, without waiting for the panel: an output that stays on for less than a polling cycle is seen too (a pulse needs both entries, on and off). The **re-read** that follows brings back the panel's real state and corrects a badly written entry. If the number is missing or matches no object, the state is left alone and only the re-read runs.
+
+By default the webhook accepts **LAN** requests only (the panel calls it on the local IP). If HA is behind a **reverse proxy** and sees even local requests as «remote» (webhook rejected), enable **«Accept non-local requests»** in General parameters. The **secret id** in the URL is the key: keep it private.
+
+> **Experimental**: which events your panel lets you attach to an entry should be verified in the field.
 
 # Available devices
 The integration groups the entities into a few devices.
@@ -207,7 +214,8 @@ Represents the panel.
 
 ## Zones
 A single device holding all the zones. For each zone:
-- **Binary sensor** (the zone's name) — open/closed state. Setting its type with `Show as` (Door, Window, Motion…) is recommended.
+- **Binary sensor** (the zone's name) — open/closed state. Setting its type with `Show as` (Door, Window, Motion…) is recommended. The `zone_id` attribute is the zone's number.
+- A **double-zone** terminal shows up as two zones, each with its own name and bypass (firmware 4 and 5).
 - **State** — one of FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Bypass** (switch) — shows and changes the bypass state.
 - **Alarm memory** (diagnostic).
@@ -215,12 +223,12 @@ A single device holding all the zones. For each zone:
 ## Partitions
 A single device with all the partitions. For each one:
 - **Arming state** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
-- **State** — ALARM / READY / SABOTAGE.
+- **State** — ALARM / READY / SABOTAGE. The `partition_id` attribute is the partition's number.
 - **Reset memory** (button).
 - **Alarm memory** (diagnostic).
 
 ## Outputs
-A single device with all the panel outputs, as switches (`switch`). **Dimmable** outputs become lights (`light`) with brightness **only in PrimeLAN mode**; in Native they are on/off.
+A single device with all the panel outputs, as switches (`switch`). **Dimmable** outputs become lights (`light`) with brightness **only in PrimeLAN mode**; in Native they are on/off. The `output_id` attribute is the output's number.
 
 ## Roller shutters
 A single device with the configured shutters (covers with Open/Close and optional position).

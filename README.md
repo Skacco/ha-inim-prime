@@ -177,22 +177,29 @@ Si appoggia alla funzione **«Gestione Api Http in uscita»** della centrale, ch
 
 Come si attiva:
 1. Opzioni → *Parametri generali* → **Push in tempo reale (webhook locale)** → salva. L'**URL locale** del webhook compare **in cima** ai Parametri generali (usa l'**IP locale** di HA: la centrale è in LAN).
-2. In Prime/STUDIO → **Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita»**, crea **una riga per ogni evento** (non c'è il jolly), metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri:
+2. In Prime/STUDIO → **Configurazione PrimeLAN → Web API → «Gestione Api Http in uscita»**, crea le righe, metodo **GET**, senza autenticazione, puntando all'URL del webhook più i parametri. La centrale invia l'indirizzo **così come lo scrivi**: non ci sono variabili né jolly, quindi serve **una riga per ogni oggetto e per ogni evento** (per una zona: una riga per «aperta» e una per «chiusa»), con il numero dell'oggetto scritto a mano.
 
-| Evento | Parametri |
-|---|---|
-| Zona aperta | `?ev=zone_open&id=<zona>` |
-| Zona chiusa | `?ev=zone_close&id=<zona>` |
-| Area inserita | `?ev=arm&area=<area>` |
-| Area disinserita | `?ev=disarm&area=<area>` |
-| Allarme | `?ev=alarm&area=<area>` |
-| Uscita accesa | `?ev=output&id=<uscita>&state=1` |
-| Uscita spenta | `?ev=output&id=<uscita>&state=0` |
-| Tamper / guasto | `?ev=tamper` / `?ev=fault` |
+| Evento | Parametri | Cosa fa l'integrazione |
+|---|---|---|
+| Zona aperta | `?ev=zone_open&id=<zona>` | zona aperta subito, poi rilettura |
+| Zona chiusa | `?ev=zone_close&id=<zona>` | zona chiusa subito, poi rilettura |
+| Uscita accesa | `?ev=output&id=<uscita>&state=1` | uscita accesa subito, poi rilettura |
+| Uscita spenta | `?ev=output&id=<uscita>&state=0` | uscita spenta subito, poi rilettura |
+| Area disinserita | `?ev=disarm&area=<area>` | area disinserita subito, poi rilettura |
+| Allarme | `?ev=alarm&area=<area>` | area in allarme subito, poi rilettura |
+| Area inserita | `?ev=arm&area=<area>` | solo rilettura (l'indirizzo non dice la modalità) |
+| Tamper / guasto / ripristino | `?ev=tamper` / `?ev=fault` / `?ev=fault_restore` | solo rilettura dei guasti |
 
-Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato. Il numero da scrivere in `id` si legge negli attributi dell'entità: `zone_id` sul sensore della zona, `output_id` sull'interruttore dell'uscita; quello da scrivere in `area` è `partition_id`, sul sensore di stato dell'area. All'arrivo dell'evento l'integrazione imposta subito lo stato di zone, uscite e aree (disinserimento e allarme) e poi rilegge la centrale; per gli altri eventi, inserimento compreso, rilegge soltanto.
+**Dove leggere i numeri**, negli attributi delle entità:
+- `<zona>` → `zone_id`, sul sensore aperto/chiuso della zona;
+- `<uscita>` → `output_id`, sull'interruttore dell'uscita;
+- `<area>` → `partition_id`, sul sensore «Stato» dell'area.
 
-> Funzione **sperimentale**: i nomi esatti dei parametri che la tua centrale invia vanno verificati sul campo.
+**«Subito»** vuol dire che lo stato viene preso dall'indirizzo, senza aspettare la centrale: così si vede anche un'uscita che resta accesa meno di un giro di polling (per un impulso servono le due righe, accesa e spenta). La **rilettura** che segue riporta lo stato vero della centrale e corregge una riga scritta male. Se il numero manca o non corrisponde a nessun oggetto, lo stato non viene toccato e parte solo la rilettura.
+
+Di default il webhook accetta solo richieste dalla **LAN** (la centrale lo chiama dall'IP locale). Se HA è dietro un **reverse proxy** e vede anche le richieste locali come «remote» (webhook rifiutato), attiva **«Accetta richieste non locali»** nei Parametri generali. L'**id segreto** nell'URL fa da chiave: tienilo privato.
+
+> Funzione **sperimentale**: quali eventi la tua centrale permette di agganciare a una riga va verificato sul campo.
 
 # Dispositivi disponibili
 L'integrazione raggruppa le entità in pochi dispositivi.
@@ -208,7 +215,8 @@ Rappresenta la centrale.
 
 ## Zone
 Device unico che contiene tutte le zone. Per ogni zona:
-- **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…).
+- **Binary sensor** (nome della zona) — stato aperto/chiuso. Consigliato impostarne il tipo con `Mostra come` (Porta, Finestra, Movimento…). L'attributo `zone_id` è il numero della zona.
+- Un morsetto a **zona doppia** compare come due zone, ognuna con il proprio nome e la propria esclusione (firmware 4 e 5).
 - **Stato** — uno tra FAULT / READY / ALARM / SHORT_CIRCUIT.
 - **Esclusione** (switch) — mostra e cambia lo stato di esclusione/bypass.
 - **Memorie allarme** (diagnostica).
@@ -216,12 +224,12 @@ Device unico che contiene tutte le zone. Per ogni zona:
 ## Aree
 Device unico con tutte le aree. Per ognuna:
 - **Stato inserimento** (select) — DISARMED / INSTANT / PARTIAL / TOTAL.
-- **Stato** — ALARM / READY / SABOTAGE.
+- **Stato** — ALARM / READY / SABOTAGE. L'attributo `partition_id` è il numero dell'area.
 - **Cancella memorie** (pulsante).
 - **Memorie allarme** (diagnostica).
 
 ## Uscite
-Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off.
+Device unico con tutte le uscite della centrale, come interruttori (`switch`). Le uscite **dimmerabili** diventano luci (`light`) con regolazione **solo in modalità PrimeLAN**; in Native sono on/off. L'attributo `output_id` è il numero dell'uscita.
 
 ## Tapparelle
 Device unico con le tapparelle configurate (cover con Apri/Chiudi ed eventuale posizione).
