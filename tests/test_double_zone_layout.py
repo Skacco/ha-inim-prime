@@ -4,8 +4,10 @@ Firmware 4 keeps it at <terminal> + 1005, firmware 5 at <terminal> + 1505
 (500 video/radio/"and" zones were inserted in between). Values taken from a
 Prime PR060 5.00, where the second zones came up without a name.
 """
+import asyncio
 from unittest.mock import patch
 
+from inim.prime.native.client import Client
 from inim.prime.native.helpers import terminals as t
 from inim.prime.native.models.terminals import TerminalType
 from inim.prime.native.operations.zones.const import get_zone_1_id_offset
@@ -97,7 +99,7 @@ class _Protocol:
         return b""
 
 
-async def test_firmware_5_second_zone_bypass_uses_terminal_and_value():
+async def test_second_zone_bypass_uses_terminal_and_value():
     protocol = _Protocol()
     await set_zone_bypass(protocol, 19, True, None, True)
     await set_zone_bypass(protocol, 19, False, None, True)
@@ -111,7 +113,29 @@ async def test_firmware_5_second_zone_bypass_uses_terminal_and_value():
     ]
 
 
-async def test_firmware_4_second_zone_bypass_is_unchanged():
-    protocol = _Protocol()
-    await set_zone_bypass(protocol, 1023, True)
-    assert protocol.commands == [(9, "ff 03 00 00")]
+def _client(offset: int, protocol: _Protocol) -> Client:
+    client = object.__new__(Client)
+    client._zones = {15: object(), 15 + offset: object()}
+    client._zone_1_id_offset = offset
+    client._zone_to_terminal = {15: 15, 15 + offset: 15}
+    client._lock = asyncio.Lock()
+    client._protocol = protocol
+    client._pin = None
+    client._initialized = True
+    return client
+
+
+async def test_client_excludes_the_second_zone_through_its_terminal_on_every_firmware():
+    """The panel refuses the second zone's own id (answer 05 00), on firmware 4
+    as on firmware 5: seen on a Prime120 4.07 with zone 1020 of terminal 15."""
+    for offset in (1005, 1505):
+        protocol = _Protocol()
+        client = _client(offset, protocol)
+        await client.set_zone_bypass(15 + offset, True)
+        await client.set_zone_bypass(15 + offset, False)
+        await client.set_zone_bypass(15, True)
+        assert protocol.commands == [
+            (9, "0f 00 01 00"),
+            (9, "0f 00 03 00"),
+            (9, "0f 00 00 00"),
+        ], offset
