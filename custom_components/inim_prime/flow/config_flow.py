@@ -18,6 +18,8 @@ from .const import (
 )
 from .models import NativeConfig, PrimelanConfig, ConfigData, ConfigOptions, clean_alarm_panel, extract_hybrid_sections
 from .options_flow import InimPrimeOptionsFlowHandler
+from ..adapters.native_adapter import password_refused
+from ..port_exposure import async_port_reachable
 from .schemas import build_connection_schema, build_options_schema
 from ..const import (
     DOMAIN,
@@ -47,14 +49,27 @@ def _describe_error(err: BaseException) -> str:
     return f"{type(err).__name__}: {text}" if text else type(err).__name__
 
 
-async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> tuple[dict[str, str], dict[str, str]]:
+async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool, hass = None) -> tuple[dict[str, str], dict[str, str]]:
     """Test each configured backend separately.
 
     Returns (errors, placeholders) so the form can say which part failed
     and why.
     """
     errors: dict[str, str] = {}
-    placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
+    placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": ""}
+    password_rejected = False
+
+    # Asked for with the checkbox: a Native port reachable from the Internet
+    # stops the form here, before any connection to the panel. No answer from
+    # the check service does not stop anything.
+    if hass is not None and flow_data.native is not None and flow_data.native.check_port_exposed:
+        started = time.monotonic()
+        reachable = await async_port_reachable(hass, flow_data.native.port_check_server, flow_data.native.port)
+        _LOGGER.debug("Connection test: port check answered %s in %.2fs", reachable, time.monotonic() - started)
+        if reachable:
+            placeholders["port"] = str(flow_data.native.port)
+            errors["base"] = "native_port_exposed"
+            return errors, placeholders
 
     if flow_data.native is not None:
         started = time.monotonic()
@@ -66,6 +81,8 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("INIM Prime: Native connection test to %s:%s failed", flow_data.host, flow_data.native.port, exc_info = True)
             placeholders["native_error"] = _describe_error(err)
+            # every connection of this test is a new one
+            password_rejected = password_refused(err)
         _LOGGER.debug("Connection test: Native took %.2fs", time.monotonic() - started)
 
     if flow_data.primelan is not None:
@@ -85,6 +102,11 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool) -> t
             parts.append("PrimeLAN: " + (f"FAILED ({placeholders['primelan_error']})" if placeholders["primelan_error"] else "OK"))
         placeholders["status"] = " | ".join(parts)
         errors["base"] = "connection_failed"
+        if password_rejected:
+            errors["base"] = "native_password_rejected"
+            placeholders["status"] = (
+                f" PrimeLAN: FAILED ({placeholders['primelan_error']})" if placeholders["primelan_error"] else ""
+            )
     return errors, placeholders
 
 
@@ -191,7 +213,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 )
 
             # Native present -> serial number is retrieved here, never asked.
-            errors, placeholders = await _run_connection_tests(self._data, get_serial = True)
+            errors, placeholders = await _run_connection_tests(self._data, get_serial = True, hass = self.hass)
             if not errors:
                 try:
                     await self.async_set_unique_id(self._data.serial_number)
@@ -398,7 +420,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
             # Reconfigure never touches the serial number, only the
             # connection itself is verified here.
-            errors, placeholders = await _run_connection_tests(self._data, get_serial = False)
+            errors, placeholders = await _run_connection_tests(self._data, get_serial = False, hass = self.hass)
             if not errors:
                 return self._finish_reconfigure()
 

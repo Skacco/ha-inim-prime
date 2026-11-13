@@ -41,7 +41,7 @@ PERIODIC_DROP_TOLERANCE = 5.0
 NATIVE_PORT_DEFAULT: Final[int] = inim.prime.native.const.Panel.DEFAULT_PORT
 NATIVE_USE_OUTER_FRAME_DEFAULT: Final[bool] = False
 NATIVE_PASSWORD_DEFAULT: Final[str] = inim.prime.native.const.Panel.DEFAULT_PASSWORD
-# Optional check, at start-up, that the Native port cannot be reached from the
+# Optional check, in the connection form, that the Native port cannot be reached from the
 # Internet. Off by default: it asks an external service to try the port on the
 # public address this request comes from (any server running "echoip").
 NATIVE_CHECK_PORT_EXPOSED_DEFAULT: Final[bool] = False

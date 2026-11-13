@@ -213,6 +213,24 @@ def _closed_without_answer(err: BaseException) -> bool:
     return False
 
 
+def _undecryptable_answer(err: BaseException) -> bool:
+    """True when the panel did answer, but the answer cannot be decrypted with
+    our password (the other way a wrong password shows up: some wrong passwords
+    get an immediate answer instead of a closed connection)."""
+    seen = set()
+    while err is not None and id(err) not in seen:
+        seen.add(id(err))
+        if isinstance(err, ValueError) and "padd" in str(err).lower():
+            return True
+        err = err.__cause__
+    return False
+
+
+def password_refused(err: BaseException) -> bool:
+    """How a wrong connection password looks on a connection just opened."""
+    return _closed_without_answer(err) or _undecryptable_answer(err)
+
+
 def matches_periodic_drop_cadence(wall_time: float) -> bool:
     """True when wall_time falls on the periodic drop cadence (see const)."""
     offset = (wall_time - PERIODIC_DROP_PHASE) % PERIODIC_DROP_PERIOD
@@ -282,14 +300,16 @@ class NativeAdapter:
         first request without a byte of answer. During the panel's own short
         network restarts the port refuses the connection instead, so those are
         not taken for a refused password."""
-        if err is not None and self._fresh_connection and _closed_without_answer(err):
+        if err is not None and self._fresh_connection and password_refused(err):
             self._password_rejected = True
             _LOGGER.error(
-                "The panel closed a new connection at its first request without "
-                "answering: it does not accept the Native connection password. "
-                "Connection attempts are stopped (each one makes the panel drop "
-                "all its network connections for about ten seconds). Enter the "
-                "password again with Reconfigure",
+                "The panel %s at the first request on a new connection: it does "
+                "not accept the Native connection password. Connection attempts "
+                "are stopped (they can make the panel drop all its network "
+                "connections for about ten seconds each). Enter the password "
+                "again with Reconfigure",
+                "closed the connection without answering" if _closed_without_answer(err)
+                else "sent an answer that cannot be decrypted",
             )
             raise NativePasswordRejected(PASSWORD_REJECTED_MESSAGE) from err
         if err is None and self._password_rejected:
@@ -299,6 +319,9 @@ class NativeAdapter:
         self._raise_if_password_rejected()
         try:
             result = await coro_factory()
+        except ValueError as err:
+            self._raise_if_password_rejected(err)   # only on a fresh connection
+            raise
         except (ConnectionError, TimeoutError, OSError) as err:
             self._raise_if_password_rejected(err)
             self._note_outage(err)
@@ -307,7 +330,7 @@ class NativeAdapter:
             await self._ensure_reconnected()
             try:
                 result = await coro_factory()
-            except (ConnectionError, TimeoutError, OSError) as retry_err:
+            except (ConnectionError, TimeoutError, OSError, ValueError) as retry_err:
                 self._raise_if_password_rejected(retry_err)
                 raise
         self._fresh_connection = False
@@ -437,7 +460,7 @@ class NativeAdapter:
             self._fresh_connection = True
         try:
             await self._client.ensure_initialized()
-        except (ConnectionError, TimeoutError, OSError) as err:
+        except (ConnectionError, TimeoutError, OSError, ValueError) as err:
             self._raise_if_password_rejected(err)
             raise
         self._fresh_connection = False

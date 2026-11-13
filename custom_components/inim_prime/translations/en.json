@@ -43,7 +43,7 @@
               "password": "Native protocol password. Leave at the default unless you've changed it on the panel.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "PIN code used to authenticate with the panel.",
-              "check_port_exposed": "When the integration starts it asks an external service to try this port on your public address. If it is reachable a notice appears in Repairs. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try this port on your public address. If it is reachable the form stops with a notice. Only the port number is sent to the service.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
@@ -95,7 +95,7 @@
               "password": "Leave blank to keep the current password.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "Leave blank to keep the current PIN.",
-              "check_port_exposed": "When the integration starts it asks an external service to try this port on your public address. If it is reachable a notice appears in Repairs. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try this port on your public address. If it is reachable the form stops with a notice. Only the port number is sent to the service.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
@@ -229,7 +229,9 @@
     },
     "error": {
       "cannot_connect": "Failed to connect to the INIM Prime panel.",
-      "connection_failed": "Connection test failed. {status}"
+      "connection_failed": "Connection test failed. {status}",
+      "native_password_rejected": "The panel did not accept the Native connection password.{status}",
+      "native_port_exposed": "Port {port} of the panel can be reached from the Internet: remove its forwarding on the router and try again. To go on anyway turn the port check off."
     },
     "abort": {
       "already_configured": "This INIM Prime panel is already configured.",
@@ -393,6 +395,10 @@
         "connection": {
           "name": "Connection",
           "description": "Only the drops of this connection. Leave empty for both."
+        },
+        "periodic": {
+          "name": "Periodic only",
+          "description": "On: only the drops matching the panel's periodic network restart. Off: only the others. Leave empty to see them all."
         }
       }
     },
@@ -577,10 +583,6 @@
     "native_password_rejected": {
       "title": "The panel refuses the connection password",
       "description": "The INIM Prime panel closed the Native connection at its first request, without answering: this is how it reacts to a connection password it does not recognise.\n\nThe integration has stopped connecting, because every attempt with a refused password makes the panel drop all its network connections for about ten seconds, those of Prime/STUDIO included.\n\nTo resume: Settings → Devices & services → INIM Prime → ⋮ menu → **Reconfigure**, and enter the connection password set on the panel. If the password is correct, reloading the integration is enough."
-    },
-    "native_port_exposed": {
-      "title": "Port {port} of the panel can be reached from the Internet",
-      "description": "The check service managed to connect to port {port} on your public address: the router forwards that port to the INIM Prime panel.\n\nWhoever reaches that port can send commands to the panel knowing only the connection password, which is the same on every panel unless it was changed. Even without knowing it they can make the panel drop its network connections.\n\nRemove or disable the forwarding of port {port} on the router. The Inim Home app does not need it. The notice goes away the next time the integration starts, once the port is no longer reachable."
     }
   }
 }

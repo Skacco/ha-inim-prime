@@ -5,8 +5,8 @@ connection password (the default one is the same on every panel), and can make
 it drop its network connections even without knowing it.
 
 The integration runs inside the local network and cannot see the port "from
-outside" by itself: when the user enables the check, it asks an external
-service to try the port on the public address the request comes from. The
+outside" by itself: when the user enables the check in the connection form,
+submitting the form asks an external service to try the port on the public address the request comes from. The
 service is any server running "echoip" (https://github.com/mpolden/echoip):
 GET <server>/port/<port> answers {"ip": ..., "port": ..., "reachable": bool}.
 Nothing about the panel is sent, only the port number.
@@ -61,28 +61,6 @@ async def async_port_reachable(hass: HomeAssistant, server: str | None, port: in
     return reachable
 
 
-async def async_check_port_exposure(hass: HomeAssistant, entry_id: str, native_conf: dict | None) -> None:
-    """Run the check once (at start-up) and raise or clear the repair notice."""
-    if not native_conf or not native_conf.get("check_port_exposed"):
-        ir.async_delete_issue(hass, DOMAIN, _issue_id(entry_id))
-        return
-    port = native_conf["port"]
-    reachable = await async_port_reachable(hass, native_conf.get("port_check_server"), port)
-    if reachable is None:
-        return      # no answer: leave a previous notice as it is
-    if not reachable:
-        ir.async_delete_issue(hass, DOMAIN, _issue_id(entry_id))
-        return
-    _LOGGER.warning(
-        "The Native port %s of the panel can be reached from the Internet: "
-        "remove its forwarding on the router", port,
-    )
-    ir.async_create_issue(
-        hass,
-        DOMAIN,
-        _issue_id(entry_id),
-        is_fixable = False,
-        severity = ir.IssueSeverity.ERROR,
-        translation_key = "native_port_exposed",
-        translation_placeholders = {"port": str(port)},
-    )
+def clear_port_exposed_notice(hass: HomeAssistant, entry_id: str) -> None:
+    """Remove the repair notice an earlier build raised at start-up."""
+    ir.async_delete_issue(hass, DOMAIN, _issue_id(entry_id))

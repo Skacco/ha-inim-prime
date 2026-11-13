@@ -102,7 +102,7 @@ def build_native_schema(
         DataKey.Native.PIN,
     )] = TextSelector(TextSelectorConfig(type = TextSelectorType.PASSWORD))
 
-    # Check, at start-up, that the port is not reachable from the Internet
+    # Check, when the form is submitted, that the port is not reachable from the Internet
     schema[vol.Required(
         DataKey.Native.CHECK_PORT_EXPOSED,
         default = (

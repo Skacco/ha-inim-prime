@@ -174,3 +174,50 @@ async def test_coordinator_reports_the_refused_password_and_does_not_ride_throug
     from custom_components.inim_prime.repairs_helpers import clear_password_rejected
     clear_password_rejected(hass, "ENTRY")
     assert ir.async_get(hass).async_get_issue(DOMAIN, "native_password_rejected_ENTRY") is None
+
+
+# --- the other face of a wrong password: an answer that cannot be decrypted ---
+# Some wrong passwords get an immediate answer instead of a closed connection
+# (seen on a Prime120 4.07: "Padding is incorrect.", nothing drops).
+
+def _undecryptable() -> ValueError:
+    return ValueError("Padding is incorrect.")
+
+
+async def test_undecryptable_answer_at_startup_is_a_refused_password():
+    client = _Client(reads = [_undecryptable()])
+    adapter = na.NativeAdapter(client)
+
+    with pytest.raises(na.NativePasswordRejected):
+        await adapter.connect()
+    assert adapter.password_rejected
+    assert (client.connect_calls, client.read_calls) == (1, 1)
+
+
+async def test_undecryptable_answer_after_a_reconnection_stops_the_attempts():
+    client = _Client(reads = [_closed_without_answer(), _undecryptable(), "never read"])
+    adapter = na.NativeAdapter(client)
+
+    with pytest.raises(na.NativePasswordRejected):
+        await _read(adapter)
+    for _ in range(3):
+        with pytest.raises(na.NativePasswordRejected):
+            await _read(adapter)
+    assert (client.read_calls, client.reconnect_calls) == (2, 1)
+
+
+async def test_undecryptable_answer_on_a_working_session_is_not_a_refused_password():
+    client = _Client(reads = ["zones", _undecryptable(), "zones again"])
+    adapter = na.NativeAdapter(client)
+
+    assert await _read(adapter) == "zones"
+    with pytest.raises(ValueError):
+        await _read(adapter)
+    assert not adapter.password_rejected
+    assert await _read(adapter) == "zones again"
+
+
+def test_other_value_errors_are_not_a_refused_password():
+    assert not na.password_refused(ValueError("Native panel did not report a serial number"))
+    assert na.password_refused(_undecryptable())
+    assert na.password_refused(_closed_without_answer())

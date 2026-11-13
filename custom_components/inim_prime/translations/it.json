@@ -43,7 +43,7 @@
               "password": "Password del protocollo Native. Lascia il valore predefinito se non l'hai cambiata sulla centrale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
               "pin": "Codice PIN usato per autenticarsi con la centrale.",
-              "check_port_exposed": "All'avvio dell'integrazione chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile compare un avviso in Riparazioni. Al servizio arriva solo il numero della porta.",
+              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile il modulo si ferma con un avviso. Al servizio arriva solo il numero della porta.",
               "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },
@@ -95,7 +95,7 @@
               "password": "Lascia vuoto per mantenere la password attuale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
               "pin": "Lascia vuoto per mantenere il PIN attuale.",
-              "check_port_exposed": "All'avvio dell'integrazione chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile compare un avviso in Riparazioni. Al servizio arriva solo il numero della porta.",
+              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile il modulo si ferma con un avviso. Al servizio arriva solo il numero della porta.",
               "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },
@@ -229,7 +229,9 @@
     },
     "error": {
       "cannot_connect": "Impossibile connettersi alla centrale INIM Prime.",
-      "connection_failed": "Test di connessione fallito. {status}"
+      "connection_failed": "Test di connessione fallito. {status}",
+      "native_password_rejected": "La centrale non ha accettato la password della connessione Native.{status}",
+      "native_port_exposed": "La porta {port} della centrale è raggiungibile da Internet: rimuovi l'inoltro di quella porta sul router e riprova. Per proseguire comunque spegni il controllo della porta."
     },
     "abort": {
       "already_configured": "Questa centrale INIM Prime è già configurata.",
@@ -393,6 +395,10 @@
         "connection": {
           "name": "Connessione",
           "description": "Solo le cadute di questa connessione. Lascia vuoto per vederle entrambe."
+        },
+        "periodic": {
+          "name": "Solo periodiche",
+          "description": "Acceso: solo le cadute che coincidono con il riavvio periodico della rete della centrale. Spento: solo le altre. Lascia vuoto per vederle tutte."
         }
       }
     },
@@ -577,10 +583,6 @@
     "native_password_rejected": {
       "title": "La centrale rifiuta la password di connessione",
       "description": "La centrale INIM Prime ha chiuso la connessione Native alla prima richiesta, senza rispondere: è il modo in cui reagisce a una password di connessione che non riconosce.\n\nL'integrazione ha smesso di collegarsi, perché ogni tentativo con una password rifiutata fa cadere per circa dieci secondi tutte le connessioni di rete della centrale, comprese quelle di Prime/STUDIO.\n\nPer ripartire: Impostazioni → Dispositivi e servizi → INIM Prime → menu ⋮ → **Riconfigura**, e inserisci la password di connessione impostata sulla centrale. Se la password è corretta, basta ricaricare l'integrazione."
-    },
-    "native_port_exposed": {
-      "title": "La porta {port} della centrale è raggiungibile da Internet",
-      "description": "Il servizio di verifica è riuscito a collegarsi alla porta {port} sul tuo indirizzo pubblico: sul router c'è un inoltro di quella porta verso la centrale INIM Prime.\n\nChi raggiunge quella porta può comandare la centrale conoscendo solo la password di connessione, che se non è stata cambiata è uguale per tutte le centrali. Anche senza conoscerla può far cadere le connessioni di rete della centrale.\n\nRimuovi o disabilita l'inoltro della porta {port} sul router. L'app Inim Home non ne ha bisogno. L'avviso sparisce al prossimo avvio dell'integrazione, quando la porta non risulta più raggiungibile."
     }
   }
 }

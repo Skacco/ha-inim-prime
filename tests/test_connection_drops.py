@@ -72,6 +72,17 @@ async def test_action_lists_recorded_drops_newest_first(recorder_mock, hass):
             DOMAIN, cd.SERVICE_CONNECTION_DROPS, data, blocking = True, return_response = True,
         )
         assert answer["numero"] == 2, data
+
+    # periodic filter: true and false split the list, nothing is lost
+    split = {}
+    for flag in (True, False):
+        filtered = await hass.services.async_call(
+            DOMAIN, cd.SERVICE_CONNECTION_DROPS, {"hours": 1, "periodic": flag},
+            blocking = True, return_response = True,
+        )
+        assert all(d["periodica"] is flag for d in filtered["cadute"])
+        split[flag] = filtered["numero"]
+    assert split[True] + split[False] == 2
     from datetime import datetime, timedelta
     span = datetime.fromisoformat(answer["al"]) - datetime.fromisoformat(answer["dal"])
     assert span == timedelta(days = 2, hours = 5)
