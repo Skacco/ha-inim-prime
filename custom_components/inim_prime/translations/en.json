@@ -33,14 +33,18 @@
               "use_outer_frame": "Use Outer Frame",
               "password": "Password",
               "use_custom_pin": "Use Custom PIN (not recommended)",
-              "pin": "PIN"
+              "pin": "PIN",
+              "check_port_exposed": "Check whether the port can be reached from the Internet",
+              "port_check_server": "Check service"
             },
             "data_description": {
               "port": "TCP port the panel's Native protocol listens on.",
               "use_outer_frame": "Enable if the panel uses a PrimeLAN network card (not the onboard LAN). Set automatically when PrimeLAN is also configured.",
               "password": "Native protocol password. Leave at the default unless you've changed it on the panel.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
-              "pin": "PIN code used to authenticate with the panel."
+              "pin": "PIN code used to authenticate with the panel.",
+              "check_port_exposed": "When the integration starts it asks an external service to try this port on your public address. If it is reachable a notice appears in Repairs. Only the port number is sent to the service.",
+              "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
           "primelan": {
@@ -81,14 +85,18 @@
               "use_outer_frame": "Use Outer Frame",
               "password": "Password",
               "use_custom_pin": "Use Custom PIN (not recommended)",
-              "pin": "PIN"
+              "pin": "PIN",
+              "check_port_exposed": "Check whether the port can be reached from the Internet",
+              "port_check_server": "Check service"
             },
             "data_description": {
               "port": "TCP port the panel's Native protocol listens on.",
               "use_outer_frame": "Enable if the panel uses a PrimeLAN network card (not the onboard LAN). Set automatically when PrimeLAN is also configured.",
               "password": "Leave blank to keep the current password.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
-              "pin": "Leave blank to keep the current PIN."
+              "pin": "Leave blank to keep the current PIN.",
+              "check_port_exposed": "When the integration starts it asks an external service to try this port on your public address. If it is reachable a notice appears in Repairs. Only the port number is sent to the service.",
+              "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
           "primelan": {
@@ -370,6 +378,24 @@
     }
   },
   "services": {
+    "connection_drops": {
+      "name": "Connection drops",
+      "description": "Lists the connection drops to the panel found in the recorded history: connection (Native or PrimeLAN), start time, duration and whether they fall on the panel's periodic restart of its network.",
+      "fields": {
+        "days": {
+          "name": "Days",
+          "description": "How many days back to look (1 to 365). Added to the hours."
+        },
+        "hours": {
+          "name": "Hours",
+          "description": "How many hours back to look (1 to 240). Added to the days. With neither days nor hours: last 24 hours."
+        },
+        "connection": {
+          "name": "Connection",
+          "description": "Only the drops of this connection. Leave empty for both."
+        }
+      }
+    },
     "debug_read_terminals": {
       "name": "Debug: read terminals",
       "description": "Native protocol: raw status (10 bytes) of each terminal, with its label.",
@@ -551,6 +577,10 @@
     "native_password_rejected": {
       "title": "The panel refuses the connection password",
       "description": "The INIM Prime panel closed the Native connection at its first request, without answering: this is how it reacts to a connection password it does not recognise.\n\nThe integration has stopped connecting, because every attempt with a refused password makes the panel drop all its network connections for about ten seconds, those of Prime/STUDIO included.\n\nTo resume: Settings → Devices & services → INIM Prime → ⋮ menu → **Reconfigure**, and enter the connection password set on the panel. If the password is correct, reloading the integration is enough."
+    },
+    "native_port_exposed": {
+      "title": "Port {port} of the panel can be reached from the Internet",
+      "description": "The check service managed to connect to port {port} on your public address: the router forwards that port to the INIM Prime panel.\n\nWhoever reaches that port can send commands to the panel knowing only the connection password, which is the same on every panel unless it was changed. Even without knowing it they can make the panel drop its network connections.\n\nRemove or disable the forwarding of port {port} on the router. The Inim Home app does not need it. The notice goes away the next time the integration starts, once the port is no longer reachable."
     }
   }
 }

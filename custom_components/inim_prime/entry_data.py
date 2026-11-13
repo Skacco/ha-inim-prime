@@ -16,6 +16,8 @@ class NativeConfigData(TypedDict):
     password: str
     use_outer_frame: bool
     pin: str | None
+    check_port_exposed: NotRequired[bool]
+    port_check_server: NotRequired[str]
 
 
 class PrimelanConfigData(TypedDict):

@@ -179,6 +179,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                     # With PrimeLAN configured the panel has a PrimeLAN card -> outer frame.
                     use_outer_frame = True if self._data.use_primelan else native_conf[DataKey.Native.USE_OUTER_FRAME],
                     pin = native_conf[DataKey.Native.PIN] if native_conf[DataKey.Native.USE_CUSTOM_PIN] else None,
+                    check_port_exposed = bool(native_conf.get(DataKey.Native.CHECK_PORT_EXPOSED)),
+                    port_check_server = (native_conf.get(DataKey.Native.PORT_CHECK_SERVER) or "").strip() or None,
                 )
 
             if self._data.use_primelan:
@@ -302,6 +304,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 password = native_conf["password"],
                 use_outer_frame = native_conf["use_outer_frame"],
                 pin = native_conf["pin"],
+                check_port_exposed = bool(native_conf.get("check_port_exposed", False)),
+                port_check_server = native_conf.get("port_check_server"),
             )
 
         primelan_conf = data.get("primelan")
@@ -381,6 +385,8 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                     # With PrimeLAN configured the panel has a PrimeLAN card -> outer frame.
                     use_outer_frame = True if self._data.use_primelan else native_conf[DataKey.Native.USE_OUTER_FRAME],
                     pin = new_pin,
+                    check_port_exposed = bool(native_conf.get(DataKey.Native.CHECK_PORT_EXPOSED)),
+                    port_check_server = (native_conf.get(DataKey.Native.PORT_CHECK_SERVER) or "").strip() or None,
                 )
 
             if self._data.use_primelan:

@@ -4,6 +4,8 @@
 - **Pacchetto di installazione**: l'integrazione viene ora distribuita da HACS come pacchetto unico allegato alla release.
 - **Zone doppie con firmware 4**: l'esclusione della seconda zona ora funziona anche con firmware 4.
 - **Password di connessione rifiutata**: se la centrale non accetta la password della connessione Native, l'integrazione smette di riprovare e mostra un avviso in Riparazioni (ogni tentativo fa cadere le connessioni locali della centrale per una decina di secondi).
+- **Cadute di connessione**: nuova azione «Cadute di connessione», che elenca le cadute registrate nello storico con connessione, ora di inizio e durata.
+- **Controllo porta esposta**: opzione facoltativa nella connessione Native che all'avvio verifica se la porta della centrale è raggiungibile da Internet e, in caso, mostra un avviso in Riparazioni.
 
 ## Novità 1.1.7
 

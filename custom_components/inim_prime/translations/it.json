@@ -33,14 +33,18 @@
               "use_outer_frame": "Usa Outer Frame",
               "password": "Password",
               "use_custom_pin": "Usa PIN personalizzato (sconsigliato)",
-              "pin": "PIN"
+              "pin": "PIN",
+              "check_port_exposed": "Controlla se la porta è raggiungibile da Internet",
+              "port_check_server": "Servizio di verifica"
             },
             "data_description": {
               "port": "Porta TCP su cui la centrale ascolta il protocollo Native.",
               "use_outer_frame": "Abilita se la centrale usa una scheda di rete PrimeLAN (non la LAN integrata). Impostato automaticamente quando è configurato anche PrimeLAN.",
               "password": "Password del protocollo Native. Lascia il valore predefinito se non l'hai cambiata sulla centrale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
-              "pin": "Codice PIN usato per autenticarsi con la centrale."
+              "pin": "Codice PIN usato per autenticarsi con la centrale.",
+              "check_port_exposed": "All'avvio dell'integrazione chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile compare un avviso in Riparazioni. Al servizio arriva solo il numero della porta.",
+              "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },
           "primelan": {
@@ -81,14 +85,18 @@
               "use_outer_frame": "Usa Outer Frame",
               "password": "Password",
               "use_custom_pin": "Usa PIN personalizzato (sconsigliato)",
-              "pin": "PIN"
+              "pin": "PIN",
+              "check_port_exposed": "Controlla se la porta è raggiungibile da Internet",
+              "port_check_server": "Servizio di verifica"
             },
             "data_description": {
               "port": "Porta TCP su cui la centrale ascolta il protocollo Native.",
               "use_outer_frame": "Abilita se la centrale usa una scheda di rete PrimeLAN (non la LAN integrata). Impostato automaticamente quando è configurato anche PrimeLAN.",
               "password": "Lascia vuoto per mantenere la password attuale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
-              "pin": "Lascia vuoto per mantenere il PIN attuale."
+              "pin": "Lascia vuoto per mantenere il PIN attuale.",
+              "check_port_exposed": "All'avvio dell'integrazione chiede a un servizio esterno di provare questa porta sul tuo indirizzo pubblico. Se risulta raggiungibile compare un avviso in Riparazioni. Al servizio arriva solo il numero della porta.",
+              "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },
           "primelan": {
@@ -370,6 +378,24 @@
     }
   },
   "services": {
+    "connection_drops": {
+      "name": "Cadute di connessione",
+      "description": "Elenca le cadute di connessione con la centrale registrate nello storico: connessione (Native o PrimeLAN), ora di inizio, durata e se coincidono con il riavvio periodico della rete della centrale.",
+      "fields": {
+        "days": {
+          "name": "Giorni",
+          "description": "Quanti giorni indietro guardare (da 1 a 365). Si somma alle ore."
+        },
+        "hours": {
+          "name": "Ore",
+          "description": "Quante ore indietro guardare (da 1 a 240). Si somma ai giorni. Senza giorni né ore: ultime 24 ore."
+        },
+        "connection": {
+          "name": "Connessione",
+          "description": "Solo le cadute di questa connessione. Lascia vuoto per vederle entrambe."
+        }
+      }
+    },
     "debug_read_terminals": {
       "name": "Debug: leggi terminali",
       "description": "Protocollo Native: stato grezzo (10 byte) di ogni terminale, con la sua etichetta.",
@@ -551,6 +577,10 @@
     "native_password_rejected": {
       "title": "La centrale rifiuta la password di connessione",
       "description": "La centrale INIM Prime ha chiuso la connessione Native alla prima richiesta, senza rispondere: è il modo in cui reagisce a una password di connessione che non riconosce.\n\nL'integrazione ha smesso di collegarsi, perché ogni tentativo con una password rifiutata fa cadere per circa dieci secondi tutte le connessioni di rete della centrale, comprese quelle di Prime/STUDIO.\n\nPer ripartire: Impostazioni → Dispositivi e servizi → INIM Prime → menu ⋮ → **Riconfigura**, e inserisci la password di connessione impostata sulla centrale. Se la password è corretta, basta ricaricare l'integrazione."
+    },
+    "native_port_exposed": {
+      "title": "La porta {port} della centrale è raggiungibile da Internet",
+      "description": "Il servizio di verifica è riuscito a collegarsi alla porta {port} sul tuo indirizzo pubblico: sul router c'è un inoltro di quella porta verso la centrale INIM Prime.\n\nChi raggiunge quella porta può comandare la centrale conoscendo solo la password di connessione, che se non è stata cambiata è uguale per tutte le centrali. Anche senza conoscerla può far cadere le connessioni di rete della centrale.\n\nRimuovi o disabilita l'inoltro della porta {port} sul router. L'app Inim Home non ne ha bisogno. L'avviso sparisce al prossimo avvio dell'integrazione, quando la porta non risulta più raggiungibile."
     }
   }
 }

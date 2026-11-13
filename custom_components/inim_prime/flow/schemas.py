@@ -26,6 +26,8 @@ from ..const import (
     SCENARIOS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PRIMELAN_SCAN_INTERVAL_BOTH_DEFAULT,
     NATIVE_PASSWORD_DEFAULT,
+    NATIVE_CHECK_PORT_EXPOSED_DEFAULT,
+    NATIVE_PORT_CHECK_SERVER_DEFAULT,
     PRIMELAN_USE_HTTPS_DEFAULT,
     NATIVE_USE_CUSTOM_PIN_DEFAULT,
     NATIVE_PORT_DEFAULT,
@@ -51,6 +53,8 @@ def build_native_schema(
         require_password: bool = True,
         ask_outer_frame: bool = True,
         current_password: str | None = None,
+        current_check_port_exposed: bool | None = None,
+        current_port_check_server: str | None = None,
 ) -> dict:
     """Build the native-protocol connection schema.
 
@@ -97,6 +101,19 @@ def build_native_schema(
     schema[vol.Optional(
         DataKey.Native.PIN,
     )] = TextSelector(TextSelectorConfig(type = TextSelectorType.PASSWORD))
+
+    # Check, at start-up, that the port is not reachable from the Internet
+    schema[vol.Required(
+        DataKey.Native.CHECK_PORT_EXPOSED,
+        default = (
+            current_check_port_exposed if current_check_port_exposed is not None
+            else NATIVE_CHECK_PORT_EXPOSED_DEFAULT
+        ),
+    )] = bool
+    schema[vol.Optional(
+        DataKey.Native.PORT_CHECK_SERVER,
+        default = current_port_check_server or NATIVE_PORT_CHECK_SERVER_DEFAULT,
+    )] = TextSelector(TextSelectorConfig(type = TextSelectorType.URL))
 
     return schema
 
@@ -167,6 +184,8 @@ def build_connection_schema(
                         current_port = flow_data.native.port,
                         current_use_outer_frame = flow_data.native.use_outer_frame,
                         current_use_custom_pin = flow_data.native.pin is not None,
+                        current_check_port_exposed = flow_data.native.check_port_exposed,
+                        current_port_check_server = flow_data.native.port_check_server,
                         # First setup, form shown again after an error: keep
                         # what was typed. Reconfigure: blank keeps the stored one.
                         require_password = prefill_secrets,

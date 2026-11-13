@@ -19,14 +19,20 @@ class NativeConfig:
     password: str
     use_outer_frame: bool
     pin: str | None
+    check_port_exposed: bool = False
+    port_check_server: str | None = None
 
     def to_dict(self) -> NativeConfigData:
-        return {
+        data: NativeConfigData = {
             "port": self.port,
             "password": self.password,
             "use_outer_frame": self.use_outer_frame,
             "pin": self.pin,
+            "check_port_exposed": self.check_port_exposed,
         }
+        if self.port_check_server:
+            data["port_check_server"] = self.port_check_server
+        return data
 
 
 @dataclass

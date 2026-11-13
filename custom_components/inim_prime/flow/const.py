@@ -13,6 +13,8 @@ class DataKey:
         PASSWORD: Final = "password"
         USE_CUSTOM_PIN: Final = "use_custom_pin"
         PIN: Final = "pin"
+        CHECK_PORT_EXPOSED: Final = "check_port_exposed"
+        PORT_CHECK_SERVER: Final = "port_check_server"
 
     class Primelan:
         API_KEY: Final = "api_key"

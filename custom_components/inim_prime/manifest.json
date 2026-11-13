@@ -1,6 +1,9 @@
 {
   "domain": "inim_prime",
   "name": "Inim Prime",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@Skacco"
   ],
