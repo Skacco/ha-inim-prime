@@ -280,3 +280,51 @@ def test_partial_response_bytes():
     except ConnectionError as err:
         assert na._partial_response_bytes(err) == 3
     assert na._partial_response_bytes(ConnectionError("refused")) == 0
+
+async def test_last_drop_attributes_survive_a_restart(hass):
+    """The connectivity sensor keeps showing the last drop recorded before a
+    restart, until a new drop replaces it."""
+    from datetime import datetime, timezone
+    from homeassistant.core import State
+    from custom_components.inim_prime.entities.panel import BackendConnectivityBinarySensor
+
+    coordinator = _coordinator(hass, [{"zone": "ok"}])
+    await coordinator.async_refresh()
+    sensor = BackendConnectivityBinarySensor(coordinator, "SERIAL", "Connessione Native", "native_connection")
+    sensor.hass = hass
+
+    async def last_state():
+        return State("binary_sensor.x", "on", {
+            "ultima_caduta": "2026-11-13T11:12:12.855083+00:00",
+            "durata_ultima_caduta": 8.0,
+        })
+
+    sensor.async_get_last_state = last_state
+    await sensor.async_added_to_hass()
+    attributes = sensor.extra_state_attributes
+    assert attributes["ultima_caduta"] == "2026-11-13T11:12:12.855083+00:00"
+    assert attributes["durata_ultima_caduta"] == 8.0
+
+    # a drop after the restart takes over
+    coordinator.last_drop_at = datetime(2026, 11, 13, 13, 35, 22, tzinfo = timezone.utc)
+    coordinator.last_drop_duration = 9.5
+    attributes = sensor.extra_state_attributes
+    assert attributes["ultima_caduta"] == "2026-11-13T13:35:22+00:00"
+    assert attributes["durata_ultima_caduta"] == 9.5
+
+
+async def test_last_drop_attributes_start_empty_without_a_previous_state(hass):
+    from custom_components.inim_prime.entities.panel import BackendConnectivityBinarySensor
+
+    coordinator = _coordinator(hass, [{"zone": "ok"}])
+    await coordinator.async_refresh()
+    sensor = BackendConnectivityBinarySensor(coordinator, "SERIAL", "Connessione Native", "native_connection")
+    sensor.hass = hass
+
+    async def no_state():
+        return None
+
+    sensor.async_get_last_state = no_state
+    await sensor.async_added_to_hass()
+    assert sensor.extra_state_attributes["ultima_caduta"] is None
+    assert sensor.extra_state_attributes["durata_ultima_caduta"] is None

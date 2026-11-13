@@ -7,6 +7,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -40,7 +41,7 @@ def _reachable(coordinator) -> bool:
     return bool(getattr(coordinator, "backend_reachable", coordinator.last_update_success))
 
 
-class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class BackendConnectivityBinarySensor(CoordinatorEntity, RestoreEntity, BinarySensorEntity):
     """Connectivity of one backend (Native or PrimeLAN), from whether its
     coordinator's last poll succeeded.
 
@@ -48,7 +49,8 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
     off, and records the last successful poll time in the 'ultimo_ok' attribute.
     Like every other entity it rides through a short drop (it turns off only
     past the grace period); the last drop is still reported, for diagnostics,
-    in the 'ultima_caduta' and 'durata_ultima_caduta' attributes.
+    in the 'ultima_caduta' and 'durata_ultima_caduta' attributes, which survive
+    a restart of Home Assistant (until the next drop replaces them).
     Lives on the panel device as a diagnostic entity."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
@@ -60,6 +62,20 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_unique_id = f"{serial_number}_{suffix}"
         self._attr_device_info = create_panel_device_info(serial_number)
         self._last_ok = dt_util.utcnow() if _reachable(coordinator) else None
+        self._restored_drop: str | None = None
+        self._restored_drop_duration: float | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state is None:
+            return
+        drop = last_state.attributes.get("ultima_caduta")
+        if isinstance(drop, str) and dt_util.parse_datetime(drop) is not None:
+            self._restored_drop = drop
+            duration = last_state.attributes.get("durata_ultima_caduta")
+            if isinstance(duration, (int, float)) and not isinstance(duration, bool):
+                self._restored_drop_duration = float(duration)
 
     @property
     def available(self) -> bool:
@@ -87,10 +103,17 @@ class BackendConnectivityBinarySensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         last_drop = getattr(self.coordinator, "last_drop_at", None)
+        if last_drop is not None:
+            drop = last_drop.isoformat()
+            duration = getattr(self.coordinator, "last_drop_duration", None)
+        else:
+            # no drop since Home Assistant started: keep showing the last one
+            # recorded before the restart
+            drop, duration = self._restored_drop, self._restored_drop_duration
         return {
             "ultimo_ok": self._last_ok.isoformat() if self._last_ok else None,
-            "ultima_caduta": last_drop.isoformat() if last_drop else None,
-            "durata_ultima_caduta": getattr(self.coordinator, "last_drop_duration", None),
+            "ultima_caduta": drop,
+            "durata_ultima_caduta": duration,
         }
 
 

@@ -3,6 +3,7 @@
 - **Manutenzione interna**: adeguamenti ai controlli di validazione di Home Assistant e HACS.
 - **Pacchetto di installazione**: l'integrazione viene ora distribuita da HACS come pacchetto unico allegato alla release.
 - **Zone doppie con firmware 4**: l'esclusione della seconda zona ora funziona anche con firmware 4.
+- **Sensori di connessione**: gli attributi dell'ultima caduta restano dopo il riavvio di Home Assistant.
 
 ## Novità 1.1.7
 
