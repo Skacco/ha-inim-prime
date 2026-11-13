@@ -19,9 +19,10 @@ from homeassistant.helpers import config_validation as cv
 
 from inim.prime.native.const import CommandOperation, FrameOperation
 from inim.prime.native.operations.terminals.get_terminal_statuses import get_terminal_statuses
+from inim.prime.native.operations.zones.const import get_zone_ids_interval
+from inim.prime.native.operations.zones.get_zone_labels import get_zone_labels
 from inim.prime.native.utils import Interval
 
-from . import native_compat
 from .const import DOMAIN
 
 SERVICE_READ_TERMINALS = "debug_read_terminals"
@@ -109,8 +110,12 @@ def _native_client(hass: HomeAssistant):
     raise ServiceValidationError("No loaded Inim Prime entry with the native protocol")
 
 
-def _labels() -> dict[int, str]:
-    return {k: (v or "").replace("\x00", "").strip() for k, v in native_compat._terminal_labels.items()}
+async def _labels(client) -> dict[int, str]:
+    """Terminal descriptions, read from the panel (the table also covers the
+    terminals the library does not expose as zones or outputs)."""
+    async with client._lock:
+        labels = await get_zone_labels(client._protocol, get_zone_ids_interval(client._zone_1_id_offset))
+    return {k: (v or "").replace("\x00", "").strip() for k, v in labels.items()}
 
 
 async def _read_statuses(client, start: int, end: int) -> dict[int, bytes]:
@@ -123,7 +128,7 @@ async def _read_terminals(hass: HomeAssistant, call: ServiceCall) -> ServiceResp
     client = _native_client(hass)
     start, end = call.data["start"], call.data["end"]
     raw = await _read_statuses(client, start, end)
-    labels = _labels()
+    labels = await _labels(client)
     terminals = {}
     for t_id, data in raw.items():
         label = labels.get(t_id, "")
@@ -136,7 +141,7 @@ async def _read_terminals(hass: HomeAssistant, call: ServiceCall) -> ServiceResp
 async def _watch_terminals(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     client = _native_client(hass)
     start, end = call.data["start"], call.data["end"]
-    labels = _labels()
+    labels = await _labels(client)
     began = time.monotonic()
     previous = await _read_statuses(client, start, end)
     changes = []

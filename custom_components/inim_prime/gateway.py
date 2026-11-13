@@ -63,7 +63,7 @@ class InimPrimeGateway:
         self._native = native
         self._primelan = primelan
         # Output labels from PrimeLAN, used to name native outputs whose
-        # label the native library can't read (see native_compat).
+        # label the native protocol does not carry.
         self._primelan_output_labels: dict[int, str] | None = None
         # During setup the labels are loaded by load_primelan_output_labels()
         # at a chosen moment; update_outputs() must not fetch them meanwhile.

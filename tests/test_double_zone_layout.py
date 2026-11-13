@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 from inim.prime.native.helpers import terminals as t
 from inim.prime.native.models.terminals import TerminalType
-
-from custom_components.inim_prime import native_compat
+from inim.prime.native.operations.zones.const import get_zone_1_id_offset
+from inim.prime.native.operations.zones.set_zone_bypass import set_zone_bypass
 
 
 class _Status:
@@ -23,10 +23,6 @@ class _Protocol:
 
 async def _initialize(description: str):
     seen: dict = {}
-
-    async def panel_info(protocol):
-        firmware, model = description.split(" ", 1)
-        return "SERIAL", firmware, model
 
     async def statuses(*a, **k):
         return {18: _Status(TerminalType.DOUBLE_ZONE), 19: _Status(TerminalType.DOUBLE_ZONE)}
@@ -47,15 +43,13 @@ async def _initialize(description: str):
     async def no_outputs(*a, **k):
         return {}
 
-    protocol = _Protocol()
-    with patch.object(native_compat, "_original_get_panel_info", panel_info), \
-         patch.object(t, "get_terminal_statuses", statuses), \
-         patch.object(native_compat, "_original_get_zone_labels", labels), \
-         patch.object(native_compat, "_original_get_zone_settings", settings), \
-         patch.object(native_compat, "_original_get_output_labels", no_outputs), \
+    firmware = description.split(" ", 1)[0]
+    with patch.object(t, "get_terminal_statuses", statuses), \
+         patch.object(t, "get_zone_labels", labels), \
+         patch.object(t, "get_zone_settings", settings), \
+         patch.object(t, "get_output_labels", no_outputs), \
          patch.object(t.DoubleZone, "decode", lambda **kw: kw):
-        await native_compat._get_panel_info_recording(protocol)
-        terminals = await native_compat._initialize_terminals_for_firmware(protocol)
+        terminals = await t.initialize_terminals(_Protocol(), None, get_zone_1_id_offset(firmware))
     return terminals, seen
 
 
@@ -75,9 +69,8 @@ async def test_firmware_5_reads_the_second_zone_500_further():
     # the tables are read far enough to contain those zones
     assert seen["labels_interval"].end == 2509
     assert seen["settings_interval"].end == 2509
-    # and the library is left as it was for the next panel
+    # and the layout of other panels is untouched
     assert t.ZONE_1_ID_OFFSET == 1005
-    assert native_compat._zone_ids_interval is None
 
 
 async def test_firmware_4_is_unchanged():
@@ -85,14 +78,14 @@ async def test_firmware_4_is_unchanged():
 
     assert terminals[18]["zone_1_id"] == 1023
     assert terminals[18]["zone_1_label"] == "Z. Video  19"  # whatever is at +1005
-    assert seen["labels_interval"] is None, "the library's own interval is used"
+    assert seen["labels_interval"].end == 2009
 
 
-def test_offset_by_firmware_text():
-    assert native_compat.zone_1_id_offset("5.00 PR060") == 1505
-    assert native_compat.zone_1_id_offset("5.10 Prime240L") == 1505
-    assert native_compat.zone_1_id_offset("4.07 Prime120L") == 1005
-    assert native_compat.zone_1_id_offset("") == 1005
+def test_offset_by_firmware_version():
+    assert get_zone_1_id_offset("5.00") == 1505
+    assert get_zone_1_id_offset("5.10") == 1505
+    assert get_zone_1_id_offset("4.07") == 1005
+    assert get_zone_1_id_offset("") == 1005
 
 
 class _Protocol:
@@ -106,14 +99,10 @@ class _Protocol:
 
 async def test_firmware_5_second_zone_bypass_uses_terminal_and_value():
     protocol = _Protocol()
-    native_compat._second_zone_offsets[id(protocol)] = 1505
-    try:
-        await native_compat._set_zone_bypass_for_firmware(protocol, 1524, True)
-        await native_compat._set_zone_bypass_for_firmware(protocol, 1524, False)
-        await native_compat._set_zone_bypass_for_firmware(protocol, 19, True)
-        await native_compat._set_zone_bypass_for_firmware(protocol, 19, False)
-    finally:
-        del native_compat._second_zone_offsets[id(protocol)]
+    await set_zone_bypass(protocol, 19, True, None, True)
+    await set_zone_bypass(protocol, 19, False, None, True)
+    await set_zone_bypass(protocol, 19, True)
+    await set_zone_bypass(protocol, 19, False)
     assert protocol.commands == [
         (9, "13 00 01 00"),   # second zone of terminal 19: exclude
         (9, "13 00 03 00"),   # ... include
@@ -124,5 +113,5 @@ async def test_firmware_5_second_zone_bypass_uses_terminal_and_value():
 
 async def test_firmware_4_second_zone_bypass_is_unchanged():
     protocol = _Protocol()
-    await native_compat._set_zone_bypass_for_firmware(protocol, 1023, True)
+    await set_zone_bypass(protocol, 1023, True)
     assert protocol.commands == [(9, "ff 03 00 00")]

@@ -2,7 +2,6 @@
 import asyncio
 from types import SimpleNamespace
 
-from custom_components.inim_prime import native_compat
 from custom_components.inim_prime.cover import discover_shutters, InimPrimeShutterCover
 
 
@@ -27,7 +26,6 @@ def test_discover_shutters_pairs_default_named_modules():
 
 
 def test_inner_magic_accepts_firmware_5_variant():
-    native_compat.apply()
     from inim.prime.native.wire.header import InnerHeader
     assert InnerHeader(magic=b"\x50\x50").is_magic_valid      # 4.x
     assert InnerHeader(magic=b"\x50\x54").is_magic_valid      # 5.00
@@ -35,7 +33,6 @@ def test_inner_magic_accepts_firmware_5_variant():
 
 
 def test_virtual_type_02_decoded_as_output():
-    native_compat.apply()
     from inim.prime.native.models.terminals import TerminalStatus, TerminalType
     assert TerminalStatus.decode_type(bytes([0x02, 0, 8, 0, 1])) == TerminalType.OUTPUT
     assert TerminalStatus.decode_type(bytes([0x01, 0, 0, 0, 0])) == TerminalType.OUTPUT

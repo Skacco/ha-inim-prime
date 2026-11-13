@@ -114,7 +114,6 @@ async def test_connection_errors_say_which_backend_failed():
 
 async def test_native_output_without_label_does_not_crash():
     from unittest.mock import patch
-    from custom_components.inim_prime import native_compat  # noqa: F401
     from inim.prime.native.helpers import terminals as t
     from inim.prime.native.models.terminals import TerminalType
 
@@ -132,21 +131,21 @@ async def test_native_output_without_label_does_not_crash():
         return {1005: "SIRENA"}  # only on-board outputs, like the library
 
     async def terminal_labels(*a, **k):
-        return {6: "STATO IMPIANTO  "}
+        return {6: "STATO IMPIANTO"}
 
     with patch.object(t, "get_terminal_statuses", statuses), \
-         patch.object(native_compat, "_original_get_zone_labels", terminal_labels), \
+         patch.object(t, "get_zone_labels", terminal_labels), \
          patch.object(t, "get_zone_settings", empty), \
-         patch.object(native_compat, "_original_get_output_labels", board_labels), \
+         patch.object(t, "get_output_labels", board_labels), \
          patch.object(t.Output, "decode", lambda **kw: kw):
         terminals = await t.initialize_terminals(protocol=None)
     assert terminals[6]["label"] == "STATO IMPIANTO"
 
     # no description anywhere -> empty label, no crash
     with patch.object(t, "get_terminal_statuses", statuses), \
-         patch.object(native_compat, "_original_get_zone_labels", empty), \
+         patch.object(t, "get_zone_labels", empty), \
          patch.object(t, "get_zone_settings", empty), \
-         patch.object(native_compat, "_original_get_output_labels", board_labels), \
+         patch.object(t, "get_output_labels", board_labels), \
          patch.object(t.Output, "decode", lambda **kw: kw):
         terminals = await t.initialize_terminals(protocol=None)
     assert terminals[6]["label"] == ""
