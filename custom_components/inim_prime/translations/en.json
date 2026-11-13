@@ -232,7 +232,8 @@
       "connection_failed": "Connection test failed. {status}",
       "native_password_rejected": "The panel did not accept the Native connection password.{status}",
       "native_port_exposed": "Native port {port} of the panel can be reached from the Internet: remove its forwarding on the router and try again. To go on anyway turn the port check off.",
-      "native_port_check_failed": "Native port check failed: the check service did not answer, so it is not known whether port {port} can be reached from the Internet. Try again, change the check service or turn the port check off."
+      "native_port_check_failed": "Native port check failed: the check service did not answer, so it is not known whether port {port} can be reached from the Internet. Try again, change the check service or turn the port check off.",
+      "native_password_too_long": "The Native connection password can be at most {max} characters long."
     },
     "abort": {
       "already_configured": "This INIM Prime panel is already configured.",

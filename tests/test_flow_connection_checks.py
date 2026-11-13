@@ -86,3 +86,20 @@ async def test_port_check_outcome_is_reported_next_to_another_error(hass, aiocli
     # checkbox off: nothing is said about the port
     _, placeholders = await cf._run_connection_tests(_data(), get_serial = False, hass = hass)
     assert placeholders["port_check"] == ""
+
+
+async def test_password_longer_than_the_key_is_refused_before_connecting(monkeypatch):
+    calls = []
+
+    async def ok(conf, host):
+        calls.append(host)
+    monkeypatch.setattr(cf, "test_native_connection", ok)
+    data = _data()
+    data.native.password = "x" * 17
+    errors, placeholders = await cf._run_connection_tests(data, get_serial = False)
+    assert errors == {"base": "native_password_too_long"}
+    assert placeholders["max"] == "16" and calls == []
+
+    data.native.password = "x" * 16
+    errors, _ = await cf._run_connection_tests(data, get_serial = False)
+    assert errors == {} and calls == ["192.168.1.98"]

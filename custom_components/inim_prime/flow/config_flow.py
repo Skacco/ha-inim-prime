@@ -49,6 +49,8 @@ def _describe_error(err: BaseException) -> str:
     return f"{type(err).__name__}: {text}" if text else type(err).__name__
 
 
+NATIVE_PASSWORD_MAX_LENGTH = 16
+
 # Outcome of the port check, shown at the top of the form when it comes back
 # with an error on something else (a placeholder cannot be translated by the
 # frontend, hence the texts here).
@@ -72,9 +74,16 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool, hass
     errors: dict[str, str] = {}
     placeholders: dict[str, str] = {
         "native_error": "", "primelan_error": "", "status": "", "port": "",
-        "port_check": "", "port_check_outcome": "",
+        "port_check": "", "port_check_outcome": "", "max": "",
     }
     password_rejected = False
+
+    # The password is the 16-byte encryption key: a longer one cannot exist on
+    # the panel, so say it here instead of failing inside the library.
+    if flow_data.native is not None and len((flow_data.native.password or "").encode("utf-8")) > NATIVE_PASSWORD_MAX_LENGTH:
+        errors["base"] = "native_password_too_long"
+        placeholders["max"] = str(NATIVE_PASSWORD_MAX_LENGTH)
+        return errors, placeholders
 
     # Asked for with the checkbox: a Native port reachable from the Internet
     # stops the form here, before any connection to the panel. So does a check
@@ -207,7 +216,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # ------------------------------------------------------------------
     async def async_step_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": "", "max": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -407,7 +416,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
     async def async_step_reconfigure_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": "", "max": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()

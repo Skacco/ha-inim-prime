@@ -232,7 +232,8 @@
       "connection_failed": "Test di connessione fallito. {status}",
       "native_password_rejected": "La centrale non ha accettato la password della connessione Native.{status}",
       "native_port_exposed": "La porta Native {port} della centrale è raggiungibile da Internet: rimuovi l'inoltro di quella porta sul router e riprova. Per proseguire comunque spegni il controllo della porta.",
-      "native_port_check_failed": "Controllo porta Native non riuscito: il servizio di verifica non ha risposto, quindi non si sa se la porta {port} è raggiungibile da Internet. Riprova, cambia il servizio di verifica oppure spegni il controllo della porta."
+      "native_port_check_failed": "Controllo porta Native non riuscito: il servizio di verifica non ha risposto, quindi non si sa se la porta {port} è raggiungibile da Internet. Riprova, cambia il servizio di verifica oppure spegni il controllo della porta.",
+      "native_password_too_long": "La password della connessione Native può avere al massimo {max} caratteri."
     },
     "abort": {
       "already_configured": "Questa centrale INIM Prime è già configurata.",
