@@ -20,7 +20,7 @@ It exposes:
 - **thermostats** (temperature sensors)
 - **roller shutters** (driven through the panel's command outputs)
 
-It only needs the local protocol port to be reachable and its password (default `pass`). It does **not** need the PrimeLAN board.
+It only needs the local protocol port to be reachable and its password. It does **not** need the PrimeLAN board.
 
 ### PrimeLAN — official Inim Web API
 Uses the **official Inim Web API** exposed by the **PrimeLAN** network board. It adds the features the local protocol does not expose:
@@ -55,6 +55,7 @@ Always verify critical operations directly on the Inim Prime panel or through th
 - PrimeLAN's HTTPS implementation uses a dated TLS.
 - It is strongly recommended to use this integration **only on a trusted LAN**.
 - Never expose the panel directly to the Internet.
+- **Do not forward the Native port (default 6004) from the router to the Internet.** Whoever reaches it can send commands to the panel knowing only the connection password, which is the same on every panel out of the box; even without knowing it they can make the panel drop its network connections. The Inim Home app does not need that forwarding. An optional check is available in the connection form (see [Initial setup](#initial-setup)).
 
 > **Before installing**, if you haven't already, set up the panel with Prime/STUDIO: see **[Inim Prime panel setup](#inim-prime-panel-setup)** at the bottom of this page.
 
@@ -80,7 +81,9 @@ At the start you choose which integration mode to use: **Native only**, **PrimeL
 ### Initial setup
 - **Serial number** — paste it (the one copied from Prime/STUDIO). It is not verified by the integration and **cannot be changed later**: it identifies the installation and determines where data is stored. If you don't have it, an alternative is the network MAC.
 - **Host** — the panel's IP or hostname (reserve a static IP or a DNS record if you use DHCP).
-- **Native** section (if enabled): port (default 6004), protocol password (default `pass`), optional custom PIN.
+- **Native** section (if enabled): port (default 6004), protocol password, optional custom PIN.
+  - **Check whether the Native port can be reached from the Internet** (optional, off by default): when the form is submitted it asks an external service to try the port on your public address. If the port is reachable, or if the service does not answer, the form stops with a notice; if it is closed the form goes on. Only the port number is sent to the service. The **Check service** field says which one to use (default `https://ifconfig.co`, an "echoip" server).
+  - If the panel does not accept the password, the form says so: "The panel did not accept the Native connection password".
 - **PrimeLAN** section (if enabled): `Use HTTPS` (recommended) and the `API Key` generated in Prime/STUDIO.
 
 The first setup asks for **the connection only**. Scan intervals, alarm panel, roller shutters and the other parameters start with default values and can be adjusted at any time from the **Options** (see below) — where scenario/partition names and shutter modules are already loaded.
@@ -91,6 +94,14 @@ At the end you will see the devices created by the integration, which you can re
 
 # Reconfiguration
 To change host, HTTPS, API key, port/password/PIN or to change the integration mode: open the integration, click the three dots on the device (default name `INIM Prime (serial_number)`) and press `Reconfigure`.
+
+## Changing the Native connection password
+Moving from the default password to your own is recommended, but do it in this order:
+
+1. **Disable the integration before touching the password**: open the integration → ⋮ menu → **Disable**. This is mandatory. A connection attempt with the wrong password can make the panel restart its network card, which closes **all** network connections for about ten seconds; with the integration running this happens right while you are saving the new password.
+2. Change the password on the panel with Prime/STUDIO (1 to 16 characters). Avoid special characters.
+3. Enable the integration again. It makes a single attempt with the old password, stops and shows the "The panel refuses the connection password" notice in **Repairs**: it does not keep retrying.
+4. Open **Reconfigure**, type the new password in the Native section and submit. The integration starts again and the notice goes away.
 
 ## After changes on the panel
 When you change the panel configuration (add/rename **zones, outputs, partitions, scenarios, roller shutters**, etc.) the new entities do **not** appear on their own: after you `Upload` from Prime/STUDIO, in HA open the integration → ⋮ menu → **Reload** (or restart Home Assistant). On reload the integration re-reads the panel and creates/updates the entities.
@@ -244,6 +255,24 @@ A single device with the panel timers: an "active" binary sensor and an "enabled
 ## GSM
 Operator, Signal strength, Credit, Supply voltage.
 
+# Actions
+## Connection drops (`inim_prime.connection_drops`)
+Lists the connection drops recorded in Home Assistant's history, newest first. Run it from **Developer tools → Actions**. All fields are optional:
+
+- **Days** (1-365) and **Hours** (1-240): how far back to look; they add up. Neither: the last 24 hours.
+- **Connection**: Native only or PrimeLAN only. Empty: both.
+- **Kind**: only the periodic ones (matching the panel's periodic network restart) or only the others. Empty: all.
+
+```yaml
+action: inim_prime.connection_drops
+data:
+  days: 2
+  connection: native
+  kind: periodic
+```
+
+The answer has `dal`, `al`, `numero` and the `cadute` list, each with `connessione`, `inizio`, `durata_secondi` and `periodica`. The history covers what Home Assistant's recorder keeps (10 days by default).
+
 # Recommended configuration
 ## Rename the devices
 Rename zones and partitions with meaningful names (they work by id, so renaming them is safe).
@@ -308,7 +337,7 @@ card_mod:
 # Inim Prime panel setup
 ## Requirements
 - The **PrimeLAN** mode needs an Inim Prime panel with the **PrimeLAN network board**: without that board PrimeLAN cannot be used (you can buy and install it yourself or through an installer). The board manual is here: [Inim PrimeLAN manual](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
-- The **Native** mode needs the panel's local protocol port to be reachable (TCP, default **6004**) and the protocol password (default `pass`).
+- The **Native** mode needs the panel's local protocol port to be reachable (TCP, default **6004**) and the protocol password.
 
 In both cases the panel is configured with the **Prime/STUDIO** software on Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
 
@@ -318,7 +347,7 @@ Open Prime/STUDIO and click `Open panel connected`, then select `Prime LAN`:
 
 <img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
 
-Enter the panel's IP and password (default `pass`) and click `Next`.
+Enter the panel's IP and password and click `Next`.
 Once communication is verified, you will see the detected panel, the firmware version and the **serial number**.
 It is **STRONGLY RECOMMENDED** to copy the serial number correctly and keep it: you will need it later in the Home Assistant setup.
 Then click `Open the panel`.

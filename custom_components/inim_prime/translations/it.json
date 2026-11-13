@@ -592,5 +592,10 @@
       "title": "La centrale rifiuta la password di connessione",
       "description": "La centrale INIM Prime ha chiuso la connessione Native alla prima richiesta, senza rispondere: è il modo in cui reagisce a una password di connessione che non riconosce.\n\nL'integrazione ha smesso di collegarsi, perché ogni tentativo con una password rifiutata fa cadere per circa dieci secondi tutte le connessioni di rete della centrale, comprese quelle di Prime/STUDIO.\n\nPer ripartire: Impostazioni → Dispositivi e servizi → INIM Prime → menu ⋮ → **Riconfigura**, e inserisci la password di connessione impostata sulla centrale. Se la password è corretta, basta ricaricare l'integrazione."
     }
+  },
+  "exceptions": {
+    "native_password_rejected": {
+      "message": "La centrale non accetta la password della connessione Native. Inseriscila di nuovo con Riconfigura."
+    }
   }
 }

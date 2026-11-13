@@ -20,7 +20,7 @@ Espone:
 - **termostati** (sensori di temperatura)
 - **tapparelle** (comandate tramite le uscite-comando della centrale)
 
-Richiede solo la raggiungibilità della porta del protocollo locale e la relativa password (default `pass`). **Non** richiede la scheda PrimeLAN.
+Richiede solo la raggiungibilità della porta del protocollo locale e la relativa password. **Non** richiede la scheda PrimeLAN.
 
 ### PrimeLAN — Web API ufficiale Inim
 Usa la **Web API ufficiale Inim** esposta dalla scheda di rete **PrimeLAN**. Aggiunge le funzioni che il protocollo locale non espone:
@@ -55,6 +55,7 @@ Verifica sempre le operazioni critiche direttamente sulla centrale Inim Prime o 
 - L'implementazione HTTPS di PrimeLAN usa un TLS datato.
 - Si consiglia caldamente di usare questa integrazione **solo su una LAN fidata**.
 - Non esporre mai la centrale direttamente su Internet.
+- **Non inoltrare la porta Native (default 6004) dal router verso Internet.** Chi la raggiunge può comandare la centrale conoscendo solo la password della connessione, che di fabbrica è uguale per tutte le centrali; anche senza conoscerla può far cadere le connessioni di rete della centrale. L'app Inim Home non ha bisogno di quell'inoltro. Per verificarlo c'è il controllo facoltativo nel modulo di connessione (vedi [Configurazione iniziale](#configurazione-iniziale)).
 
 > **Prima di installare**, se non l'hai già fatto, prepara la centrale con Prime/STUDIO: vedi **[Configurazione della centrale Inim Prime](#configurazione-della-centrale-inim-prime)** in fondo a questa pagina.
 
@@ -80,7 +81,9 @@ All'inizio scegli quale modalità di integrazione usare: **Solo Native**, **Solo
 ### Configurazione iniziale
 - **Numero di serie** — incollalo (quello copiato da Prime/STUDIO). Non viene verificato dall'integrazione e **non è modificabile in seguito**: identifica l'installazione e determina dove vengono salvati i dati. Se non ce l'hai, un'alternativa è il MAC di rete.
 - **Host** — IP o hostname della centrale (riserva un IP statico o un record DNS se usi il DHCP).
-- Sezione **Native** (se attivo): porta (default 6004), password del protocollo (default `pass`), eventuale PIN personalizzato.
+- Sezione **Native** (se attivo): porta (default 6004), password del protocollo, eventuale PIN personalizzato.
+  - **Controlla se la porta Native è raggiungibile da Internet** (facoltativo, spento di default): all'invio del modulo chiede a un servizio esterno di provare la porta sul tuo indirizzo pubblico. Se la porta risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso; se è chiusa prosegue. Al servizio arriva solo il numero della porta. Il campo **Servizio di verifica** indica quale usare (default `https://ifconfig.co`, un server «echoip»).
+  - Se la centrale non accetta la password, il modulo lo dice: «La centrale non ha accettato la password della connessione Native».
 - Sezione **PrimeLAN** (se attivo): `Usa HTTPS` (consigliato) e la `Chiave API` generata in Prime/STUDIO.
 
 Il primo setup chiede **solo la connessione**. Intervalli di scansione, pannello allarme, tapparelle e gli altri parametri partono con valori predefiniti e si regolano in qualsiasi momento dalle **Opzioni** (vedi sotto) — dove i nomi di scenari/aree e i moduli tapparella sono già caricati.
@@ -91,6 +94,14 @@ Al termine vedrai i dispositivi creati dall'integrazione, che puoi rinominare e 
 
 # Riconfigurazione
 Per cambiare host, HTTPS, chiave API, porta/password/PIN o cambiare modalità di integrazione: apri l'integrazione, clicca i tre puntini del dispositivo (nome di default `INIM Prime (numero_di_serie)`) e premi `Riconfigura`.
+
+## Cambiare la password della connessione Native
+Passare dalla password predefinita a una personale è consigliato, ma va fatto in quest'ordine:
+
+1. **Disabilita l'integrazione prima di toccare la password**: apri l'integrazione → menù ⋮ → **Disabilita**. È tassativo. Un tentativo di connessione con la password sbagliata può far riavviare la scheda di rete della centrale, che per una decina di secondi chiude **tutte** le connessioni di rete; con l'integrazione attiva succede proprio mentre stai salvando la nuova password.
+2. Cambia la password sulla centrale con Prime/STUDIO (da 1 a 16 caratteri). Evita i caratteri speciali.
+3. Riabilita l'integrazione. Farà un solo tentativo con la password vecchia, si fermerà e mostrerà in **Riparazioni** l'avviso «La centrale rifiuta la password di connessione»: non continua a riprovare.
+4. Apri **Riconfigura**, scrivi la nuova password nella sezione Native e invia. L'integrazione riparte e l'avviso sparisce.
 
 ## Dopo modifiche sulla centrale
 Quando cambi la configurazione della centrale (aggiungi/rinomini **zone, uscite, aree, scenari, tapparelle**, ecc.) le nuove entità **non** compaiono da sole: dopo aver fatto `Upload` da Prime/STUDIO, in HA apri l'integrazione → menù ⋮ → **Ricarica** (oppure riavvia Home Assistant). Al ricaricamento l'integrazione rilegge la centrale e crea/aggiorna le entità.
@@ -210,7 +221,7 @@ L'integrazione raggruppa le entità in pochi dispositivi.
 Rappresenta la centrale.
 - **Sensori:** Zone escluse, Memorie allarme zone, Memorie allarme aree, Scenario attivo.
 - **Diagnostica:** Tensione alimentazione, i sensori di **guasto** (Batteria scarica, Guasto rete, Linea telefonica assente, Disturbo radio, Sabotaggio, Guasto GSM, Guasto Internet, ecc.) e i sensori di **connessione** per modalità di integrazione (**Connessione Native** e/o **Connessione PrimeLAN**, `connectivity`): accesi quando l'ultimo polling della modalità è andato a buon fine, con l'attributo `ultimo_ok` (aggiornato al massimo una volta al minuto). Hanno anche due attributi a solo scopo diagnostico, `ultima_caduta` e `durata_ultima_caduta` (in secondi): è normale vederli aggiornati spesso, vedi la nota qui sotto. Ne compare uno per ogni modalità configurata — due se usi entrambi.
-- **Nota sulle cadute di connessione:** la centrale chiude le connessioni locali per circa 11 secondi a intervalli fissi di ~71,6 minuti (2³² microsecondi), quando riavvia le proprie connessioni di rete. È un comportamento della centrale, non un guasto. L'integrazione mantiene lo stato delle entità, tiene in attesa i comandi e si ricollega da sola: i sensori di connessione restano accesi e passano a «disconnesso» solo se la centrale non torna entro 30 secondi.
+- **Nota sulle cadute di connessione:** la centrale ogni tanto chiude le connessioni locali per circa 11 secondi, quando riavvia le proprie connessioni di rete. Succede in istanti che cadono su una cadenza fissa di ~71,6 minuti (2³² microsecondi), ma non a ogni ciclo. È un comportamento della centrale, non un guasto. L'integrazione mantiene lo stato delle entità, tiene in attesa i comandi e si ricollega da sola: i sensori di connessione restano accesi e passano a «disconnesso» solo se la centrale non torna entro 30 secondi.
 - **Registro eventi** (event entity): traccia i log della centrale. Non è in tempo reale (vedi sezione sulla card del registro).
 - **Pulsanti:** Annulla esclusioni zone, Cancella memorie aree, e i pulsanti degli **scenari**.
 - **Allarme** (`alarm_control_panel`): inserimento/disinserimento guidato dagli scenari (se configurato nelle opzioni).
@@ -244,6 +255,24 @@ Device unico con i timer della centrale: un binary sensor "attivo" e uno switch 
 
 ## GSM
 Operatore, Potenza segnale, Credito, Tensione alimentazione.
+
+# Azioni
+## Cadute di connessione (`inim_prime.connection_drops`)
+Elenca le cadute di connessione con la centrale registrate nello storico di Home Assistant, dalla più recente. Si lancia da **Strumenti per sviluppatori → Azioni**. Campi, tutti facoltativi:
+
+- **Giorni** (1-365) e **Ore** (1-240): quanto indietro guardare; si sommano. Senza nessuno dei due: ultime 24 ore.
+- **Connessione**: solo Native o solo PrimeLAN. Vuoto: entrambe.
+- **Tipologia**: solo le periodiche (coincidono con il riavvio periodico della rete della centrale) o solo le altre. Vuoto: tutte.
+
+```yaml
+action: inim_prime.connection_drops
+data:
+  days: 2
+  connection: native
+  kind: periodic
+```
+
+La risposta contiene `dal`, `al`, `numero` e l'elenco `cadute`, ognuna con `connessione`, `inizio`, `durata_secondi` e `periodica`. Lo storico copre il periodo conservato dal registratore di Home Assistant (di default 10 giorni).
 
 # Configurazione consigliata
 ## Rinomina i dispositivi
@@ -309,7 +338,7 @@ card_mod:
 # Configurazione della centrale Inim Prime
 ## Requisiti
 - Per la modalità **PrimeLAN** serve una centrale Inim Prime con la **scheda di rete PrimeLAN**: senza quella scheda PrimeLAN non è utilizzabile (puoi acquistarla e installarla da solo o tramite un installatore). Il manuale della scheda è qui: [manuale Inim PrimeLAN](https://www.manualslib.com/manual/3494645/Inim-Primelan.html?page=4#manual).
-- Per la modalità **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo (default `pass`).
+- Per la modalità **Native** serve la raggiungibilità della porta del protocollo locale della centrale (TCP, default **6004**) e la password del protocollo.
 
 In entrambi i casi si configura la centrale con il software **Prime/STUDIO** su Windows (download: [Inim Prime/STUDIO](https://archive.org/details/primestudio_4002_setup)).
 
@@ -319,7 +348,7 @@ Apri Prime/STUDIO e clicca su `Open panel connected`, poi seleziona `Prime LAN`:
 
 <img width="905" alt="img01" src="https://github.com/user-attachments/assets/9507ebab-88d9-46d6-84a3-f51cedd98854" />
 
-Inserisci IP e password della centrale (default `pass`) e clicca `Next`.
+Inserisci IP e password della centrale e clicca `Next`.
 Verificata la comunicazione, vedrai la centrale rilevata, la versione firmware e il **numero di serie**.
 È **FORTEMENTE CONSIGLIATO** copiare correttamente il numero di serie e conservarlo: servirà dopo nella configurazione di Home Assistant.
 Poi clicca `Open the panel`.

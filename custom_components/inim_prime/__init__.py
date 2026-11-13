@@ -171,8 +171,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             except Exception:  # noqa: BLE001 - best effort cleanup
                 pass
             raise ConfigEntryError(
-                "The panel does not accept the Native connection password. "
-                "Enter it again with Reconfigure"
+                translation_domain = DOMAIN,
+                translation_key = "native_password_rejected",
             ) from err
         except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
             if attempt == attempts:
