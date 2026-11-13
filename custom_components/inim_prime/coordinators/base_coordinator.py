@@ -17,6 +17,18 @@ if TYPE_CHECKING:
 from ..gateway import InimPrimeGateway
 from ..entry_data import InimPrimeConfigData, InimPrimeOptionsData, get_entry_data, get_entry_options
 from ..const import CONNECTION_GRACE_PERIOD
+from ..adapters.native_adapter import NativePasswordRejected
+from ..repairs_helpers import report_password_rejected
+
+
+def _caused_by_rejected_password(err: BaseException | None) -> bool:
+    seen = set()
+    while err is not None and id(err) not in seen:
+        seen.add(id(err))
+        if isinstance(err, NativePasswordRejected):
+            return True
+        err = err.__cause__ or err.__context__
+    return False
 
 
 class InimPrimeBaseCoordinator(DataUpdateCoordinator):
@@ -81,6 +93,12 @@ class InimPrimeBaseCoordinator(DataUpdateCoordinator):
                 data = await fetch(self)
             except UpdateFailed as err:
                 self._note_read_failed()
+                if _caused_by_rejected_password(err):
+                    # no riding through: the adapter has stopped connecting
+                    if self.config_entry is not None:
+                        report_password_rejected(self.hass, self.config_entry.entry_id)
+                    self._riding_through = False
+                    raise
                 if (
                     self.data is not None
                     and self._last_success is not None

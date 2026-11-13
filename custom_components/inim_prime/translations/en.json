@@ -546,5 +546,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "native_password_rejected": {
+      "title": "The panel refuses the connection password",
+      "description": "The INIM Prime panel closed the Native connection at its first request, without answering: this is how it reacts to a connection password it does not recognise.\n\nThe integration has stopped connecting, because every attempt with a refused password makes the panel drop all its network connections for about ten seconds, those of Prime/STUDIO included.\n\nTo resume: Settings → Devices & services → INIM Prime → ⋮ menu → **Reconfigure**, and enter the connection password set on the panel. If the password is correct, reloading the integration is enough."
+    }
   }
 }

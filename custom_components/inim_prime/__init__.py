@@ -4,7 +4,7 @@ import time
 from datetime import timedelta
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers import entity_registry as er
@@ -13,7 +13,8 @@ from homeassistant.helpers.storage import Store
 from . import debug_services, native_handoff  # noqa: F401  (must run before native clients initialize)
 from inim.prime.native.client import Client as NativeClient
 from inim.prime.primelan.client import InimPrimeClient as PrimelanClient
-from .adapters.native_adapter import NativeAdapter
+from .adapters.native_adapter import NativeAdapter, NativePasswordRejected
+from .repairs_helpers import clear_password_rejected, report_password_rejected
 from .adapters.primelan_adapter import PrimelanAdapter
 from .const import (
     DOMAIN,
@@ -151,6 +152,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # showing the "not ready" error.
     attempts = 10
     setup_started = time.monotonic()
+    clear_password_rejected(hass, entry.entry_id)
     for attempt in range(1, attempts + 1):
         try:
             await inim_gateway.connect()
@@ -159,6 +161,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
                 time.monotonic() - setup_started, attempt,
             )
             break
+        except NativePasswordRejected as err:
+            # Not retried: every attempt with a refused password makes the
+            # panel drop all its network connections for about ten seconds.
+            report_password_rejected(hass, entry.entry_id)
+            try:
+                await inim_gateway.close()
+            except Exception:  # noqa: BLE001 - best effort cleanup
+                pass
+            raise ConfigEntryError(
+                "The panel does not accept the Native connection password. "
+                "Enter it again with Reconfigure"
+            ) from err
         except (ConnectionError, OSError, asyncio.TimeoutError, TimeoutError) as err:
             if attempt == attempts:
                 raise ConfigEntryNotReady(

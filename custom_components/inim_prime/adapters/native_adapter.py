@@ -183,6 +183,36 @@ def _partial_response_bytes(err: BaseException) -> int:
     return 0
 
 
+class NativePasswordRejected(ConnectionError):
+    """The panel closed a just-opened connection without answering its first
+    request: the way it reacts to a connection password it does not accept
+    (the password is the encryption key, there is no "wrong password" reply).
+
+    Every such attempt makes the panel drop all its network connections for
+    about ten seconds, the ones of other clients included, so the adapter stops
+    connecting until the entry is reloaded with the right password."""
+
+
+PASSWORD_REJECTED_MESSAGE = (
+    "The panel does not accept the Native connection password: "
+    "connection attempts stopped until the password is entered again"
+)
+
+
+def _closed_without_answer(err: BaseException) -> bool:
+    """True when the panel closed the connection before sending a single byte
+    of its answer."""
+    seen = set()
+    while err is not None and id(err) not in seen:
+        seen.add(id(err))
+        if isinstance(err, asyncio.IncompleteReadError):
+            return len(err.partial) == 0
+        # only the explicit cause: the implicit context of an error raised
+        # while handling another one would point at that earlier error
+        err = err.__cause__
+    return False
+
+
 def matches_periodic_drop_cadence(wall_time: float) -> bool:
     """True when wall_time falls on the periodic drop cadence (see const)."""
     offset = (wall_time - PERIODIC_DROP_PHASE) % PERIODIC_DROP_PERIOD
@@ -208,6 +238,8 @@ class NativeAdapter:
         "_already_connected",
         "_reconnect_lock",
         "_last_reconnect_attempt",
+        "_fresh_connection",
+        "_password_rejected",
         "_outage_started",
         "_held_commands",
         "_timer_labels",
@@ -227,6 +259,10 @@ class NativeAdapter:
 
         self._reconnect_lock = asyncio.Lock()
         self._last_reconnect_attempt: float | None = None
+        # True from a (re)connection until the first exchange on it succeeds.
+        self._fresh_connection = False
+        # Set once the panel refused the password (see NativePasswordRejected).
+        self._password_rejected = False
         self._outage_started: float | None = None
         # Commands currently waiting for the panel to come back (see _call_command).
         self._held_commands: set = set()
@@ -235,15 +271,46 @@ class NativeAdapter:
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
         self._thermostats: dict = {}
 
+    @property
+    def password_rejected(self) -> bool:
+        return self._password_rejected
+
+    def _raise_if_password_rejected(self, err: BaseException | None = None) -> None:
+        """Stop for good when the panel refuses the password.
+
+        Recognised by a connection that was just opened and is closed at its
+        first request without a byte of answer. During the panel's own short
+        network restarts the port refuses the connection instead, so those are
+        not taken for a refused password."""
+        if err is not None and self._fresh_connection and _closed_without_answer(err):
+            self._password_rejected = True
+            _LOGGER.error(
+                "The panel closed a new connection at its first request without "
+                "answering: it does not accept the Native connection password. "
+                "Connection attempts are stopped (each one makes the panel drop "
+                "all its network connections for about ten seconds). Enter the "
+                "password again with Reconfigure",
+            )
+            raise NativePasswordRejected(PASSWORD_REJECTED_MESSAGE) from err
+        if err is None and self._password_rejected:
+            raise NativePasswordRejected(PASSWORD_REJECTED_MESSAGE)
+
     async def _call_with_reconnect(self, coro_factory, resend_started_answer: bool = True):
+        self._raise_if_password_rejected()
         try:
             result = await coro_factory()
         except (ConnectionError, TimeoutError, OSError) as err:
+            self._raise_if_password_rejected(err)
             self._note_outage(err)
             if resend_started_answer is False and _partial_response_bytes(err):
                 raise
             await self._ensure_reconnected()
-            result = await coro_factory()
+            try:
+                result = await coro_factory()
+            except (ConnectionError, TimeoutError, OSError) as retry_err:
+                self._raise_if_password_rejected(retry_err)
+                raise
+        self._fresh_connection = False
         self._note_recovered()
         return result
 
@@ -260,6 +327,7 @@ class NativeAdapter:
         first is still held is dropped (a second tap because "nothing
         happened" must not become a second pulse once the panel is back).
         """
+        self._raise_if_password_rejected()
         if key is not None and key in self._held_commands:
             _LOGGER.debug(
                 "Command %s ignored: the same command is already waiting for the panel", key,
@@ -277,6 +345,8 @@ class NativeAdapter:
                     _LOGGER.debug("Command %s held: the panel is unreachable, waiting", key)
                 try:
                     await self._ensure_reconnected()
+                except NativePasswordRejected:
+                    raise
                 except (ConnectionError, TimeoutError, OSError):
                     pass
                 if self._client.is_connected:
@@ -344,6 +414,7 @@ class NativeAdapter:
 
     async def _ensure_reconnected(self) -> None:
         async with self._reconnect_lock:
+            self._raise_if_password_rejected()
             now = asyncio.get_running_loop().time()
             if (
                     self._last_reconnect_attempt is not None and
@@ -352,16 +423,24 @@ class NativeAdapter:
                 return
             self._last_reconnect_attempt = now
             await self._client.reconnect()
+            self._fresh_connection = True
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
     async def connect(self) -> None:
+        self._raise_if_password_rejected()
         if self._already_connected:
             self._already_connected = False
         else:
             await self._client.connect()
-        await self._client.ensure_initialized()
+            self._fresh_connection = True
+        try:
+            await self._client.ensure_initialized()
+        except (ConnectionError, TimeoutError, OSError) as err:
+            self._raise_if_password_rejected(err)
+            raise
+        self._fresh_connection = False
 
     async def close(self) -> None:
         self._client.disconnect()
