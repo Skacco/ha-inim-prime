@@ -1,6 +1,7 @@
-## Novità 1.1.8
+## Novità 1.2.0
 
 - **Manutenzione interna**: adeguamenti ai controlli di validazione di Home Assistant e HACS.
+- **Pacchetto di installazione**: l'integrazione viene ora distribuita da HACS come pacchetto unico allegato alla release.
 
 ## Novità 1.1.7
 
@@ -82,3 +83,6 @@
 ### Prestazioni
 - Avvio molto più rapido: connessioni in parallelo e letture non essenziali spostate in background (su una centrale di prova da ~28 s a ~13 s).
 - La schermata Tapparelle si apre subito (nomi dei moduli in memoria).
+
+---
+⭐ Se l'integrazione ti è utile, lascia una stella al [repository](https://github.com/Skacco/inim-prime): aiuta altri a trovarla.

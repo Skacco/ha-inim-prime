@@ -2,6 +2,8 @@
 
 > **Project maintained by [Skacco](https://github.com/Skacco).** Built on the work of [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), author of the original integration and of the panel communication libraries. This project adds: the **Native mode** (local TCP protocol, fast), **outputs** (switches; dimmable ones as lights only in PrimeLAN mode), **scenarios** (buttons + active scenario sensor), an **alarm panel** driven by scenarios or partitions (with an optional second **PIN**-protected panel), **timers**, **thermostats** (temperature sensors), **roller shutters** (driven by virtual outputs), **realtime push** (local webhook, optional), device grouping and the **Italian interface**.
 
+⭐ If you find this integration useful, star the repository: it helps others find it.
+
 # Introduction
 This custom integration lets Home Assistant communicate with **Inim Prime alarm panels**.
 

@@ -78,6 +78,10 @@ jobs:
           else
             gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md $PRERELEASE
           fi
+          # HACS installs from this zip ("zip_release" in hacs.json) and reads
+          # the download count from it: every release must carry it.
+          (cd custom_components/inim_prime && zip -qr "$GITHUB_WORKSPACE/inim_prime.zip" . -x '*__pycache__*')
+          gh release upload "$VERSION" inim_prime.zip --clobber
           # A stable release supersedes the betas: remove them and their tags.
           if [ -z "$PRERELEASE" ]; then
             gh release list --limit 100 --json tagName,isPrerelease \

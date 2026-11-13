@@ -2,6 +2,8 @@
 
 > **Progetto mantenuto da [Skacco](https://github.com/Skacco).** Nato dal lavoro di [Pitscheider](https://github.com/Pitscheider/ha-inim-prime) (GPL-3.0), autore dell'integrazione originale e delle librerie di comunicazione con la centrale. Questo progetto aggiunge: la **modalità Native** (protocollo locale TCP, veloce), le **uscite** (interruttori; le dimmerabili come luci solo in modalità PrimeLAN), gli **scenari** (pulsanti + sensore scenario attivo), un **pannello di allarme** guidato dagli scenari o dalle aree (con un secondo pannello protetto da **PIN**, facoltativo), i **timer**, i **termostati** (sensori di temperatura), le **tapparelle** (comandate dalle uscite virtuali), il **push in tempo reale** (webhook locale, opzionale), il raggruppamento dei dispositivi e l'**interfaccia in italiano**.
 
+⭐ Se l'integrazione ti è utile, lascia una stella al repository: aiuta altri a trovarla.
+
 # Introduzione
 Questa integrazione personalizzata permette a Home Assistant di comunicare con le **centrali di allarme Inim Prime**.
 
