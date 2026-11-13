@@ -49,6 +49,20 @@ def _describe_error(err: BaseException) -> str:
     return f"{type(err).__name__}: {text}" if text else type(err).__name__
 
 
+# Outcome of the port check, shown at the top of the form when it comes back
+# with an error on something else (a placeholder cannot be translated by the
+# frontend, hence the texts here).
+_PORT_CHECK_PASSED = {
+    "it": "✅ Controllo porta Native superato: la porta {port} non è raggiungibile da Internet.",
+    "en": "✅ Native port check passed: port {port} cannot be reached from the Internet.",
+}
+
+
+def _port_check_note(hass, port: int) -> str:
+    language = (getattr(hass.config, "language", None) or "en").split("-")[0]
+    return _PORT_CHECK_PASSED.get(language, _PORT_CHECK_PASSED["en"]).format(port = port)
+
+
 async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool, hass = None) -> tuple[dict[str, str], dict[str, str]]:
     """Test each configured backend separately.
 
@@ -56,20 +70,26 @@ async def _run_connection_tests(flow_data: ConfigData, *, get_serial: bool, hass
     and why.
     """
     errors: dict[str, str] = {}
-    placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": ""}
+    placeholders: dict[str, str] = {
+        "native_error": "", "primelan_error": "", "status": "", "port": "",
+        "port_check": "", "port_check_outcome": "",
+    }
     password_rejected = False
 
     # Asked for with the checkbox: a Native port reachable from the Internet
-    # stops the form here, before any connection to the panel. No answer from
-    # the check service does not stop anything.
+    # stops the form here, before any connection to the panel. So does a check
+    # that could not be done (no answer from the service): asked for, it must
+    # not be skipped silently.
     if hass is not None and flow_data.native is not None and flow_data.native.check_port_exposed:
         started = time.monotonic()
         reachable = await async_port_reachable(hass, flow_data.native.port_check_server, flow_data.native.port)
         _LOGGER.debug("Connection test: port check answered %s in %.2fs", reachable, time.monotonic() - started)
-        if reachable:
-            placeholders["port"] = str(flow_data.native.port)
-            errors["base"] = "native_port_exposed"
+        placeholders["port"] = str(flow_data.native.port)
+        if reachable is not False:
+            errors["base"] = "native_port_exposed" if reachable else "native_port_check_failed"
             return errors, placeholders
+        placeholders["port_check_outcome"] = "closed"
+        placeholders["port_check"] = _port_check_note(hass, flow_data.native.port)
 
     if flow_data.native is not None:
         started = time.monotonic()
@@ -187,7 +207,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
     # ------------------------------------------------------------------
     async def async_step_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -387,7 +407,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
 
     async def async_step_reconfigure_connection(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
-        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": ""}
+        placeholders: dict[str, str] = {"native_error": "", "primelan_error": "", "status": "", "port": "", "port_check": ""}
 
         if user_input is not None:
             self._data.host = user_input[DataKey.HOST].strip()
@@ -422,7 +442,9 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             # connection itself is verified here.
             errors, placeholders = await _run_connection_tests(self._data, get_serial = False, hass = self.hass)
             if not errors:
-                return self._finish_reconfigure()
+                return self._finish_reconfigure(
+                    port_check_passed = placeholders.get("port_check_outcome") == "closed",
+                )
 
         schema = vol.Schema(
             build_connection_schema(
@@ -437,7 +459,7 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             description_placeholders = placeholders,
         )
 
-    def _finish_reconfigure(self):
+    def _finish_reconfigure(self, port_check_passed: bool = False):
         """Save the new connection and reload; every other option is kept.
 
         Reconfigure is about the connection and the integration mode only (the
@@ -481,10 +503,23 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         options["scan_intervals"] = intervals
 
         assert self._data.serial_number is not None
-        return self.async_update_reload_and_abort(
+        if not port_check_passed:
+            return self.async_update_reload_and_abort(
+                entry,
+                title = f"INIM Prime ({self._data.serial_number})",
+                data = self._data.to_entry_data(),
+                options = options,
+            )
+        # same as above, with the port number in the closing message
+        self.hass.config_entries.async_update_entry(
             entry,
             title = f"INIM Prime ({self._data.serial_number})",
             data = self._data.to_entry_data(),
             options = options,
+        )
+        self.hass.config_entries.async_schedule_reload(entry.entry_id)
+        return self.async_abort(
+            reason = "reconfigure_successful_port_closed",
+            description_placeholders = {"port": str(self._data.native.port)},
         )
 

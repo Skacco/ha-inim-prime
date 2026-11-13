@@ -69,7 +69,7 @@ class InimPrimeGateway:
         # at a chosen moment; update_outputs() must not fetch them meanwhile.
         self.defer_output_labels: bool = False
         # While an alarm command waits for its confirmation, routine polls
-        # (zones, outputs, timers, thermostats) answer from their cache: the
+        # (zones, timers, thermostats; outputs only without Native) answer from their cache: the
         # native link serves one request at a time and would make it queue.
         self._poll_released = asyncio.Event()
         self._poll_released.set()
@@ -399,7 +399,11 @@ class InimPrimeGateway:
             pass
 
     async def update_outputs(self) -> MappingProxyType[int, UnifiedOutput]:
-        if self._polling_held() and self.outputs:
+        # Not paused during an alarm command when read over Native: a scenario
+        # often pulses an output for about a second (e.g. "close the house"),
+        # and a paused read would never show it. The price is that the
+        # command's own Native reads may queue behind one output read.
+        if self._native is None and self._polling_held() and self.outputs:
             return self.outputs
         if self._native is not None:
             await self._native.update_outputs()

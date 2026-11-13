@@ -75,9 +75,9 @@ async def test_action_lists_recorded_drops_newest_first(recorder_mock, hass):
 
     # periodic filter: true and false split the list, nothing is lost
     split = {}
-    for flag in (True, False):
+    for kind, flag in (("periodic", True), ("other", False)):
         filtered = await hass.services.async_call(
-            DOMAIN, cd.SERVICE_CONNECTION_DROPS, {"hours": 1, "periodic": flag},
+            DOMAIN, cd.SERVICE_CONNECTION_DROPS, {"hours": 1, "kind": kind},
             blocking = True, return_response = True,
         )
         assert all(d["periodica"] is flag for d in filtered["cadute"])

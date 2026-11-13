@@ -206,3 +206,29 @@ def test_hidden_outputs_option_only_with_both():
     assert "show_hidden_outputs" in keys(has_native=True, has_primelan=True)
     assert "show_hidden_outputs" not in keys(has_native=True, has_primelan=False)
     assert "show_hidden_outputs" not in keys(has_native=False, has_primelan=True)
+
+
+async def test_outputs_keep_being_read_over_native_during_an_alarm_command():
+    """A scenario pulses an output for about a second: a paused read would
+    never show it (seen live: "close the house" fired by an arm from HA)."""
+    native, primelan = FakeBackend("native"), FakeBackend("primelan")
+    gw = InimPrimeGateway(native=native, primelan=primelan)
+    await gw.update_outputs()
+    native.calls.clear()
+    gw.hold_polling(5)
+    try:
+        await gw.update_outputs()
+        assert native.calls == ["update"]
+    finally:
+        gw.release_polling()
+
+
+async def test_outputs_stay_paused_during_an_alarm_command_without_native():
+    primelan = FakeBackend("primelan")
+    gw = InimPrimeGateway(primelan=primelan)
+    gw.hold_polling(5)
+    try:
+        await gw.update_outputs()
+        assert primelan.calls == []
+    finally:
+        gw.release_polling()

@@ -12,9 +12,13 @@ connection_drops:
           options:
             - {label: Native, value: native}
             - {label: PrimeLAN, value: primelan}
-    periodic:
+    kind:
       selector:
-        boolean:
+        select:
+          translation_key: connection_drop_kind
+          options:
+            - periodic
+            - other
 debug_read_terminals:
   fields:
     start:

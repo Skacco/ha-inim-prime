@@ -12,7 +12,6 @@ from typing import Any, Iterable
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
@@ -31,8 +30,8 @@ CONNECTION_DROPS_SCHEMA = vol.Schema({
     vol.Optional("hours"): vol.All(vol.Coerce(int), vol.Range(min = 1, max = 240)),
     # one connection only; both when left out
     vol.Optional("connection"): vol.In(("native", "primelan")),
-    # true: only the periodic ones; false: only the others; both when left out
-    vol.Optional("periodic"): cv.boolean,
+    # only the periodic drops, or only the others; all of them when left out
+    vol.Optional("kind"): vol.In(("periodic", "other")),
 })
 
 # unique_id suffix of the connectivity sensors -> name shown in the answer
@@ -113,9 +112,9 @@ async def _connection_drops(hass: HomeAssistant, call: ServiceCall) -> ServiceRe
         slice_start = slice_end
 
     drops = [drop for drop in found.values() if drop["_start"] >= start]
-    periodic = call.data.get("periodic")
-    if periodic is not None:
-        drops = [drop for drop in drops if drop["periodica"] is periodic]
+    kind = call.data.get("kind")
+    if kind is not None:
+        drops = [drop for drop in drops if drop["periodica"] is (kind == "periodic")]
     drops.sort(key = lambda drop: drop["_start"], reverse = True)
     for drop in drops:
         del drop["_start"]

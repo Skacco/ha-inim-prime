@@ -49,15 +49,40 @@ async def test_exposed_port_stops_the_form_before_connecting(hass, aioclient_moc
     assert placeholders["port"] == "6004"
     assert calls == []
 
-    # closed port, or no answer from the service: the form goes on
-    for kwargs in ({"json": {"reachable": False}}, {"status": 502}):
-        aioclient_mock.clear_requests()
-        aioclient_mock.get(url, **kwargs)
-        errors, _ = await cf._run_connection_tests(
-            _data(check_port_exposed = True), get_serial = False, hass = hass)
-        assert errors == {}
+    # no answer from the service: the check was asked for, the form stops too
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(url, status = 502)
+    errors, placeholders = await cf._run_connection_tests(
+        _data(check_port_exposed = True), get_serial = False, hass = hass)
+    assert errors == {"base": "native_port_check_failed"}
+    assert placeholders["port"] == "6004" and calls == []
+
+    # closed port: the form goes on
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(url, json = {"reachable": False})
+    errors, _ = await cf._run_connection_tests(
+        _data(check_port_exposed = True), get_serial = False, hass = hass)
+    assert errors == {} and calls == ["192.168.1.98"]
 
     # checkbox off: the service is not asked at all
     aioclient_mock.clear_requests()
     errors, _ = await cf._run_connection_tests(_data(), get_serial = False, hass = hass)
     assert errors == {} and aioclient_mock.call_count == 0
+
+
+async def test_port_check_outcome_is_reported_next_to_another_error(hass, aioclient_mock, monkeypatch):
+    async def fail(conf, host):
+        raise ValueError("Padding is incorrect.")
+    monkeypatch.setattr(cf, "test_native_connection", fail)
+    url = "https://ifconfig.co/port/6004"
+
+    aioclient_mock.get(url, json = {"reachable": False})
+    errors, placeholders = await cf._run_connection_tests(
+        _data(check_port_exposed = True), get_serial = False, hass = hass)
+    assert errors == {"base": "native_password_rejected"}
+    assert placeholders["port_check_outcome"] == "closed"
+    assert "6004" in placeholders["port_check"] and placeholders["port_check"].startswith("✅")
+
+    # checkbox off: nothing is said about the port
+    _, placeholders = await cf._run_connection_tests(_data(), get_serial = False, hass = hass)
+    assert placeholders["port_check"] == ""

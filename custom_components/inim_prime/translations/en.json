@@ -20,7 +20,7 @@
       },
       "connection": {
         "title": "Connect to your panel",
-        "description": "Enter connection details for your INIM Prime alarm panel.",
+        "description": "Enter connection details for your INIM Prime alarm panel.\n\n{port_check}",
         "data": {
           "host": "Host / IP Address"
         },
@@ -34,7 +34,7 @@
               "password": "Password",
               "use_custom_pin": "Use Custom PIN (not recommended)",
               "pin": "PIN",
-              "check_port_exposed": "Check whether the port can be reached from the Internet",
+              "check_port_exposed": "Check whether the Native port can be reached from the Internet",
               "port_check_server": "Check service"
             },
             "data_description": {
@@ -43,7 +43,7 @@
               "password": "Native protocol password. Leave at the default unless you've changed it on the panel.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "PIN code used to authenticate with the panel.",
-              "check_port_exposed": "When you submit this form it asks an external service to try this port on your public address. If it is reachable the form stops with a notice. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice. Only the port number is sent to the service.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
@@ -72,7 +72,7 @@
       },
       "reconfigure_connection": {
         "title": "Reconfigure connection",
-        "description": "Update connection details for your INIM Prime alarm panel.",
+        "description": "Update connection details for your INIM Prime alarm panel.\n\n{port_check}",
         "data": {
           "host": "Host / IP Address"
         },
@@ -86,7 +86,7 @@
               "password": "Password",
               "use_custom_pin": "Use Custom PIN (not recommended)",
               "pin": "PIN",
-              "check_port_exposed": "Check whether the port can be reached from the Internet",
+              "check_port_exposed": "Check whether the Native port can be reached from the Internet",
               "port_check_server": "Check service"
             },
             "data_description": {
@@ -95,7 +95,7 @@
               "password": "Leave blank to keep the current password.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "Leave blank to keep the current PIN.",
-              "check_port_exposed": "When you submit this form it asks an external service to try this port on your public address. If it is reachable the form stops with a notice. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice. Only the port number is sent to the service.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
@@ -231,11 +231,13 @@
       "cannot_connect": "Failed to connect to the INIM Prime panel.",
       "connection_failed": "Connection test failed. {status}",
       "native_password_rejected": "The panel did not accept the Native connection password.{status}",
-      "native_port_exposed": "Port {port} of the panel can be reached from the Internet: remove its forwarding on the router and try again. To go on anyway turn the port check off."
+      "native_port_exposed": "Native port {port} of the panel can be reached from the Internet: remove its forwarding on the router and try again. To go on anyway turn the port check off.",
+      "native_port_check_failed": "Native port check failed: the check service did not answer, so it is not known whether port {port} can be reached from the Internet. Try again, change the check service or turn the port check off."
     },
     "abort": {
       "already_configured": "This INIM Prime panel is already configured.",
-      "reconfigure_successful": "The INIM Prime panel was reconfigured successfully."
+      "reconfigure_successful": "The INIM Prime panel was reconfigured successfully.",
+      "reconfigure_successful_port_closed": "The INIM Prime panel was reconfigured successfully. Native port check passed: port {port} cannot be reached from the Internet."
     }
   },
   "options": {
@@ -396,9 +398,9 @@
           "name": "Connection",
           "description": "Only the drops of this connection. Leave empty for both."
         },
-        "periodic": {
-          "name": "Periodic only",
-          "description": "On: only the drops matching the panel's periodic network restart. Off: only the others. Leave empty to see them all."
+        "kind": {
+          "name": "Kind",
+          "description": "Only the drops of this kind: periodic (matching the panel's periodic network restart) or the others. Leave empty to see them all."
         }
       }
     },
@@ -546,6 +548,12 @@
       "options": {
         "scenario": "Scenario (PrimeLAN)",
         "aree": "Partitions (Native)"
+      }
+    },
+    "connection_drop_kind": {
+      "options": {
+        "periodic": "Periodic",
+        "other": "Not periodic"
       }
     }
   },
