@@ -261,8 +261,7 @@ class NativeAdapter:
         "_outage_started",
         "_held_commands",
         "_resumed",
-        "_calls_running",
-        "_idle",
+        "_link",
         "_closed",
         "_timer_labels",
         "_timers",
@@ -292,10 +291,10 @@ class NativeAdapter:
         # deliberately closed, requests wait for it instead of reconnecting.
         self._resumed = asyncio.Event()
         self._resumed.set()
-        # Requests in progress, so a pause never cuts one in half.
-        self._calls_running = 0
-        self._idle = asyncio.Event()
-        self._idle.set()
+        # Held by the one request that is using the connection: the others
+        # queue here, and a pause takes it to close the connection between
+        # two requests, never in the middle of one.
+        self._link = asyncio.Lock()
         self._closed = False
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
@@ -335,50 +334,61 @@ class NativeAdapter:
     async def pause(self, idle_timeout: float) -> bool:
         """Close the connection on purpose, until resume().
 
-        Waits (at most idle_timeout) for the requests in progress to end, so
-        none is cut in half. From then on every request waits for resume()
-        instead of reconnecting, and nothing is recorded as a drop. Returns
+        Waits (at most idle_timeout) only for the request that is using the
+        connection: the ones queued behind it are not sent, they wait for
+        resume() like every later one. Nothing is recorded as a drop. Returns
         False, leaving everything as it is, when there is nothing to pause or
-        the requests in progress did not end in time."""
+        the request in progress did not end in time."""
         if self.paused or self._password_rejected or self._outage_started is not None:
             return False
         if not self._client.is_connected:
             return False
         self._resumed.clear()
         try:
-            await asyncio.wait_for(self._idle.wait(), idle_timeout)
+            await asyncio.wait_for(self._link.acquire(), idle_timeout)
         except TimeoutError:
             self._resumed.set()
             return False
-        self._client.disconnect()
+        try:
+            self._client.disconnect()
+        finally:
+            self._link.release()
         return True
 
-    async def resume(self) -> None:
-        """Reopen the connection closed by pause() and let the requests go on."""
+    async def resume(self) -> bool:
+        """Reopen the connection closed by pause() and let the requests go on.
+
+        False when the panel did not accept the connection (the usual
+        reconnection then takes over at the first request)."""
         if not self.paused:
-            return
+            return True
+        reopened = False
         try:
             # Not marked as a fresh connection: the password already worked
             # on this link, a failure right after the pause is not a refusal.
             if not self._closed:
                 await self._client.connect()
+                reopened = True
         except (ConnectionError, TimeoutError, OSError) as err:
-            # the usual reconnection takes over at the first request
             _LOGGER.debug("Reopening the connection after the pause failed (%s)", err)
         finally:
             self._resumed.set()
+        return reopened
+
+    async def _on_link(self, coro_factory):
+        """Run one request with the connection to itself, outside a pause."""
+        while True:
+            await self._resumed.wait()
+            async with self._link:
+                if self.paused:
+                    # the pause began while this request was queued: it is
+                    # not sent, it waits for the connection to be reopened
+                    continue
+                return await coro_factory()
 
     async def _call_with_reconnect(self, coro_factory, resend_started_answer: bool = True):
         self._raise_if_password_rejected()
-        await self._resumed.wait()
-        self._calls_running += 1
-        self._idle.clear()
-        try:
-            return await self._call_now(coro_factory, resend_started_answer)
-        finally:
-            self._calls_running -= 1
-            if self._calls_running == 0:
-                self._idle.set()
+        return await self._on_link(lambda: self._call_now(coro_factory, resend_started_answer))
 
     async def _call_now(self, coro_factory, resend_started_answer: bool):
         try:
@@ -536,17 +546,14 @@ class NativeAdapter:
 
     async def read_memory(self, address: int, length: int) -> bytes:
         """Read raw panel memory (used e.g. for the module-name table)."""
-        if self._calls_running == 0:
-            await self._resumed.wait()   # not part of a request in progress
-        async with self._client._lock:
-            return await self._client._protocol.read_memory(address, length)
+        return await self._on_link(lambda: self._read_memory(address, length))
 
     # ------------------------------------------------------------------
     # Thermostats (temperature sensors)
     # ------------------------------------------------------------------
     async def _read_labels(self, address: int, count: int) -> dict[int, str]:
         from ..const import MODULE_LABEL_SIZE
-        data = await self.read_memory(address, count * MODULE_LABEL_SIZE)
+        data = await self._read_memory(address, count * MODULE_LABEL_SIZE)
         labels: dict[int, str] = {}
         for i in range(count):
             raw = data[i * MODULE_LABEL_SIZE:(i + 1) * MODULE_LABEL_SIZE]
@@ -576,17 +583,21 @@ class NativeAdapter:
         from ..models.thermostats import (
             UnifiedThermostat, parse_temperatures, thermostat_name,
         )
-        if self._thermostat_names is None:
-            keypad = await self._read_labels(KEYPAD_LABELS_ADDRESS, KEYPAD_LABELS_COUNT)
-            sensor = await self._read_labels(SENSOR_LABELS_ADDRESS, SENSOR_LABELS_COUNT)
-            self._thermostat_names = (keypad, sensor)
-        keypad, sensor = self._thermostat_names
-        status = await self._thermostat_status()
-        self._thermostats = {
-            index: UnifiedThermostat(index, thermostat_name(index, keypad, sensor), temperature)
-            for index, temperature in parse_temperatures(status).items()
-        }
-        return self._thermostats
+        async def _do() -> dict:
+            if self._thermostat_names is None:
+                keypad = await self._read_labels(KEYPAD_LABELS_ADDRESS, KEYPAD_LABELS_COUNT)
+                sensor = await self._read_labels(SENSOR_LABELS_ADDRESS, SENSOR_LABELS_COUNT)
+                self._thermostat_names = (keypad, sensor)
+            keypad, sensor = self._thermostat_names
+            status = await self._thermostat_status()
+            self._thermostats = {
+                index: UnifiedThermostat(index, thermostat_name(index, keypad, sensor), temperature)
+                for index, temperature in parse_temperatures(status).items()
+            }
+            return self._thermostats
+        # with the connection to itself and outside a pause, like every other
+        # request, but without the reconnection logic (it never had it)
+        return await self._on_link(_do)
 
     @property
     def thermostats(self) -> dict:

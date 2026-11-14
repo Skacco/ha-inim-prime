@@ -196,3 +196,75 @@ def test_margins_are_clamped():
     assert cp._margin(0, 5.0) == cp.NATIVE_CYCLE_PAUSE_MIN
     assert cp._margin(99, 5.0) == cp.NATIVE_CYCLE_PAUSE_MAX
     assert cp._margin(2, 5.0) == 2.0
+
+
+async def test_pause_waits_only_for_the_request_in_flight_not_for_the_queue():
+    """The requests queued behind the one in flight are not sent: the
+    connection closes as soon as that one ends, and they go after the pause."""
+    adapter, client = _adapter()
+    release = asyncio.Event()
+    sent = []
+
+    def _read(name, wait = False):
+        async def _do():
+            assert client.is_connected, f"{name} reached a closed connection"
+            sent.append(name)
+            if wait:
+                await release.wait()
+            return name
+        return _do
+
+    in_flight = asyncio.create_task(adapter._call_with_reconnect(_read("zones", wait = True)))
+    await asyncio.sleep(0)
+    queued = [
+        asyncio.create_task(adapter._call_with_reconnect(_read(name)))
+        for name in ("partitions", "outputs", "timers")
+    ]
+    await asyncio.sleep(0)
+    assert sent == ["zones"]
+
+    pause = asyncio.create_task(adapter.pause(idle_timeout = 1))
+    await asyncio.sleep(0.02)
+    assert client.disconnects == 0, "never in the middle of a request"
+    release.set()
+    assert await in_flight == "zones"
+    assert await pause is True
+    assert client.disconnects == 1
+    assert sent == ["zones"], "the queued requests were not sent before closing"
+    assert not any(task.done() for task in queued)
+
+    assert await adapter.resume() is True
+    assert await asyncio.gather(*queued) == ["partitions", "outputs", "timers"]
+    assert sent == ["zones", "partitions", "outputs", "timers"]
+    assert client.reconnects == 0 and adapter._outage_started is None
+
+
+async def test_resume_reports_a_refused_reopening():
+    adapter, client = _adapter()
+    await adapter.pause(idle_timeout = 1)
+
+    async def _refused():
+        raise ConnectionRefusedError("panel restarting")
+
+    client.connect = _refused
+    assert await adapter.resume() is False
+
+
+async def test_raw_memory_read_waits_for_the_pause():
+    adapter, client = _adapter()
+    reads = []
+
+    class _Protocol:
+        async def read_memory(self, address, length):
+            assert client.is_connected
+            reads.append(address)
+            return bytes(length)
+
+    client._lock = asyncio.Lock()
+    client._protocol = _Protocol()
+    await adapter.pause(idle_timeout = 1)
+    read = asyncio.create_task(adapter.read_memory(0x10, 4))
+    await asyncio.sleep(0.02)
+    assert not reads
+    await adapter.resume()
+    assert await read == bytes(4) and reads == [0x10]

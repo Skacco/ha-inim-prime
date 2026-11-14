@@ -81,8 +81,16 @@ async def run_cycle_pause(adapter: NativeAdapter, before: float, after: float) -
                 await _sleep_until(instant + after)
         finally:
             if adapter.paused:
-                await asyncio.shield(adapter.resume())
-                _LOGGER.debug("Cycle pause: Native connection reopened")
+                if await asyncio.shield(adapter.resume()):
+                    _LOGGER.debug(
+                        "Cycle pause: Native connection reopened at once, the "
+                        "panel did not restart its network at this cycle"
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Cycle pause: the panel did not accept the connection "
+                        "back, it restarted its network at this cycle all the same"
+                    )
         # never the same instant twice, whatever the margins
         await _sleep_until(instant + after + 1.0)
 
