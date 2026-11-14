@@ -323,6 +323,13 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
             if OptionsKey.ALARM_PIN_PANEL in user_input:
                 self._pending[OptionsKey.ALARM_PIN_PANEL] = user_input[OptionsKey.ALARM_PIN_PANEL]
+            for key in (
+                    OptionsKey.NATIVE_CYCLE_PAUSE,
+                    OptionsKey.NATIVE_CYCLE_PAUSE_BEFORE,
+                    OptionsKey.NATIVE_CYCLE_PAUSE_AFTER,
+            ):
+                if key in user_input:
+                    self._pending[key] = user_input[key]
             # The PIN field is optional; an empty submit clears it.
             self._pending[OptionsKey.ALARM_PIN] = (user_input.get(OptionsKey.ALARM_PIN) or "").strip()
             return await self.async_step_init()
@@ -502,6 +509,9 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             webhook_allow_remote=o.get("webhook_allow_remote"),
             alarm_pin_panel=o.get("alarm_pin_panel"),
             alarm_pin=o.get("alarm_pin"),
+            native_cycle_pause=o.get("native_cycle_pause"),
+            native_cycle_pause_before=o.get("native_cycle_pause_before"),
+            native_cycle_pause_after=o.get("native_cycle_pause_after"),
         )
 
     def _scenario_choices(self) -> list[tuple[int, str]]:

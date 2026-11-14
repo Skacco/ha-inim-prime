@@ -14,6 +14,11 @@ from .const import (
 )
 from .models import ConfigData, ScanIntervalsDefault, ConfigOptions
 from ..const import (
+    NATIVE_CYCLE_PAUSE_DEFAULT,
+    NATIVE_CYCLE_PAUSE_BEFORE_DEFAULT,
+    NATIVE_CYCLE_PAUSE_AFTER_DEFAULT,
+    NATIVE_CYCLE_PAUSE_MIN,
+    NATIVE_CYCLE_PAUSE_MAX,
     ZONES_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     PARTITIONS_SCAN_INTERVAL_PRIMELAN_DEFAULT,
     ZONES_SCAN_INTERVAL_NATIVE_DEFAULT,
@@ -400,6 +405,32 @@ def build_general_params_schema(
             max = PANEL_LOG_EVENTS_FETCH_LIMIT_MAX,
             mode = NumberSelectorMode.BOX,
         ))
+    if has_native:
+        # Experimental, last in the form: Native closed across the panel's cycle.
+        schema[vol.Required(
+            OptionsKey.NATIVE_CYCLE_PAUSE,
+            default = (
+                bool(current_options.native_cycle_pause) if current_options
+                else NATIVE_CYCLE_PAUSE_DEFAULT
+            ),
+        )] = bool
+        for key, current, default in (
+                (OptionsKey.NATIVE_CYCLE_PAUSE_BEFORE,
+                 current_options.native_cycle_pause_before if current_options else None,
+                 NATIVE_CYCLE_PAUSE_BEFORE_DEFAULT),
+                (OptionsKey.NATIVE_CYCLE_PAUSE_AFTER,
+                 current_options.native_cycle_pause_after if current_options else None,
+                 NATIVE_CYCLE_PAUSE_AFTER_DEFAULT),
+        ):
+            schema[vol.Required(
+                key, default = current if current is not None else default,
+            )] = NumberSelector(NumberSelectorConfig(
+                min = NATIVE_CYCLE_PAUSE_MIN,
+                max = NATIVE_CYCLE_PAUSE_MAX,
+                step = 0.5,
+                unit_of_measurement = "s",
+                mode = NumberSelectorMode.BOX,
+            ))
     return schema
 
 

@@ -16,6 +16,7 @@ from inim.prime.primelan.client import InimPrimeClient as PrimelanClient
 from .adapters.native_adapter import NativeAdapter, NativePasswordRejected
 from .repairs_helpers import clear_password_rejected, report_password_rejected
 from .port_exposure import clear_port_exposed_notice
+from .cycle_pause import setup_cycle_pause
 from .adapters.primelan_adapter import PrimelanAdapter
 from .const import (
     DOMAIN,
@@ -410,6 +411,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # the port check now runs only in the connection form
     clear_port_exposed_notice(hass, entry.entry_id)
     _setup_realtime_webhook(hass, entry)
+    setup_cycle_pause(hass, entry, inim_gateway.native_adapter)
     _remove_stale_output_entities(hass, entry, inim_gateway)
     _remove_stale_timer_entities(hass, entry, inim_gateway)
     _remove_hidden_partition_entities(hass, entry, inim_gateway)

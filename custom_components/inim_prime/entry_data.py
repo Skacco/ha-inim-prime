@@ -55,6 +55,9 @@ class InimPrimeOptionsData(TypedDict):
     webhook_allow_remote: NotRequired[bool]
     alarm_pin_panel: NotRequired[bool]
     alarm_pin: NotRequired[str]
+    native_cycle_pause: NotRequired[bool]
+    native_cycle_pause_before: NotRequired[float]
+    native_cycle_pause_after: NotRequired[float]
 
 
 def get_entry_data(entry: ConfigEntry) -> InimPrimeConfigData:

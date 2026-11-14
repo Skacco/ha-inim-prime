@@ -36,6 +36,14 @@ CONNECTION_GRACE_PERIOD = 30.0
 PERIODIC_DROP_PERIOD = 4294.967296
 PERIODIC_DROP_PHASE = 2147.483648
 PERIODIC_DROP_TOLERANCE = 5.0
+# Experimental option: the Native connection is closed shortly before each of
+# those instants and reopened shortly after, so the panel finds no local
+# connection open when its cycle comes round. Seconds, set in the options.
+NATIVE_CYCLE_PAUSE_DEFAULT = False
+NATIVE_CYCLE_PAUSE_BEFORE_DEFAULT = 5.0
+NATIVE_CYCLE_PAUSE_AFTER_DEFAULT = 5.0
+NATIVE_CYCLE_PAUSE_MIN = 0.5
+NATIVE_CYCLE_PAUSE_MAX = 15.0
 
 # Native defaults
 NATIVE_PORT_DEFAULT: Final[int] = inim.prime.native.const.Panel.DEFAULT_PORT

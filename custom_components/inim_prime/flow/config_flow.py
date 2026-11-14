@@ -509,6 +509,9 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
                 options.pop(key, None)
         if not native:
             options.pop("alarm_panel_native", None)
+            for key in ("native_cycle_pause", "native_cycle_pause_before",
+                        "native_cycle_pause_after"):
+                options.pop(key, None)
         options["scan_intervals"] = intervals
 
         assert self._data.serial_number is not None

@@ -35,6 +35,10 @@ class OptionsKey:
     WEBHOOK_ALLOW_REMOTE: Final = "webhook_allow_remote"  # accept non-local hits
     ALARM_PIN_PANEL: Final = "alarm_pin_panel"  # extra PIN-protected alarm entity
     ALARM_PIN: Final = "alarm_pin"            # PIN required to disarm that entity
+    # experimental: Native connection closed across the panel's periodic cycle
+    NATIVE_CYCLE_PAUSE: Final = "native_cycle_pause"
+    NATIVE_CYCLE_PAUSE_BEFORE: Final = "native_cycle_pause_before"   # seconds
+    NATIVE_CYCLE_PAUSE_AFTER: Final = "native_cycle_pause_after"     # seconds
 
     class AlarmPanel:
         """Scenario id activated by each alarm panel command (PrimeLAN)."""

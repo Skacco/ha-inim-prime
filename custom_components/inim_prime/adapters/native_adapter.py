@@ -260,6 +260,10 @@ class NativeAdapter:
         "_password_rejected",
         "_outage_started",
         "_held_commands",
+        "_resumed",
+        "_calls_running",
+        "_idle",
+        "_closed",
         "_timer_labels",
         "_timers",
         "_thermostat_names",
@@ -284,6 +288,15 @@ class NativeAdapter:
         self._outage_started: float | None = None
         # Commands currently waiting for the panel to come back (see _call_command).
         self._held_commands: set = set()
+        # Planned pause (see pause/resume): cleared while the connection is
+        # deliberately closed, requests wait for it instead of reconnecting.
+        self._resumed = asyncio.Event()
+        self._resumed.set()
+        # Requests in progress, so a pause never cuts one in half.
+        self._calls_running = 0
+        self._idle = asyncio.Event()
+        self._idle.set()
+        self._closed = False
         self._timer_labels: dict[int, str] | None = None
         self._timers: dict[int, UnifiedTimer] = {}
         self._thermostat_names: tuple[dict[int, str], dict[int, str]] | None = None
@@ -315,8 +328,59 @@ class NativeAdapter:
         if err is None and self._password_rejected:
             raise NativePasswordRejected(PASSWORD_REJECTED_MESSAGE)
 
+    @property
+    def paused(self) -> bool:
+        return not self._resumed.is_set()
+
+    async def pause(self, idle_timeout: float) -> bool:
+        """Close the connection on purpose, until resume().
+
+        Waits (at most idle_timeout) for the requests in progress to end, so
+        none is cut in half. From then on every request waits for resume()
+        instead of reconnecting, and nothing is recorded as a drop. Returns
+        False, leaving everything as it is, when there is nothing to pause or
+        the requests in progress did not end in time."""
+        if self.paused or self._password_rejected or self._outage_started is not None:
+            return False
+        if not self._client.is_connected:
+            return False
+        self._resumed.clear()
+        try:
+            await asyncio.wait_for(self._idle.wait(), idle_timeout)
+        except TimeoutError:
+            self._resumed.set()
+            return False
+        self._client.disconnect()
+        return True
+
+    async def resume(self) -> None:
+        """Reopen the connection closed by pause() and let the requests go on."""
+        if not self.paused:
+            return
+        try:
+            # Not marked as a fresh connection: the password already worked
+            # on this link, a failure right after the pause is not a refusal.
+            if not self._closed:
+                await self._client.connect()
+        except (ConnectionError, TimeoutError, OSError) as err:
+            # the usual reconnection takes over at the first request
+            _LOGGER.debug("Reopening the connection after the pause failed (%s)", err)
+        finally:
+            self._resumed.set()
+
     async def _call_with_reconnect(self, coro_factory, resend_started_answer: bool = True):
         self._raise_if_password_rejected()
+        await self._resumed.wait()
+        self._calls_running += 1
+        self._idle.clear()
+        try:
+            return await self._call_now(coro_factory, resend_started_answer)
+        finally:
+            self._calls_running -= 1
+            if self._calls_running == 0:
+                self._idle.set()
+
+    async def _call_now(self, coro_factory, resend_started_answer: bool):
         try:
             result = await coro_factory()
         except ValueError as err:
@@ -466,10 +530,14 @@ class NativeAdapter:
         self._fresh_connection = False
 
     async def close(self) -> None:
+        self._closed = True
         self._client.disconnect()
+        self._resumed.set()
 
     async def read_memory(self, address: int, length: int) -> bytes:
         """Read raw panel memory (used e.g. for the module-name table)."""
+        if self._calls_running == 0:
+            await self._resumed.wait()   # not part of a request in progress
         async with self._client._lock:
             return await self._client._protocol.read_memory(address, length)
 

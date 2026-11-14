@@ -87,6 +87,9 @@ class ConfigOptions:
     webhook_allow_remote: bool | None = None
     alarm_pin_panel: bool | None = None
     alarm_pin: str | None = None
+    native_cycle_pause: bool | None = None
+    native_cycle_pause_before: float | None = None
+    native_cycle_pause_after: float | None = None
 
     def to_options_dict(self) -> InimPrimeOptionsData:
         assert self.zones_scan_interval is not None
