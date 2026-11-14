@@ -302,7 +302,14 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
     # --- General parameters (no intervals, no alarm, no shutters) -------
     async def async_step_params(self, user_input: dict[str, Any] | None = None):
         self._load()
+        errors: dict[str, str] = {}
         if user_input is not None:
+            # The PIN card only has a numeric keypad: anything else could
+            # never be typed on it.
+            pin = (user_input.get(OptionsKey.ALARM_PIN) or "").strip()
+            if pin and not (pin.isascii() and pin.isdigit()):
+                errors[OptionsKey.ALARM_PIN] = "alarm_pin_not_numeric"
+        if user_input is not None and not errors:
             if OptionsKey.HIDE_UNUSED_PARTITIONS in user_input:
                 self._pending[OptionsKey.HIDE_UNUSED_PARTITIONS] = user_input[OptionsKey.HIDE_UNUSED_PARTITIONS]
             if OptionsKey.SHOW_HIDDEN_OUTPUTS in user_input:
@@ -345,7 +352,11 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
         # there), so HA shows "Avanti" and a back arrow back to the menu.
         return self.async_show_form(
             step_id="params",
-            data_schema=schema,
+            data_schema=(
+                self.add_suggested_values_to_schema(schema, user_input)
+                if errors else schema
+            ),
+            errors=errors,
             last_step=False,
             description_placeholders={"webhook_url": self._webhook_url_line()},
         )

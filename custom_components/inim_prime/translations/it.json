@@ -386,6 +386,9 @@
           "outputs": "Attivazione uscite"
         }
       }
+    },
+    "error": {
+      "alarm_pin_not_numeric": "Il PIN può contenere solo cifre: il pannello con PIN ha solo il tastierino numerico."
     }
   },
   "services": {

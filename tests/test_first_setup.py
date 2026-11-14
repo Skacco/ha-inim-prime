@@ -86,3 +86,73 @@ async def test_first_setup_after_the_form_loads(hass: HomeAssistant):
 
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+def _closed_without_answer() -> ConnectionError:
+    try:
+        raise asyncio.IncompleteReadError(b"", 12)
+    except asyncio.IncompleteReadError as exc:
+        err = ConnectionError("Panel closed the connection mid-response.")
+        err.__cause__ = exc
+        return err
+
+
+class _RefusingClient(_FakeNativeClient):
+    """A panel that closes the new connection at its first request."""
+
+    async def ensure_initialized(self):
+        raise _closed_without_answer()
+
+
+def _native_entry(hass: HomeAssistant) -> MockConfigEntry:
+    entry = MockConfigEntry(
+        domain = DOMAIN, version = 2, minor_version = 0, unique_id = SERIAL,
+        data = {
+            "serial_number": SERIAL, "host": HOST,
+            "native": {"port": 6004, "password": "x", "use_outer_frame": False, "pin": None},
+        },
+        options = {"scan_intervals": {"zones": 500, "partitions": 500}},
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+async def test_reload_waits_and_a_closed_new_connection_is_retried(hass: HomeAssistant, monkeypatch):
+    """Right after our own close the panel may close the new connection
+    without answering: that is retried, not taken for a refused password."""
+    import custom_components.inim_prime as integration
+
+    native_handoff.keep(HOST, 6004, _FakeNativeClient())
+    entry = _native_entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    waits = []
+    real_sleep = asyncio.sleep
+
+    async def _sleep(seconds):
+        waits.append(seconds)
+        await real_sleep(0)
+
+    monkeypatch.setattr(integration.asyncio, "sleep", _sleep)
+    monkeypatch.setattr(integration, "NativeClient", lambda **_: _RefusingClient())
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert any(0 < wait <= integration.NATIVE_REOPEN_DELAY for wait in waits), "the panel is given time"
+    assert entry.state is ConfigEntryState.SETUP_RETRY, "tried again, not blocked"
+    await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_refused_password_with_no_recent_close_still_blocks(hass: HomeAssistant, monkeypatch):
+    import custom_components.inim_prime as integration
+
+    monkeypatch.setattr(integration, "NativeClient", lambda **_: _RefusingClient())
+    entry = _native_entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.SETUP_ERROR

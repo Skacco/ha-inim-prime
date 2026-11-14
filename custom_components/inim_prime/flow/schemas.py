@@ -373,7 +373,11 @@ def build_general_params_schema(
         description = {
             "suggested_value": current_options.alarm_pin if current_options else None
         },
-    )] = TextSelector(TextSelectorConfig(type = TextSelectorType.PASSWORD))
+    # "one-time-code": keeps the browser's password manager from filling the
+    # field with a saved password, which would then be stored as the PIN.
+    )] = TextSelector(TextSelectorConfig(
+        type = TextSelectorType.PASSWORD, autocomplete = "one-time-code",
+    ))
     if has_primelan:
         # Realtime push is driven by the panel's outbound HTTP ("Gestione Api
         # Http in uscita"), which is a PrimeLAN Web API feature -- so only offer

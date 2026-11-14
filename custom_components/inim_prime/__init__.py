@@ -17,6 +17,10 @@ from .adapters.native_adapter import NativeAdapter, NativePasswordRejected
 from .repairs_helpers import clear_password_rejected, report_password_rejected
 from .port_exposure import clear_port_exposed_notice
 from .cycle_pause import setup_cycle_pause
+from .const import NATIVE_REOPEN_DELAY, NATIVE_REOPEN_GRACE
+
+# entry_id -> time.monotonic() of the last unload that closed a Native connection
+_NATIVE_CLOSED_AT = "inim_prime_native_closed_at"
 from .adapters.primelan_adapter import PrimelanAdapter
 from .const import (
     DOMAIN,
@@ -153,6 +157,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
     # connection (one client at a time), so retry for ~30s before giving up and
     # showing the "not ready" error.
     attempts = 10
+    closed_at = hass.data.get(_NATIVE_CLOSED_AT, {}).get(entry.entry_id)
+    if closed_at is not None and data.get("native"):
+        wait = NATIVE_REOPEN_DELAY - (time.monotonic() - closed_at)
+        if wait > 0:
+            _LOGGER.debug(
+                "Setup: waiting %.2fs for the panel to release the previous Native connection", wait,
+            )
+            await asyncio.sleep(wait)
     setup_started = time.monotonic()
     clear_password_rejected(hass, entry.entry_id)
     for attempt in range(1, attempts + 1):
@@ -164,13 +176,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) ->
             )
             break
         except NativePasswordRejected as err:
-            # Not retried: every attempt with a refused password makes the
-            # panel drop all its network connections for about ten seconds.
-            report_password_rejected(hass, entry.entry_id)
             try:
                 await inim_gateway.close()
             except Exception:  # noqa: BLE001 - best effort cleanup
                 pass
+            if closed_at is not None and time.monotonic() - closed_at < NATIVE_REOPEN_GRACE:
+                # We closed a connection to this panel moments ago (reload):
+                # the panel was still releasing it, the password is not the
+                # problem. Home Assistant tries the setup again shortly.
+                _LOGGER.debug(
+                    "Setup: the panel closed the new Native connection %.1fs after "
+                    "the previous one was closed, trying again",
+                    time.monotonic() - closed_at,
+                )
+                raise ConfigEntryNotReady(
+                    "The panel is still releasing the previous Native connection"
+                ) from err
+            # Not retried: every attempt with a refused password makes the
+            # panel drop all its network connections for about ten seconds.
+            report_password_rejected(hass, entry.entry_id)
             raise ConfigEntryError(
                 translation_domain = DOMAIN,
                 translation_key = "native_password_rejected",
@@ -848,6 +872,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: InimPrimeConfigEntry) -
             if hasattr(coordinator, "async_shutdown"):
                 await coordinator.async_shutdown()
         await entry.runtime_data.gateway.close()
+        if entry.data.get("native"):
+            hass.data.setdefault(_NATIVE_CLOSED_AT, {})[entry.entry_id] = time.monotonic()
 
     return unload_ok
 

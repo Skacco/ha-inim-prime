@@ -19,6 +19,12 @@ NATIVE_RECONNECT_SLOW_INTERVAL = 5.0
 # A command issued while the panel is unreachable waits this long for the
 # connection to come back before giving up (seconds).
 NATIVE_COMMAND_RETRY_WINDOW = 15.0
+# On a reload (options saved, Reconfigure) the Native connection is closed
+# and opened again: the panel is given this long to release the old one.
+NATIVE_REOPEN_DELAY = 1.0
+# A new connection closed without an answer this soon after our own close is
+# the panel still releasing the old one, not a refused password: retried.
+NATIVE_REOPEN_GRACE = 30.0
 # Same for PrimeLAN: a command whose connection cannot even be opened (the
 # panel resets new connections for a few seconds during a drop) is retried
 # for this long (seconds).

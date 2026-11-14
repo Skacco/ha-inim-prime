@@ -968,6 +968,11 @@ async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
          patch("custom_components.inim_prime.flow.config_flow._run_connection_tests", tests_ok):
         result = await entry.start_reconfigure_flow(hass)
         assert result["step_id"] == "reconfigure"
+        # the mode in use (PrimeLAN only here) is the one marked with a dot
+        menu = result["menu_options"]
+        assert list(menu) == ["reconfigure_native_only", "reconfigure_primelan_only", "reconfigure_both"]
+        assert [step for step, label in menu.items() if label.startswith("● ")] == ["reconfigure_primelan_only"]
+        assert menu["reconfigure_both"] == "Native + PrimeLAN"
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"next_step_id": "reconfigure_primelan_only"})
         assert result["step_id"] == "reconfigure_connection"
@@ -1011,3 +1016,31 @@ async def test_area_and_zone_values_are_translated(hass: HomeAssistant):
             assert prefix + f"sensor.area_state.state.{value}" in texts
         for value in ("standby", "alarm", "tamper", "short_circuit", "unknown"):
             assert prefix + f"sensor.zone_state.state.{value}" in texts
+
+
+async def test_alarm_pin_must_be_numeric(hass: HomeAssistant):
+    """The PIN card only has a numeric keypad: a PIN with letters is refused."""
+    panel = FakePanel()
+    entry = await _setup(hass, panel, {"disarm": 0})
+
+    with patch("inim.prime.primelan.client.InimPrimeClient._request", side_effect=panel.request):
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "params"})
+        assert result["step_id"] == "params"
+        fields = {str(key): key for key in result["data_schema"].schema}
+        import voluptuous as vol
+        answers = {
+            name: key.default() for name, key in fields.items()
+            if isinstance(key, vol.Required) and key.default is not vol.UNDEFINED
+        }
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {**answers, "alarm_pin": "12ab"})
+        assert result["step_id"] == "params"
+        assert result["errors"] == {"alarm_pin": "alarm_pin_not_numeric"}
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {**answers, "alarm_pin": " 1234 "})
+        assert result["step_id"] == "init", "a numeric PIN goes back to the menu"
+        hass.config_entries.options.async_abort(result["flow_id"])

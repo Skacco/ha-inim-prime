@@ -394,8 +394,28 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
             self._update_migration_flags()
         return self.async_show_menu(
             step_id = "reconfigure",
-            menu_options = ["reconfigure_native_only", "reconfigure_primelan_only", "reconfigure_both"],
+            menu_options = await self._reconfigure_menu(),
         )
+
+    async def _reconfigure_menu(self) -> dict[str, str]:
+        """The three modes, the one in use marked with a dot."""
+        from homeassistant.helpers.translation import async_get_translations
+        entry_data = self._get_reconfigure_entry().data
+        current = {
+            (True, False): "reconfigure_native_only",
+            (False, True): "reconfigure_primelan_only",
+            (True, True): "reconfigure_both",
+        }.get((bool(entry_data.get("native")), bool(entry_data.get("primelan"))))
+        texts = await async_get_translations(
+            self.hass, self.hass.config.language, "config", [DOMAIN],
+        )
+        menu: dict[str, str] = {}
+        for step in ("reconfigure_native_only", "reconfigure_primelan_only", "reconfigure_both"):
+            label = texts.get(
+                f"component.{DOMAIN}.config.step.reconfigure.menu_options.{step}", step,
+            )
+            menu[step] = f"● {label}" if step == current else label
+        return menu
 
     async def async_step_reconfigure_native_only(self, user_input: dict[str, Any] | None = None):
         self._data.use_native = True

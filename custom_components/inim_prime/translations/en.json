@@ -386,6 +386,9 @@
           "outputs": "Output activation"
         }
       }
+    },
+    "error": {
+      "alarm_pin_not_numeric": "The PIN can only contain digits: the PIN panel only has a numeric keypad."
     }
   },
   "services": {
