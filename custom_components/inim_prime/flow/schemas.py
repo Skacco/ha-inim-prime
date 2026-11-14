@@ -363,20 +363,19 @@ def build_general_params_schema(
         OptionsKey.HIDE_UNUSED_PARTITIONS,
         default = bool(current_options.hide_unused_partitions) if current_options else True,
     )] = bool
-    # Optional extra alarm panel protected by a PIN (code required to disarm).
-    schema[vol.Required(
-        OptionsKey.ALARM_PIN_PANEL,
-        default = bool(current_options.alarm_pin_panel) if current_options else False,
-    )] = bool
+    # Optional extra alarm panel protected by a PIN (code required to disarm):
+    # it exists when a PIN is entered here. A plain text field on purpose,
+    # browsers fill a password field with a saved password.
     schema[vol.Optional(
         OptionsKey.ALARM_PIN,
         description = {
-            "suggested_value": current_options.alarm_pin if current_options else None
+            "suggested_value": (
+                current_options.alarm_pin
+                if current_options and current_options.alarm_pin_panel else None
+            )
         },
-    # "new-password": asks the browser not to fill the field with a saved
-    # password, which would then be stored as the PIN.
     )] = TextSelector(TextSelectorConfig(
-        type = TextSelectorType.PASSWORD, autocomplete = "new-password",
+        type = TextSelectorType.TEXT, autocomplete = "off",
     ))
     if has_primelan:
         # Realtime push is driven by the panel's outbound HTTP ("Gestione Api

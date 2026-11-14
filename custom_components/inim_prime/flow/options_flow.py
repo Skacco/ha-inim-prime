@@ -328,8 +328,6 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
                 self._pending[OptionsKey.WEBHOOK_ALLOW_REMOTE] = user_input[OptionsKey.WEBHOOK_ALLOW_REMOTE]
             if OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT in user_input:
                 self._pending[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT] = user_input[OptionsKey.PANEL_LOG_EVENTS_FETCH_LIMIT]
-            if OptionsKey.ALARM_PIN_PANEL in user_input:
-                self._pending[OptionsKey.ALARM_PIN_PANEL] = user_input[OptionsKey.ALARM_PIN_PANEL]
             for key in (
                     OptionsKey.NATIVE_CYCLE_PAUSE,
                     OptionsKey.NATIVE_CYCLE_PAUSE_BEFORE,
@@ -337,8 +335,10 @@ class InimPrimeOptionsFlowHandler(OptionsFlowWithReload):
             ):
                 if key in user_input:
                     self._pending[key] = user_input[key]
-            # The PIN field is optional; an empty submit clears it.
-            self._pending[OptionsKey.ALARM_PIN] = (user_input.get(OptionsKey.ALARM_PIN) or "").strip()
+            # The PIN field is optional: with a PIN the extra panel exists,
+            # an empty submit removes both.
+            self._pending[OptionsKey.ALARM_PIN] = pin
+            self._pending[OptionsKey.ALARM_PIN_PANEL] = bool(pin)
             return await self.async_step_init()
 
         schema = vol.Schema(

@@ -1044,4 +1044,18 @@ async def test_alarm_pin_must_be_numeric(hass: HomeAssistant):
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {**answers, "alarm_pin": " 1234 "})
         assert result["step_id"] == "init", "a numeric PIN goes back to the menu"
-        hass.config_entries.options.async_abort(result["flow_id"])
+        assert "alarm_pin_panel" not in fields, "one field only: a PIN means the panel is wanted"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "save_exit"})
+        await hass.async_block_till_done()
+        assert entry.options["alarm_pin"] == "1234" and entry.options["alarm_pin_panel"] is True
+
+        # emptied: the extra panel goes away with the PIN
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "params"})
+        result = await hass.config_entries.options.async_configure(result["flow_id"], answers)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "save_exit"})
+        await hass.async_block_till_done()
+        assert entry.options["alarm_pin"] == "" and entry.options["alarm_pin_panel"] is False
