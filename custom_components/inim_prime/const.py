@@ -50,6 +50,10 @@ NATIVE_CYCLE_PAUSE_BEFORE_DEFAULT = 5.0
 NATIVE_CYCLE_PAUSE_AFTER_DEFAULT = 5.0
 NATIVE_CYCLE_PAUSE_MIN = 0.5
 NATIVE_CYCLE_PAUSE_MAX = 15.0
+# The reads already queued on the connection are let through before it is
+# closed (up to 1.7s was seen): they are given this head start, so that the
+# connection is really closed the configured number of seconds before.
+NATIVE_CYCLE_PAUSE_DRAIN = 3.0
 
 # Native defaults
 NATIVE_PORT_DEFAULT: Final[int] = inim.prime.native.const.Panel.DEFAULT_PORT

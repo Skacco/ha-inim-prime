@@ -23,6 +23,7 @@ from .adapters.native_adapter import NativeAdapter
 from .const import (
     NATIVE_CYCLE_PAUSE_AFTER_DEFAULT,
     NATIVE_CYCLE_PAUSE_BEFORE_DEFAULT,
+    NATIVE_CYCLE_PAUSE_DRAIN,
     NATIVE_CYCLE_PAUSE_MAX,
     NATIVE_CYCLE_PAUSE_MIN,
     PERIODIC_DROP_PERIOD,
@@ -57,11 +58,15 @@ async def _sleep_until(wall_time: float) -> None:
 async def run_cycle_pause(adapter: NativeAdapter, before: float, after: float) -> None:
     """Pause the Native connection around every instant of the cadence."""
     while True:
-        instant = next_cycle_instant(time.time() + before)
-        await _sleep_until(instant - before)
+        lead = before + NATIVE_CYCLE_PAUSE_DRAIN
+        instant = next_cycle_instant(time.time() + lead)
+        # Started early: no new request is accepted from here, the ones
+        # already queued end, and the connection is closed as soon as they
+        # have (so at least `before` seconds ahead of the instant).
+        await _sleep_until(instant - lead)
         try:
-            # a request in progress may use the time left before the instant
-            paused = await adapter.pause(idle_timeout = max(before - 0.2, 0.1))
+            # late rather than never: queued requests may use the time left
+            paused = await adapter.pause(idle_timeout = max(lead - 0.2, 0.1))
             if not paused:
                 _LOGGER.debug(
                     "Cycle pause skipped: the Native connection is not open "

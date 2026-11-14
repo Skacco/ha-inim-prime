@@ -159,6 +159,7 @@ async def test_close_during_the_pause_does_not_reopen():
 
 async def test_cycle_task_closes_before_and_reopens_after(monkeypatch):
     adapter, client = _adapter()
+    monkeypatch.setattr(cp, "NATIVE_CYCLE_PAUSE_DRAIN", 3.0)
     clock = {"now": cp.next_cycle_instant(1_794_000_000.0) - 100.0}
     instant = cp.next_cycle_instant(clock["now"])
     events = []
@@ -185,7 +186,8 @@ async def test_cycle_task_closes_before_and_reopens_after(monkeypatch):
     client.disconnect, client.connect = _disconnect, _connect
     with pytest.raises(asyncio.CancelledError):
         await cp.run_cycle_pause(adapter, before = 2.0, after = 3.0)
-    assert events == [("closed", -2.0), ("opened", 3.0)]
+    # nothing was queued: closed at the start of the head start, 2 + 3 s ahead
+    assert events == [("closed", -5.0), ("opened", 3.0)]
 
 
 def test_margins_are_clamped():
