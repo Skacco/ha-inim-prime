@@ -973,6 +973,7 @@ async def test_reconfigure_keeps_all_options(hass: HomeAssistant):
         assert list(menu) == ["reconfigure_native_only", "reconfigure_primelan_only", "reconfigure_both"]
         assert [step for step, label in menu.items() if label.startswith("● ")] == ["reconfigure_primelan_only"]
         assert menu["reconfigure_both"] == "Native + PrimeLAN"
+        assert menu["reconfigure_primelan_only"] == "● PrimeLAN only [SELECTED]"
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"next_step_id": "reconfigure_primelan_only"})
         assert result["step_id"] == "reconfigure_connection"

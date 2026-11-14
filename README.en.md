@@ -82,7 +82,7 @@ At the start you choose which integration mode to use: **Native only**, **PrimeL
 - **Serial number** — paste it (the one copied from Prime/STUDIO). It is not verified by the integration and **cannot be changed later**: it identifies the installation and determines where data is stored. If you don't have it, an alternative is the network MAC.
 - **Host** — the panel's IP or hostname (reserve a static IP or a DNS record if you use DHCP).
 - **Native** section (if enabled): port (default 6004), protocol password, optional custom PIN.
-  - **Check whether the Native port can be reached from the Internet** (optional, off by default): when the form is submitted it asks an external service to try the port on your public address. If the port is reachable, or if the service does not answer, the form stops with a notice; if it is closed the form goes on. Only the port number is sent to the service. The **Check service** field says which one to use (default `https://ifconfig.co`, an "echoip" server).
+  - **Check whether the Native port can be reached from the Internet** (optional, off by default): when the form is submitted it asks an external service to try the port on your public address. If the port is reachable, or if the service does not answer, the form stops with a notice; if it is closed the form goes on. The **Check service** field says which one to use (default `https://ifconfig.co`, an "echoip" server).
   - If the panel does not accept the password, the form says so: "The panel did not accept the Native connection password".
 - **PrimeLAN** section (if enabled): `Use HTTPS` (recommended) and the `API Key` generated in Prime/STUDIO.
 

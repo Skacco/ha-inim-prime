@@ -43,7 +43,7 @@
               "password": "Native protocol password. Leave at the default unless you've changed it on the panel.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "PIN code used to authenticate with the panel.",
-              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },
@@ -95,7 +95,7 @@
               "password": "Leave blank to keep the current password.",
               "use_custom_pin": "Enable to authenticate with a specific installer/user PIN instead of the default.",
               "pin": "Leave blank to keep the current PIN.",
-              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice. Only the port number is sent to the service.",
+              "check_port_exposed": "When you submit this form it asks an external service to try the Native port on your public address. If it is reachable, or if the service does not answer, the form stops with a notice.",
               "port_check_server": "Address of the service running the test (an \"echoip\" server). Used only when the check is enabled."
             }
           },

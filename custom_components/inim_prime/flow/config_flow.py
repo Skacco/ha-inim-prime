@@ -409,12 +409,14 @@ class InimPrimeConfigFlow(config_entries.ConfigFlow, domain = DOMAIN):
         texts = await async_get_translations(
             self.hass, self.hass.config.language, "config", [DOMAIN],
         )
+        italian = str(self.hass.config.language or "").lower().startswith("it")
+        selected = "[SELEZIONATO]" if italian else "[SELECTED]"
         menu: dict[str, str] = {}
         for step in ("reconfigure_native_only", "reconfigure_primelan_only", "reconfigure_both"):
             label = texts.get(
                 f"component.{DOMAIN}.config.step.reconfigure.menu_options.{step}", step,
             )
-            menu[step] = f"● {label}" if step == current else label
+            menu[step] = f"● {label} {selected}" if step == current else label
         return menu
 
     async def async_step_reconfigure_native_only(self, user_input: dict[str, Any] | None = None):

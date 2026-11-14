@@ -43,7 +43,7 @@
               "password": "Password del protocollo Native. Lascia il valore predefinito se non l'hai cambiata sulla centrale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
               "pin": "Codice PIN usato per autenticarsi con la centrale.",
-              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare la porta Native sul tuo indirizzo pubblico. Se risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso. Al servizio arriva solo il numero della porta.",
+              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare la porta Native sul tuo indirizzo pubblico. Se risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso.",
               "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },
@@ -95,7 +95,7 @@
               "password": "Lascia vuoto per mantenere la password attuale.",
               "use_custom_pin": "Abilita per autenticarti con un PIN installatore/utente specifico invece di quello predefinito.",
               "pin": "Lascia vuoto per mantenere il PIN attuale.",
-              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare la porta Native sul tuo indirizzo pubblico. Se risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso. Al servizio arriva solo il numero della porta.",
+              "check_port_exposed": "Quando invii questo modulo chiede a un servizio esterno di provare la porta Native sul tuo indirizzo pubblico. Se risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso.",
               "port_check_server": "Indirizzo del servizio che esegue la prova (un server «echoip»). Usato solo se il controllo è attivo."
             }
           },

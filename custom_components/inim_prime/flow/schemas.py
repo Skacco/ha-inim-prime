@@ -373,10 +373,10 @@ def build_general_params_schema(
         description = {
             "suggested_value": current_options.alarm_pin if current_options else None
         },
-    # "one-time-code": keeps the browser's password manager from filling the
-    # field with a saved password, which would then be stored as the PIN.
+    # "new-password": asks the browser not to fill the field with a saved
+    # password, which would then be stored as the PIN.
     )] = TextSelector(TextSelectorConfig(
-        type = TextSelectorType.PASSWORD, autocomplete = "one-time-code",
+        type = TextSelectorType.PASSWORD, autocomplete = "new-password",
     ))
     if has_primelan:
         # Realtime push is driven by the panel's outbound HTTP ("Gestione Api

@@ -82,7 +82,7 @@ All'inizio scegli quale modalità di integrazione usare: **Solo Native**, **Solo
 - **Numero di serie** — incollalo (quello copiato da Prime/STUDIO). Non viene verificato dall'integrazione e **non è modificabile in seguito**: identifica l'installazione e determina dove vengono salvati i dati. Se non ce l'hai, un'alternativa è il MAC di rete.
 - **Host** — IP o hostname della centrale (riserva un IP statico o un record DNS se usi il DHCP).
 - Sezione **Native** (se attivo): porta (default 6004), password del protocollo, eventuale PIN personalizzato.
-  - **Controlla se la porta Native è raggiungibile da Internet** (facoltativo, spento di default): all'invio del modulo chiede a un servizio esterno di provare la porta sul tuo indirizzo pubblico. Se la porta risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso; se è chiusa prosegue. Al servizio arriva solo il numero della porta. Il campo **Servizio di verifica** indica quale usare (default `https://ifconfig.co`, un server «echoip»).
+  - **Controlla se la porta Native è raggiungibile da Internet** (facoltativo, spento di default): all'invio del modulo chiede a un servizio esterno di provare la porta sul tuo indirizzo pubblico. Se la porta risulta raggiungibile, o se il servizio non risponde, il modulo si ferma con un avviso; se è chiusa prosegue. Il campo **Servizio di verifica** indica quale usare (default `https://ifconfig.co`, un server «echoip»).
   - Se la centrale non accetta la password, il modulo lo dice: «La centrale non ha accettato la password della connessione Native».
 - Sezione **PrimeLAN** (se attivo): `Usa HTTPS` (consigliato) e la `Chiave API` generata in Prime/STUDIO.
 
