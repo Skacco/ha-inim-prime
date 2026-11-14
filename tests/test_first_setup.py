@@ -156,3 +156,20 @@ async def test_refused_password_with_no_recent_close_still_blocks(hass: HomeAssi
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.SETUP_ERROR
+
+
+async def test_entry_with_the_cycle_pause_on_unloads(hass: HomeAssistant):
+    """The pause task is stopped at unload without breaking the unload."""
+    native_handoff.keep(HOST, 6004, _FakeNativeClient())
+    entry = _native_entry(hass)
+    hass.config_entries.async_update_entry(entry, options = {
+        **entry.options, "native_cycle_pause": True,
+        "native_cycle_pause_before": 1.0, "native_cycle_pause_after": 2.0,
+    })
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.NOT_LOADED

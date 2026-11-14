@@ -101,4 +101,10 @@ def setup_cycle_pause(hass: HomeAssistant, entry: ConfigEntry, adapter: NativeAd
     task = entry.async_create_background_task(
         hass, run_cycle_pause(adapter, before, after), "inim_prime cycle pause",
     )
-    entry.async_on_unload(task.cancel)
+
+    def _stop() -> None:
+        # returns nothing: Home Assistant runs what an unload callback
+        # returns as a coroutine, and task.cancel() returns True
+        task.cancel()
+
+    entry.async_on_unload(_stop)
